@@ -38,15 +38,23 @@ export interface BaseLayer {
 const OSM_ATTR =
   '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>-Mitwirkende'
 
+const ESRI_ATTR = 'Kacheln &copy; Esri | Daten: Esri, HERE, Garmin, USGS, NGA'
+
 /**
  * Die Namensnennung ist Lizenzbedingung der Kachelanbieter und darf nicht
  * entfernt werden.
  *
- * Bewusst NICHT dabei: tile.openstreetmap.org. Diese Server werden
- * ehrenamtlich betrieben und sind laut Nutzungsrichtlinie nicht fuer fremde
- * Anwendungen gedacht; sie beantworten Anfragen von hier mit einer Kachel
- * "403 Access blocked". Die Kartendaten stammen weiterhin aus OpenStreetMap,
- * ausgeliefert werden sie aber von Anbietern, die genau dafuer da sind.
+ * Zwei Anbieter sind bewusst NICHT dabei:
+ * - tile.openstreetmap.org: ehrenamtlich betrieben, laut Nutzungsrichtlinie
+ *   nicht fuer fremde Anwendungen gedacht; antwortet mit "403 Access blocked".
+ * - basemaps.cartocdn.com: verlangt seit kurzem einen Schluessel und legt
+ *   sonst "API KEY REQUIRED" quer ueber jede Kachel.
+ *
+ * Der deutsche Kartenstil von openstreetmap.de beschriftet in Landessprache
+ * und braucht keinen Schluessel. Seine Nutzungsbedingungen erlauben das
+ * Einbinden ausdruecklich fuer nichtkommerzielle Zwecke und kleinere
+ * Webanwendungen; bei kommerzieller oder stark frequentierter Nutzung gehoert
+ * ein eigener Kachelserver oder ein bezahlter Anbieter hierher.
  */
 export const BASE_LAYERS: Record<BaseLayerId, BaseLayer> = {
   map: {
@@ -54,16 +62,15 @@ export const BASE_LAYERS: Record<BaseLayerId, BaseLayer> = {
     label: 'Karte',
     sources: [
       {
-        provider: 'CARTO',
-        url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-        subdomains: 'abcd',
-        attribution: `${OSM_ATTR} &copy; <a href="https://carto.com/attributions" target="_blank" rel="noreferrer">CARTO</a>`,
-        maxZoom: 20,
+        provider: 'OpenStreetMap Deutschland',
+        url: 'https://tile.openstreetmap.de/{z}/{x}/{y}.png',
+        attribution: `${OSM_ATTR} | Kacheln: <a href="https://openstreetmap.de/germanstyle/" target="_blank" rel="noreferrer">OpenStreetMap Deutschland</a>`,
+        maxZoom: 19,
       },
       {
         provider: 'Esri',
         url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
-        attribution: 'Kacheln &copy; Esri | Daten: Esri, HERE, Garmin, USGS, NGA',
+        attribution: ESRI_ATTR,
         maxZoom: 19,
       },
     ],
@@ -81,7 +88,7 @@ export const BASE_LAYERS: Record<BaseLayerId, BaseLayer> = {
       {
         provider: 'Esri',
         url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
-        attribution: 'Kacheln &copy; Esri | Daten: Esri, HERE, Garmin, USGS, NGA',
+        attribution: ESRI_ATTR,
         maxZoom: 19,
       },
     ],
