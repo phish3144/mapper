@@ -154,6 +154,13 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
     setStartLocationId(ort.id)
     setStartOffen(false)
     setStartAktiv(-1)
+    // Der Startpunkt ist der letzte fehlende Baustein: stehen unten schon
+    // Adressen, wird jetzt gebaut statt noch einen Knopfdruck zu verlangen.
+    // Die Wahl geht als Argument mit - der Zustand oben traegt in diesem
+    // Durchlauf noch den alten Wert.
+    if (!anhaengen && !running && parsed.lines.length > 0) {
+      void run({ text: ort.name, id: ort.id })
+    }
   }
 
   if (!canEdit) return null
@@ -213,9 +220,13 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
     }
   }
 
-  async function run(): Promise<void> {
+  async function run(startWahl?: { text: string; id: string | null }): Promise<void> {
     if (!workspaceId) return
-    const zeilen = mitStart ? [startText.trim(), ...parsed.lines] : parsed.lines
+    // Bei der Auswahl aus der Liste kommt der Start als Argument, sonst steht
+    // er im Zustand. Ab hier gilt nur noch diese eine Fassung.
+    const start = startWahl ?? { text: startText, id: startLocationId }
+    const startGesetzt = !anhaengen && start.text.trim() !== ''
+    const zeilen = startGesetzt ? [start.text.trim(), ...parsed.lines] : parsed.lines
     if (zeilen.length === 0) return
 
     const controller = new AbortController()
@@ -232,7 +243,7 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
       // Ein aus der Liste gewaehlter Start hat seine Koordinaten bereits - der
       // darf keine Anfrage kosten und kann auch nicht danebengreifen.
       const gewaehlterStart =
-        mitStart && startLocationId ? (bestand.find((l) => l.id === startLocationId) ?? null) : null
+        startGesetzt && start.id ? (bestand.find((l) => l.id === start.id) ?? null) : null
 
       for (const [i, zeile] of zeilen.entries()) {
         if (controller.signal.aborted) break
@@ -317,7 +328,7 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
       await useStore.getState().refreshLocations()
 
       // --- Route und Stopps --------------------------------------------------
-      const startZeile = mitStart ? aufgeloest[0] : null
+      const startZeile = startGesetzt ? aufgeloest[0] : null
       let routeId = routeIdRef.current ?? route?.id ?? null
       if (routeId === null) {
         const neu = await db.createRoute(workspaceId, {
@@ -392,7 +403,7 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
       await useStore.getState().refreshRoutes()
       setActiveRoute(routeId)
       focusBounds(stopps.map((e) => ({ lat: e.location.lat, lng: e.location.lng })))
-      if (mitStart) rememberStart(startText, startZeile?.locationId ?? null)
+      if (startGesetzt) rememberStart(start.text, startZeile?.locationId ?? null)
 
       const erzeugt = aufgeloest.filter((l) => l.kind === 'created' || l.kind === 'unsure').length
       const wiederverwendet = aufgeloest.filter((l) => l.kind === 'reused').length
@@ -495,7 +506,11 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
             {startOffen && startVorschlaege.length > 0 && (
               <div className="addr-pop">
                 <div className="addr-section">
-                  <span className="addr-section-title">Gespeicherte Standorte</span>
+                  <span className="addr-section-title">
+                    {parsed.lines.length > 0
+                      ? 'Standort waehlen — die Tour wird sofort gebaut'
+                      : 'Gespeicherte Standorte'}
+                  </span>
                 </div>
                 <div className="addr-pop-scroll" role="listbox" aria-label="Gespeicherte Standorte">
                   {startVorschlaege.map((ort, i) => (
