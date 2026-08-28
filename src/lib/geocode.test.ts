@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   GEOCODE_CACHE_LIMIT,
+  clearGeocodeCache,
   MIN_REQUEST_INTERVAL_MS,
   NOMINATIM_BASE_URL,
   createAddressSearch,
@@ -75,6 +76,11 @@ async function settle<T>(promise: Promise<T>): Promise<T> {
  * und zwischen ihnen liegt jeweils der Mindestabstand. Ein einzelner Zeitsprung
  * genuegt dafuer nicht.
  */
+/** Leert nur den Ergebnis-Cache; der gemerkte Dienst bleibt bestehen. */
+function resetCacheOnly(): void {
+  clearGeocodeCache()
+}
+
 async function settleCascade<T>(promise: Promise<T>): Promise<T> {
   let done = false
   const tracked = promise.then((value) => {
@@ -655,8 +661,13 @@ describe('findAddress — Kaskade und Fehlerarten', () => {
 
     expect(result.matches).toEqual([])
     expect(result.problem).toBe('rate-limit')
-    // Weitere Lockerungsschritte wuerden die Drosselung nur verschlimmern.
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+    // Bei Nominatim wird nach der Drosselung NICHT weiter gelockert - das
+    // wuerde die Lage nur verschlimmern. Ein Versuch bei Photon ist dagegen
+    // richtig; er trifft einen anderen Dienst.
+    const nominatimAufrufe = fetchMock.mock.calls.filter(
+      (call) => !String(call[0]).includes('photon'),
+    )
+    expect(nominatimAufrufe).toHaveLength(1)
   })
 
   it('unterscheidet Sperre, Netzfehler und unbrauchbare Antwort', async () => {
@@ -733,5 +744,85 @@ describe('findAddress — Kaskade und Fehlerarten', () => {
 
     expect(fetchMock.mock.calls.length).toBeGreaterThan(2)
     expect(result.matches[0].precision).toBe('street')
+  })
+})
+
+describe('Ausweichen auf Photon', () => {
+  /** Antwortet je nach Dienst unterschiedlich. */
+  function routeByHost(nominatim: () => Response, photon: () => Response) {
+    fetchMock.mockImplementation((url: string) =>
+      Promise.resolve(String(url).includes('photon') ? photon() : nominatim()),
+    )
+  }
+
+  const photonBody = {
+    features: [
+      {
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [10.0977607, 52.5619346] },
+        properties: {
+          housenumber: '14',
+          street: 'Horstwiesen',
+          postcode: '29336',
+          city: 'Nienhagen',
+          osm_value: 'house',
+        },
+      },
+    ],
+  }
+
+  it('springt ein, wenn Nominatim gesperrt ist', async () => {
+    routeByHost(
+      () => jsonResponse({}, 403),
+      () => jsonResponse(photonBody),
+    )
+    const result = await settleCascade(findAddress('Horstwiesen 14, 29336 Nienhagen'))
+
+    expect(result.matches).toHaveLength(1)
+    expect(result.provider).toBe('photon')
+    expect(result.problem).toBeNull()
+    expect(result.matches[0].precision).toBe('exact')
+    expect(result.matches[0].lat).toBeCloseTo(52.5619346, 5)
+  })
+
+  it('springt auch ein, wenn Nominatim nichts findet', async () => {
+    routeByHost(
+      () => jsonResponse([]),
+      () => jsonResponse(photonBody),
+    )
+    const result = await settleCascade(findAddress('Horstwiesen 14, 29336 Nienhagen'))
+    expect(result.provider).toBe('photon')
+    expect(result.matches).toHaveLength(1)
+  })
+
+  it('merkt sich den Dienst, der geantwortet hat, und fragt ihn danach zuerst', async () => {
+    routeByHost(
+      () => jsonResponse({}, 403),
+      () => jsonResponse(photonBody),
+    )
+    await settleCascade(findAddress('Horstwiesen 14, 29336 Nienhagen'))
+
+    fetchMock.mockClear()
+    resetCacheOnly()
+    routeByHost(
+      () => jsonResponse({}, 403),
+      () => jsonResponse(photonBody),
+    )
+    const zweite = await settleCascade(findAddress('Horstwiesen 14, 29336 Nienhagen'))
+
+    expect(zweite.provider).toBe('photon')
+    // Ohne Merken liefe jede Suche erst wieder in Nominatims Sperre.
+    expect(calledUrl(0).host).toContain('photon')
+  })
+
+  it('meldet ein Problem erst, wenn BEIDE Dienste ausfallen', async () => {
+    routeByHost(
+      () => jsonResponse({}, 429),
+      () => jsonResponse({}, 500),
+    )
+    const result = await settleCascade(findAddress('Horstwiesen 14, 29336 Nienhagen'))
+    expect(result.matches).toEqual([])
+    // Der Grund des bevorzugten Dienstes ist der aussagekraeftigere.
+    expect(result.problem).toBe('rate-limit')
   })
 })

@@ -17,11 +17,13 @@
 
 import type { LatLng } from '@/types/domain'
 import type { Bounds } from '@/lib/geo'
+import { photonFeatures, photonSearchUrl, photonToHit } from '@/lib/photon'
 import {
   buildSearchSteps,
   parseGermanAddress,
   precisionNote,
   type SearchPrecision,
+  type SearchStep,
 } from '@/lib/address'
 import { formatLatLng, isValidLatLng } from '@/lib/geo'
 
@@ -218,6 +220,7 @@ export function resetGeocodeState(): void {
   cache.clear()
   queueTail = Promise.resolve()
   lastRequestAt = 0
+  preferredProvider = 'nominatim'
 }
 
 // --- Warteschlange mit Mindestabstand ---------------------------------------
@@ -276,15 +279,16 @@ function problemForStatus(status: number): GeocodeProblem {
   return 'network'
 }
 
-async function fetchJson(url: string, signal: AbortSignal | undefined): Promise<unknown> {
+async function fetchJson(
+  url: string,
+  signal: AbortSignal | undefined,
+  minIntervalMs: number = MIN_REQUEST_INTERVAL_MS,
+): Promise<unknown> {
   return enqueue(async () => {
     if (signal?.aborted) throw createAbortError()
     // Nach oben begrenzt, damit eine zurueckgestellte Systemuhr die
     // Warteschlange nicht dauerhaft anhaelt.
-    const waitMs = Math.min(
-      MIN_REQUEST_INTERVAL_MS,
-      lastRequestAt + MIN_REQUEST_INTERVAL_MS - Date.now(),
-    )
+    const waitMs = Math.min(minIntervalMs, lastRequestAt + minIntervalMs - Date.now())
     if (waitMs > 0) await sleep(waitMs, signal)
     if (signal?.aborted) throw createAbortError()
 
@@ -368,6 +372,45 @@ async function runLookup(
   const hits: GeocodeHit[] = []
   for (const entry of body) {
     const hit = parseHit(entry)
+    if (hit) hits.push(hit)
+  }
+  writeCache(key, hits)
+  return { hits: copyHits(hits), problem: null }
+}
+
+/**
+ * Photon kennt keine Ein-Sekunden-Regel wie Nominatim; ein kleiner Abstand
+ * genuegt, um hoeflich zu bleiben.
+ */
+const PHOTON_MIN_INTERVAL_MS = 300
+
+/** Sucht bei Photon. Gleiche Ergebnisform wie bei Nominatim. */
+async function photonLookup(query: string, opts: AddressSearchOptions): Promise<RawLookup> {
+  const normalized = normalizeQuery(query)
+  const leer: RawLookup = { hits: [], problem: null }
+  if (normalized === '') return leer
+  if (opts.signal?.aborted) return leer
+
+  const limit = clampLimit(opts.limit)
+  const key = `photon|${limit}|${normalized}`
+  const cached = readCache(key)
+  if (cached) return { hits: cached, problem: null }
+
+  let body: unknown
+  try {
+    body = await fetchJson(
+      photonSearchUrl(query.trim(), limit),
+      opts.signal,
+      PHOTON_MIN_INTERVAL_MS,
+    )
+  } catch (error) {
+    if (isAbort(error)) return leer
+    return { hits: [], problem: error instanceof GeocodeError ? error.problem : 'network' }
+  }
+
+  const hits: GeocodeHit[] = []
+  for (const feature of photonFeatures(body)) {
+    const hit = photonToHit(feature)
     if (hit) hits.push(hit)
   }
   writeCache(key, hits)
@@ -578,6 +621,8 @@ async function searchStructuredRaw(
  */
 export interface AddressLookup {
   matches: AddressMatch[]
+  /** Welcher Dienst geantwortet hat; null, wenn keiner etwas geliefert hat. */
+  provider?: GeocodeProvider
   /**
    * Grund, falls die Suche nicht durchgefuehrt werden konnte. Ohne diese
    * Unterscheidung meldete die Oberflaeche "Keine Adresse gefunden", obwohl
@@ -586,30 +631,102 @@ export interface AddressLookup {
   problem: GeocodeProblem | null
 }
 
+export type GeocodeProvider = 'nominatim' | 'photon'
+
+/**
+ * Merkt sich, welcher Dienst zuletzt geantwortet hat. Ist Nominatim im Netz
+ * der Anwenderin gesperrt, soll nicht jede Suche erst in dessen Fehler laufen.
+ */
+let preferredProvider: GeocodeProvider = 'nominatim'
+
+export function resetProviderPreference(): void {
+  preferredProvider = 'nominatim'
+}
+
+/** Arbeitet die Kaskade mit Nominatim ab. */
+async function runNominatim(
+  steps: readonly SearchStep[],
+  opts: AddressSearchOptions,
+): Promise<RawLookup> {
+  let problem: GeocodeProblem | null = null
+  for (const step of steps) {
+    if (opts.signal?.aborted) return { hits: [], problem: null }
+    const result =
+      step.kind === 'free'
+        ? await searchAddressRaw(step.query ?? '', opts)
+        : await searchStructuredRaw(step.params ?? {}, opts)
+    if (result.hits.length > 0) return result
+    if (result.problem !== null) {
+      problem = result.problem
+      // Bei Drosselung oder Sperre haben weitere Schritte bei DIESEM Dienst
+      // keinen Zweck - sie wuerden die Lage nur verschlimmern.
+      if (problem === 'rate-limit' || problem === 'blocked') break
+    }
+  }
+  return { hits: [], problem }
+}
+
+/**
+ * Arbeitet dieselbe Kaskade mit Photon ab. Photon kennt keine strukturierte
+ * Suche, deshalb werden die Felder zu einer Textanfrage zusammengesetzt.
+ */
+async function runPhoton(
+  steps: readonly SearchStep[],
+  opts: AddressSearchOptions,
+): Promise<RawLookup> {
+  const queries: string[] = []
+  for (const step of steps) {
+    const query =
+      step.kind === 'free'
+        ? (step.query ?? '')
+        : ['street', 'postalcode', 'city']
+            .map((field) => step.params?.[field] ?? '')
+            .filter((value) => value !== '')
+            .join(', ')
+    const trimmed = query.trim()
+    if (trimmed !== '' && !queries.includes(trimmed)) queries.push(trimmed)
+  }
+
+  let problem: GeocodeProblem | null = null
+  for (const query of queries) {
+    if (opts.signal?.aborted) return { hits: [], problem: null }
+    const result = await photonLookup(query, opts)
+    if (result.hits.length > 0) return result
+    if (result.problem !== null) {
+      problem = result.problem
+      if (problem === 'rate-limit' || problem === 'blocked') break
+    }
+  }
+  return { hits: [], problem }
+}
+
 export async function findAddress(
   query: string,
   opts: AddressSearchOptions = {},
 ): Promise<AddressLookup> {
   const wanted = wantedPrecision(query)
   const steps = buildSearchSteps(query)
-  let problem: GeocodeProblem | null = null
+  if (steps.length === 0) return { matches: [], problem: null }
 
-  for (const step of steps) {
+  const order: GeocodeProvider[] =
+    preferredProvider === 'photon' ? ['photon', 'nominatim'] : ['nominatim', 'photon']
+
+  let problem: GeocodeProblem | null = null
+  for (const provider of order) {
     if (opts.signal?.aborted) return { matches: [], problem: null }
-    const result =
-      step.kind === 'free'
-        ? await searchAddressRaw(step.query ?? '', opts)
-        : await searchStructuredRaw(step.params ?? {}, opts)
+    const result = provider === 'photon' ? await runPhoton(steps, opts) : await runNominatim(steps, opts)
 
     if (result.hits.length > 0) {
-      return { matches: result.hits.map((hit) => describeMatch(hit, wanted)), problem: null }
+      preferredProvider = provider
+      return {
+        matches: result.hits.map((hit) => describeMatch(hit, wanted)),
+        problem: null,
+        provider,
+      }
     }
-    if (result.problem !== null) {
-      problem = result.problem
-      // Bei Drosselung oder Sperre haben weitere Schritte keinen Zweck - sie
-      // wuerden die Lage nur verschlimmern.
-      if (problem === 'rate-limit' || problem === 'blocked') break
-    }
+    // Der erste gemeldete Grund ist der aussagekraeftigste: er stammt vom
+    // bevorzugten Dienst.
+    if (problem === null) problem = result.problem
   }
   return { matches: [], problem }
 }

@@ -99,7 +99,8 @@ Die Anwendung läuft dann auf http://localhost:5173.
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Browser-Schlüssel. Öffentlich, abgesichert allein durch Row Level Security. |
 | `VITE_OSRM_BASE_URL` | Routing-Server. Vorgabe: öffentlicher OSRM-Demoserver. |
 | `VITE_ORS_API_KEY` | Optional. Schaltet OpenRouteService frei — nötig für **echte** Rad- und Fußprofile. |
-| `VITE_NOMINATIM_BASE_URL` | Adresssuche. Vorgabe: öffentliches Nominatim. |
+| `VITE_NOMINATIM_BASE_URL` | Adresssuche, erster Dienst. Vorgabe: öffentliches Nominatim. |
+| `VITE_PHOTON_BASE_URL` | Adresssuche, Ausweichdienst. Vorgabe: öffentliches Photon (Komoot). |
 
 Der `service_role`-Schlüssel gehört **niemals** in eine dieser Variablen. Er lebt
 ausschließlich in den Secrets der Edge Function.
@@ -214,6 +215,32 @@ Kachel „403 Access blocked" — die Karte bleibt dann grau. Stattdessen:
 Liefert ein Anbieter nach vier Versuchen keine einzige Kachel, wechselt die
 Karte selbsttätig auf den nächsten und sagt es in einer Meldung. Damit zeigt
 sie auch dann etwas, wenn ein Netz oder ein Gerät einen der Dienste blockiert.
+
+## Adresssuche
+
+Zwei Dienste, beide ohne Schlüssel und beide auf OpenStreetMap-Daten:
+**Nominatim** zuerst, **Photon** (Komoot) als Ausweich. Liefert der eine nichts
+oder ist er gedrosselt, gesperrt oder im Netz gefiltert, übernimmt der andere.
+Welcher zuletzt geantwortet hat, wird gemerkt und beim nächsten Mal zuerst
+gefragt — sonst liefe jede Suche erst wieder in denselben Fehler.
+
+Je Dienst wird die Anfrage schrittweise gelockert, bis etwas gefunden wird:
+
+1. wie eingegeben
+2. strukturiert (`street` / `postalcode` / `city`) — greift, wo die freie Suche
+   an der Wortstellung scheitert
+3. ohne Hausnummer → Straße
+4. nur Ort
+
+Die Genauigkeit wird aus dem **Treffer** abgeleitet, nicht aus dem Schritt:
+Nominatim gibt auf eine unbekannte Hausnummer bereitwillig die Straße zurück,
+ohne das kenntlich zu machen. Wer nach einer Hausnummer gefragt hat, sieht
+deshalb „Hausnummer nicht gefunden — Strassenmitte", sonst landete der Standort
+stillschweigend am falschen Fleck.
+
+Ein Fehlschlag wird als solcher benannt und nicht als „Keine Adresse gefunden"
+ausgegeben — das war ein echter Fehler: eine Drosselung (HTTP 429) sah für die
+Oberfläche genauso aus wie eine unbekannte Adresse.
 
 Nominatim erlaubt höchstens eine Anfrage pro Sekunde; die Adresssuche hält
 diesen Abstand selbsttätig ein.

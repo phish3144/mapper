@@ -61,12 +61,16 @@ function popMode(trimmed: string, retyped: boolean, hasPoint: boolean): PopMode 
  * Adresse gefunden" waere hier schlicht falsch.
  */
 function problemText(problem: GeocodeProblem | null): string | null {
+  // Eine Meldung erscheint erst, wenn BEIDE Dienste ausgefallen sind - der
+  // erste Grund stammt vom bevorzugten Dienst.
   if (problem === 'rate-limit') {
-    return 'Der Adressdienst ist gerade ausgelastet. Bitte einen Moment warten und erneut suchen.'
+    return 'Die Adressdienste sind gerade ausgelastet. Bitte einen Moment warten und erneut suchen.'
   }
-  if (problem === 'blocked') return 'Der Adressdienst hat die Anfrage abgewiesen.'
-  if (problem === 'network') return 'Der Adressdienst ist nicht erreichbar.'
-  if (problem === 'bad-response') return 'Der Adressdienst hat unverstaendlich geantwortet.'
+  if (problem === 'blocked') return 'Die Adressdienste haben die Anfrage abgewiesen.'
+  if (problem === 'network') {
+    return 'Kein Adressdienst erreichbar. Pruefe die Internetverbindung, einen Inhaltsblocker oder die Firewall.'
+  }
+  if (problem === 'bad-response') return 'Die Adressdienste haben unverstaendlich geantwortet.'
   return null
 }
 
