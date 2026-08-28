@@ -65,6 +65,14 @@ jobs:
           # Ohne diese Datei laesst Pages die Ausgabe durch Jekyll laufen und
           # verwirft dabei Verzeichnisse, die mit einem Unterstrich beginnen.
           touch dist/.nojekyll
+          # Vercel ist ebenfalls mit diesem Repository verknuepft und versucht
+          # sonst, auch den Branch gh-pages zu bauen. Der enthaelt nur fertige
+          # Bauergebnisse und kein package.json, der Bau scheitert also
+          # zwangslaeufig mit "vite: command not found". Vercel liest die
+          # vercel.json aus dem GEBAUTEN Commit - die Sperre muss deshalb hier
+          # im Branch liegen, nicht in der Hauptversion. Exit 0 heisst
+          # "Bau ueberspringen".
+          printf '%s\n' '{ "ignoreCommand": "exit 0" }' > dist/vercel.json
 
       - name: Nach gh-pages schreiben
         uses: peaceiris/actions-gh-pages@v4
