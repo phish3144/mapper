@@ -14,9 +14,27 @@ export const supabase = createClient(url, key, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: false,
+    // Muss an sein: Bestaetigungs- und Passwort-Zuruecksetzen-Links kommen mit
+    // einem Code in der Adresse zurueck. Steht das hier auf false, ignoriert
+    // der Client ihn und die Person landet trotz gueltigem Link wieder auf der
+    // Anmeldemaske.
+    detectSessionInUrl: true,
+    flowType: 'pkce',
   },
 })
+
+/**
+ * Adresse, auf die Supabase nach dem Klick auf einen E-Mail-Link
+ * zurueckleiten soll. Ohne diese Angabe nimmt Supabase die "Site URL" des
+ * Projekts - die steht ab Werk auf http://localhost:3000 und fuehrt ins Leere.
+ *
+ * Wichtig: die Adresse muss im Supabase-Dashboard unter
+ * Authentication -> URL Configuration als Redirect-URL hinterlegt sein, sonst
+ * faellt Supabase trotzdem auf die Site URL zurueck.
+ */
+export function appRedirectUrl(): string {
+  return new URL(import.meta.env.BASE_URL, window.location.origin).toString()
+}
 
 export const SUPABASE_URL = url
 

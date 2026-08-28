@@ -12,40 +12,95 @@ import { Button, TextField } from '@/components/ui'
 import { useUi } from '@/lib/uiStore'
 import { useVisibleLocations } from './MarkerLayer'
 
-export type BaseLayerId = 'map' | 'terrain'
+export type BaseLayerId = 'map' | 'terrain' | 'satellite'
+
+/** Ein einzelner Kachelanbieter. */
+export interface TileSource {
+  url: string
+  attribution: string
+  maxZoom: number
+  subdomains?: string
+  /** Name des Betreibers, fuer die Meldung beim Ausweichen. */
+  provider: string
+}
 
 export interface BaseLayer {
   id: BaseLayerId
   label: string
-  url: string
-  attribution: string
-  maxZoom: number
+  /**
+   * Mehrere Anbieter derselben Darstellung, in absteigender Vorliebe.
+   * Liefert der erste keine Kacheln, wird selbsttaetig auf den naechsten
+   * gewechselt - die Karte soll auf jedem Netz und jedem Geraet etwas zeigen.
+   */
+  sources: TileSource[]
 }
+
+const OSM_ATTR =
+  '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>-Mitwirkende'
 
 /**
  * Die Namensnennung ist Lizenzbedingung der Kachelanbieter und darf nicht
  * entfernt werden.
+ *
+ * Bewusst NICHT dabei: tile.openstreetmap.org. Diese Server werden
+ * ehrenamtlich betrieben und sind laut Nutzungsrichtlinie nicht fuer fremde
+ * Anwendungen gedacht; sie beantworten Anfragen von hier mit einer Kachel
+ * "403 Access blocked". Die Kartendaten stammen weiterhin aus OpenStreetMap,
+ * ausgeliefert werden sie aber von Anbietern, die genau dafuer da sind.
  */
 export const BASE_LAYERS: Record<BaseLayerId, BaseLayer> = {
   map: {
     id: 'map',
     label: 'Karte',
-    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap-Mitwirkende</a>',
-    maxZoom: 19,
+    sources: [
+      {
+        provider: 'CARTO',
+        url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+        subdomains: 'abcd',
+        attribution: `${OSM_ATTR} &copy; <a href="https://carto.com/attributions" target="_blank" rel="noreferrer">CARTO</a>`,
+        maxZoom: 20,
+      },
+      {
+        provider: 'Esri',
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+        attribution: 'Kacheln &copy; Esri | Daten: Esri, HERE, Garmin, USGS, NGA',
+        maxZoom: 19,
+      },
+    ],
   },
   terrain: {
     id: 'terrain',
     label: 'Gelaende',
-    url: 'https://tile.opentopomap.org/{z}/{x}/{y}.png',
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap-Mitwirkende</a>, SRTM | Darstellung: <a href="https://opentopomap.org" target="_blank" rel="noreferrer">OpenTopoMap</a> (CC-BY-SA)',
-    maxZoom: 17,
+    sources: [
+      {
+        provider: 'OpenTopoMap',
+        url: 'https://tile.opentopomap.org/{z}/{x}/{y}.png',
+        attribution: `${OSM_ATTR}, SRTM | Darstellung: <a href="https://opentopomap.org" target="_blank" rel="noreferrer">OpenTopoMap</a> (CC-BY-SA)`,
+        maxZoom: 17,
+      },
+      {
+        provider: 'Esri',
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+        attribution: 'Kacheln &copy; Esri | Daten: Esri, HERE, Garmin, USGS, NGA',
+        maxZoom: 19,
+      },
+    ],
+  },
+  satellite: {
+    id: 'satellite',
+    label: 'Satellit',
+    sources: [
+      {
+        provider: 'Esri',
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        attribution: 'Kacheln &copy; Esri | Quellen: Esri, Maxar, Earthstar Geographics, GIS-Gemeinschaft',
+        maxZoom: 19,
+      },
+    ],
   },
 }
 
-const BASE_LAYER_ORDER: readonly BaseLayerId[] = ['map', 'terrain']
+const BASE_LAYER_ORDER: readonly BaseLayerId[] = ['map', 'terrain', 'satellite']
 
 const BASE_LAYER_KEY = 'mapper.baseLayer'
 
@@ -53,8 +108,10 @@ const BASE_LAYER_KEY = 'mapper.baseLayer'
 export const DEFAULT_RADIUS_KM = 10
 
 export function readStoredBaseLayer(): BaseLayerId {
+  // Defensiv: in aelteren Staenden konnten hier Kennungen stehen, die es
+  // heute nicht mehr gibt.
   const stored = localStorage.getItem(BASE_LAYER_KEY)
-  return stored === 'terrain' || stored === 'map' ? stored : 'map'
+  return stored !== null && stored in BASE_LAYERS ? (stored as BaseLayerId) : 'map'
 }
 
 export interface MapControlsProps {

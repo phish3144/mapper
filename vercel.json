@@ -1,0 +1,22 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "buildCommand": "pnpm build",
+  "outputDirectory": "dist",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "build": {
+    "env": {
+      "VITE_SUPABASE_URL": "https://iisiaoexusvoecytznwg.supabase.co",
+      "VITE_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_fpGmNfPEo6g1JIpfRbNQ7g_FyHGdfSd",
+      "VITE_OSRM_BASE_URL": "https://router.project-osrm.org",
+      "VITE_NOMINATIM_BASE_URL": "https://nominatim.openstreetmap.org"
+    }
+  },
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    }
+  ]
+}

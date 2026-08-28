@@ -5,7 +5,17 @@
 Web-Anwendung, um feste Standorte nach Kategorie auf einer Karte zu pflegen, sie
 frei zu gruppieren und daraus Routen zu planen — manuell wie regelbasiert.
 
-> **Vor der ersten Anmeldung — eine Einstellung ist nötig.**
+> **Zwei Einstellungen im Supabase-Dashboard.**
+> 1. **Authentication → URL Configuration → Site URL** steht ab Werk auf
+>    `http://localhost:3000`. Sie bestimmt, wohin Bestätigungs- und
+>    Passwort-Links weiterleiten — deshalb landen sie sonst im Leeren.
+>    Auf die Adresse der Anwendung setzen und dieselbe unter
+>    *Redirect URLs* eintragen. (Die Bestätigung selbst funktioniert auch
+>    ohne das: Supabase bestätigt das Konto, *bevor* es weiterleitet — nur die
+>    Landeseite danach ist tot.)
+> 2. Optional, aber empfohlen — siehe unten.
+>
+> **Zur E-Mail-Bestätigung.**
 > Im Supabase-Projekt ist die E-Mail-Bestätigung aktiv (`mailer_autoconfirm: false`).
 > Der eingebaute Mailversand des Free Tiers ist hart limitiert, die Bestätigungsmail
 > kommt also in aller Regel nicht an — und ohne sie ist keine Anmeldung möglich.
@@ -43,6 +53,20 @@ frei zu gruppieren und daraus Routen zu planen — manuell wie regelbasiert.
 - App-Administratoren können Konten anlegen und verwalten
 
 ## Veröffentlichung
+
+### Vercel
+
+`vercel.json` liegt bei und ist fertig konfiguriert (Build, Ausgabeordner,
+SPA-Rewrite, Cache-Regeln, Supabase-Werte). Nötig ist nur einmal: auf
+vercel.com das Repository importieren — Vercel erkennt Vite selbst und baut
+bei jedem Push. Anschließend die Vercel-Adresse in Supabase als *Site URL*
+und *Redirect URL* eintragen.
+
+Gegenüber GitHub Pages hat Vercel zwei Vorteile: die Anwendung liegt im
+Wurzelpfad statt unter `/mapper/`, und Umgebungsvariablen lassen sich im
+Dashboard pflegen statt im Workflow.
+
+### GitHub Pages
 
 Die Seite liegt auf GitHub Pages und wird vom Workflow `.github/workflows/deploy.yml`
 bei jedem Push gebaut und in den Branch `gh-pages` geschrieben. Typecheck und Tests
@@ -167,7 +191,24 @@ Siehe `supabase/functions/admin-users/README.md`.
 
 ## Karten- und Datenquellen
 
-Kartenkacheln und Geodaten stammen von OpenStreetMap und seinen Mitwirkenden
-(ODbL). Die Namensnennung ist in der Karte eingeblendet und darf nicht entfernt
-werden. Nominatim erlaubt höchstens eine Anfrage pro Sekunde; die
-Adresssuche hält diesen Abstand selbsttätig ein.
+Die Kartendaten stammen von OpenStreetMap und seinen Mitwirkenden (ODbL). Die
+Namensnennung ist in der Karte eingeblendet und darf nicht entfernt werden.
+
+**Ausgeliefert werden die Kacheln bewusst nicht von `tile.openstreetmap.org`.**
+Diese Server werden ehrenamtlich betrieben und sind laut
+[Nutzungsrichtlinie](https://operations.osmfoundation.org/policies/tiles/) nicht
+für fremde Anwendungen gedacht. Sie beantworten Anfragen dieser App mit einer
+Kachel „403 Access blocked" — die Karte bleibt dann grau. Stattdessen:
+
+| Ebene | Anbieter | Ausweichanbieter |
+|---|---|---|
+| Karte | CARTO Voyager | Esri World Street Map |
+| Gelände | OpenTopoMap | Esri World Topo Map |
+| Satellit | Esri World Imagery | — |
+
+Liefert ein Anbieter nach vier Versuchen keine einzige Kachel, wechselt die
+Karte selbsttätig auf den nächsten und sagt es in einer Meldung. Damit zeigt
+sie auch dann etwas, wenn ein Netz oder ein Gerät einen der Dienste blockiert.
+
+Nominatim erlaubt höchstens eine Anfrage pro Sekunde; die Adresssuche hält
+diesen Abstand selbsttätig ein.

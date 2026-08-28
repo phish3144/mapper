@@ -11,7 +11,7 @@
 import { create } from 'zustand'
 import type { Session } from '@supabase/supabase-js'
 import * as db from './db'
-import { supabase, describeError } from './supabase'
+import { supabase, describeError, appRedirectUrl } from './supabase'
 import type {
   Category,
   Group,
@@ -138,7 +138,10 @@ export const useStore = create<State & Actions>()((set, get) => ({
     const { error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
-      options: { data: { display_name: displayName.trim() } },
+      options: {
+        data: { display_name: displayName.trim() },
+        emailRedirectTo: appRedirectUrl(),
+      },
     })
     if (error) throw error
     // Ohne E-Mail-Bestaetigung liefert signUp bereits eine Sitzung. Ist die

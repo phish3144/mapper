@@ -5,7 +5,7 @@
  * Auftraege aus dem Oberflaechenzustand (Ausschnitt anspringen, Punkt waehlen)
  * in Leaflet-Aufrufe. Die eigentlichen Ebenen stehen in eigenen Dateien.
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { LatLngTuple } from 'leaflet'
 import { MapContainer, TileLayer, ZoomControl, useMap, useMapEvents } from 'react-leaflet'
 import { Button, Spinner } from '@/components/ui'
@@ -17,6 +17,7 @@ import MapControls, {
   DEFAULT_RADIUS_KM,
   RadiusCircle,
   readStoredBaseLayer,
+  type BaseLayer,
   type BaseLayerId,
 } from './MapControls'
 import MarkerLayer, { useVisibleLocations } from './MarkerLayer'
@@ -79,14 +80,7 @@ export default function MapView() {
           cursor: pickingPoint || radiusActive ? 'crosshair' : undefined,
         }}
       >
-        {/* Der Schluessel erzwingt einen echten Wechsel der Ebene: Adresse,
-            Namensnennung und Zoomgrenze gehoeren zusammen. */}
-        <TileLayer
-          key={layer.id}
-          url={layer.url}
-          attribution={layer.attribution}
-          maxZoom={layer.maxZoom}
-        />
+        <BaseTiles layer={layer} />
         {/* Unten links, damit oben Platz fuer Hinweis und Bedienleiste bleibt. */}
         <ZoomControl position="bottomleft" />
 
@@ -205,4 +199,60 @@ function SizeWatcher() {
   }, [map])
 
   return null
+}
+
+/**
+ * Die Kachelebene samt selbsttaetigem Ausweichen.
+ *
+ * Ein Kachelanbieter kann aus Gruenden ausfallen, die niemand hier in der Hand
+ * hat: Sperre, Netzfilter, Ausfall. Weil die Karte auf jedem Geraet etwas
+ * zeigen soll, wird nach mehreren Fehlern ohne einen einzigen Treffer auf den
+ * naechsten Anbieter derselben Darstellung gewechselt.
+ */
+function BaseTiles({ layer }: { layer: BaseLayer }) {
+  const [index, setIndex] = useState(0)
+  const notify = useStore((s) => s.notify)
+  const errors = useRef(0)
+  const loaded = useRef(0)
+
+  // Beim Ebenenwechsel wieder mit dem bevorzugten Anbieter beginnen.
+  useEffect(() => {
+    setIndex(0)
+    errors.current = 0
+    loaded.current = 0
+  }, [layer.id])
+
+  const source = layer.sources[Math.min(index, layer.sources.length - 1)]
+  const hasFallback = index < layer.sources.length - 1
+
+  return (
+    <TileLayer
+      // Der Schluessel erzwingt einen echten Wechsel: Adresse, Namensnennung
+      // und Zoomgrenze gehoeren zusammen.
+      key={`${layer.id}-${index}`}
+      url={source.url}
+      attribution={source.attribution}
+      maxZoom={source.maxZoom}
+      {...(source.subdomains ? { subdomains: source.subdomains } : {})}
+      eventHandlers={{
+        tileload: () => {
+          loaded.current += 1
+        },
+        tileerror: () => {
+          errors.current += 1
+          // Erst wechseln, wenn NICHTS ankommt. Einzelne fehlende Kacheln am
+          // Rand des Ausschnitts sind normal und kein Grund zum Wechsel.
+          if (errors.current >= 4 && loaded.current === 0 && hasFallback) {
+            const naechster = layer.sources[index + 1]
+            errors.current = 0
+            setIndex((i) => i + 1)
+            notify(
+              'info',
+              `${source.provider} liefert keine Kacheln. Weiter mit ${naechster.provider}.`,
+            )
+          }
+        },
+      }}
+    />
+  )
 }
