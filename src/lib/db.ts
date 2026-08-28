@@ -158,6 +158,22 @@ export async function fetchMembers(workspaceId: string): Promise<MemberWithProfi
   return members.map((m) => ({ ...m, profile: byId.get(m.user_id) ?? null }))
 }
 
+/**
+ * Traegt ein vorhandenes Konto unmittelbar als Mitglied ein.
+ *
+ * Der Umweg ueber eine Einladung bleibt fuer Adressen, hinter denen noch kein
+ * Konto steht - dort ist nur die E-Mail bekannt. Wer die Kennung eines Kontos
+ * hat, braucht ihn nicht: das Konto existiert ja bereits, und die Einladung
+ * wuerde nur darauf warten, dass sich jemand anmeldet, der laengst angemeldet
+ * ist.
+ */
+export async function addMember(workspaceId: string, userId: string, role: MemberRole): Promise<void> {
+  const { error } = await supabase
+    .from('workspace_members')
+    .insert({ workspace_id: workspaceId, user_id: userId, role })
+  if (error) throw error
+}
+
 export async function setMemberRole(workspaceId: string, userId: string, role: MemberRole): Promise<void> {
   const { error } = await supabase
     .from('workspace_members')
@@ -594,6 +610,22 @@ async function callAdmin<T>(body: Record<string, unknown>): Promise<T> {
   const payload = data as { data?: T; error?: string }
   if (payload?.error) throw new Error(payload.error)
   return payload?.data as T
+}
+
+/**
+ * Erkennt den Fall "Funktion nicht erreichbar". supabase-js verpackt das je
+ * nach Ursache unterschiedlich: als Netzwerkfehler ohne Status oder als
+ * HTTP-Fehler mit 404.
+ */
+export function looksUndeployed(error: unknown): boolean {
+  const e = error as { name?: string; message?: string; status?: number; context?: { status?: number } }
+  const status = typeof e?.status === 'number' ? e.status : e?.context?.status
+  if (status === 404) return true
+  // Nur Netzwerk- und Transportfehler, keine Textsuche nach "nicht gefunden":
+  // die Funktion antwortet mit genau solchen Saetzen, wenn ein Konto fehlt -
+  // das ist eine echte Ablehnung und kein fehlender Ausrollstand.
+  const text = `${e?.name ?? ''} ${e?.message ?? ''}`.trim() || String(error)
+  return /Failed to send a request|Failed to fetch|NetworkError|FunctionsFetchError/i.test(text)
 }
 
 export const admin = {
