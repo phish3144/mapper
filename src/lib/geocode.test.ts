@@ -5,6 +5,7 @@ import {
   NOMINATIM_BASE_URL,
   createAddressSearch,
   resetGeocodeState,
+  findAddress,
   reverseGeocode,
   searchAddress,
 } from './geocode'
@@ -67,6 +68,23 @@ function calledUrl(index = 0): URL {
 async function settle<T>(promise: Promise<T>): Promise<T> {
   await vi.advanceTimersByTimeAsync(MIN_REQUEST_INTERVAL_MS)
   return promise
+}
+
+/**
+ * Wie settle, aber fuer die Suchkaskade: die geht mehrere Abrufe nacheinander,
+ * und zwischen ihnen liegt jeweils der Mindestabstand. Ein einzelner Zeitsprung
+ * genuegt dafuer nicht.
+ */
+async function settleCascade<T>(promise: Promise<T>): Promise<T> {
+  let done = false
+  const tracked = promise.then((value) => {
+    done = true
+    return value
+  })
+  for (let step = 0; step < 12 && !done; step++) {
+    await vi.advanceTimersByTimeAsync(MIN_REQUEST_INTERVAL_MS)
+  }
+  return tracked
 }
 
 beforeEach(() => {
@@ -154,6 +172,8 @@ describe('searchAddress - Auswertung', () => {
       lng: 13.3888599,
       type: 'attraction',
       boundingBox: { south: 52.5161, north: 52.5179, west: 13.3766, east: 13.3899 },
+      houseNumber: null,
+      road: null,
     })
   })
 
@@ -405,7 +425,8 @@ describe('createAddressSearch', () => {
     expect(calledUrl().searchParams.get('q')).toBe('Brandenburger Tor')
     expect(onResult).toHaveBeenCalledTimes(1)
     expect(onResult.mock.calls[0][1]).toBe('Brandenburger Tor')
-    expect(onResult.mock.calls[0][0]).toHaveLength(1)
+    // Der Rueckruf liefert jetzt das reichere Ergebnis samt Fehlergrund.
+    expect(onResult.mock.calls[0][0].matches).toHaveLength(1)
   })
 
   it('bricht die laufende Anfrage ab und meldet nur das letzte Ergebnis', async () => {
@@ -453,7 +474,7 @@ describe('createAddressSearch', () => {
     search('   ', onResult)
 
     expect(onResult).toHaveBeenCalledTimes(1)
-    expect(onResult).toHaveBeenCalledWith([], '')
+    expect(onResult).toHaveBeenCalledWith({ matches: [], problem: null }, '')
 
     await vi.advanceTimersByTimeAsync(2000)
     expect(fetchMock).not.toHaveBeenCalled()
@@ -624,5 +645,93 @@ describe('Randfaelle', () => {
     fetchMock.mockResolvedValue(jsonResponse([]))
     await settle(searchAddress('Hauptstrasse', { countryCodes: ' , , ' }))
     expect(calledUrl().searchParams.get('countrycodes')).toBeNull()
+  })
+})
+
+describe('findAddress — Kaskade und Fehlerarten', () => {
+  it('meldet eine Drosselung als solche, statt "nichts gefunden" zu behaupten', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ message: 'Too Many Requests' }, 429))
+    const result = await settleCascade(findAddress('Horstwiesen 14, 29336 Nienhagen'))
+
+    expect(result.matches).toEqual([])
+    expect(result.problem).toBe('rate-limit')
+    // Weitere Lockerungsschritte wuerden die Drosselung nur verschlimmern.
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('unterscheidet Sperre, Netzfehler und unbrauchbare Antwort', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({}, 403))
+    expect((await settleCascade(findAddress('Nienhagen'))).problem).toBe('blocked')
+
+    resetGeocodeState()
+    fetchMock.mockRejectedValue(new TypeError('Failed to fetch'))
+    expect((await settleCascade(findAddress('Nienhagen'))).problem).toBe('network')
+  })
+
+  it('haelt beim ersten Treffer an und meldet kein Problem', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse([
+        nominatimHit({
+          display_name: '14, Horstwiesen, Nienhagen, 29336, Deutschland',
+          type: 'house',
+          address: { house_number: '14', road: 'Horstwiesen', postcode: '29336' },
+        }),
+      ]),
+    )
+    const result = await settleCascade(findAddress('Horstwiesen 14, 29336 Nienhagen'))
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(result.problem).toBeNull()
+    expect(result.matches).toHaveLength(1)
+    expect(result.matches[0].precision).toBe('exact')
+    expect(result.matches[0].note).toBeNull()
+  })
+
+  it('weist eine Strassenmitte aus, wenn nach einer Hausnummer gefragt war', async () => {
+    // Nominatim liefert auf eine unbekannte Hausnummer bereitwillig die
+    // Strasse zurueck, ohne das kenntlich zu machen.
+    fetchMock.mockResolvedValue(
+      jsonResponse([
+        nominatimHit({
+          display_name: 'Horstwiesen, Nienhagen, 29336, Deutschland',
+          type: 'residential',
+          address: { road: 'Horstwiesen', postcode: '29336' },
+        }),
+      ]),
+    )
+    const result = await settleCascade(findAddress('Horstwiesen 999, 29336 Nienhagen'))
+
+    expect(result.matches[0].precision).toBe('street')
+    expect(result.matches[0].note).toContain('Hausnummer')
+  })
+
+  it('nennt einen blossen Ortstreffer nicht ungenau, wenn nur ein Ort gesucht war', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse([
+        nominatimHit({ display_name: 'Nienhagen, Landkreis Celle', type: 'village', address: {} }),
+      ]),
+    )
+    const result = await settleCascade(findAddress('Nienhagen'))
+
+    expect(result.matches[0].precision).toBe('exact')
+    expect(result.matches[0].note).toBeNull()
+  })
+
+  it('lockert erst, wenn ein Schritt leer bleibt', async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse([]))
+      .mockResolvedValueOnce(jsonResponse([]))
+      .mockResolvedValue(
+        jsonResponse([
+          nominatimHit({
+            display_name: 'Horstwiesen, Nienhagen',
+            address: { road: 'Horstwiesen' },
+          }),
+        ]),
+      )
+    const result = await settleCascade(findAddress('Horstwiesen 14, 29336 Nienhagen'))
+
+    expect(fetchMock.mock.calls.length).toBeGreaterThan(2)
+    expect(result.matches[0].precision).toBe('street')
   })
 })

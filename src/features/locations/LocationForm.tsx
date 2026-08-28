@@ -119,8 +119,8 @@ export default function LocationForm({
       return
     }
     setSearching(true)
-    search(query, (found) => {
-      setHits(found)
+    search(query, (result) => {
+      setHits(result.matches)
       setSearching(false)
     })
   }

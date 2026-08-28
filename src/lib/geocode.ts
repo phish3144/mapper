@@ -17,6 +17,12 @@
 
 import type { LatLng } from '@/types/domain'
 import type { Bounds } from '@/lib/geo'
+import {
+  buildSearchSteps,
+  parseGermanAddress,
+  precisionNote,
+  type SearchPrecision,
+} from '@/lib/address'
 import { formatLatLng, isValidLatLng } from '@/lib/geo'
 
 export interface GeocodeHit {
@@ -28,6 +34,14 @@ export interface GeocodeHit {
   type: string | null
   /** Umschliessendes Rechteck des Treffers, sofern die Antwort eines enthaelt. */
   boundingBox: Bounds | null
+  /**
+   * Hausnummer laut Nominatim (address.house_number). Der verlaesslichste
+   * Hinweis darauf, ob wirklich ein Haus getroffen wurde - der Typ allein
+   * genuegt nicht, weil er je nach Objekt 'house', 'building' oder 'yes' heisst.
+   */
+  houseNumber: string | null
+  /** Strassenname laut Nominatim (address.road). */
+  road: string | null
 }
 
 export interface AddressSearchOptions {
@@ -38,7 +52,7 @@ export interface AddressSearchOptions {
   countryCodes?: string
 }
 
-export type AddressSearchCallback = (hits: GeocodeHit[], query: string) => void
+export type AddressSearchCallback = (result: AddressLookup, query: string) => void
 
 export interface DebouncedAddressSearch {
   (
@@ -131,12 +145,15 @@ function parseHit(value: unknown): GeocodeHit | null {
   if (lat === null || lng === null) return null
   const point: LatLng = { lat, lng }
   if (!isValidLatLng(point)) return null
+  const address = asRecord(raw.address)
   return {
     label: firstNonEmptyString(raw.display_name, raw.name) ?? formatLatLng(point),
     lat,
     lng,
     type: firstNonEmptyString(raw.type, raw.addresstype, raw.category),
     boundingBox: parseBoundingBox(raw.boundingbox),
+    houseNumber: address ? firstNonEmptyString(address.house_number) : null,
+    road: address ? firstNonEmptyString(address.road, address.pedestrian, address.footway) : null,
   }
 }
 
@@ -236,6 +253,29 @@ function createAbortError(): Error {
   return error
 }
 
+/**
+ * Warum ein eigener Fehlertyp: eine gedrosselte Anfrage (429) und ein
+ * gesperrter Zugriff (403) sehen fuer den Aufrufer sonst genauso aus wie
+ * "nichts gefunden". Die Oberflaeche behauptete dann, es gebe die Adresse
+ * nicht — obwohl der Dienst nur gebremst hat.
+ */
+export type GeocodeProblem = 'rate-limit' | 'blocked' | 'network' | 'bad-response'
+
+export class GeocodeError extends Error {
+  readonly problem: GeocodeProblem
+  constructor(problem: GeocodeProblem, message: string) {
+    super(message)
+    this.name = 'GeocodeError'
+    this.problem = problem
+  }
+}
+
+function problemForStatus(status: number): GeocodeProblem {
+  if (status === 429) return 'rate-limit'
+  if (status === 403 || status === 401) return 'blocked'
+  return 'network'
+}
+
 async function fetchJson(url: string, signal: AbortSignal | undefined): Promise<unknown> {
   return enqueue(async () => {
     if (signal?.aborted) throw createAbortError()
@@ -254,7 +294,10 @@ async function fetchJson(url: string, signal: AbortSignal | undefined): Promise<
       headers: { Accept: 'application/json', 'Accept-Language': 'de' },
     })
     if (!response.ok) {
-      throw new Error(`Nominatim antwortet mit HTTP ${response.status}.`)
+      throw new GeocodeError(
+        problemForStatus(response.status),
+        `Nominatim antwortet mit HTTP ${response.status}.`,
+      )
     }
     return (await response.json()) as unknown
   })
@@ -293,22 +336,68 @@ function round6(value: number): string {
  * Sucht Adressen und Orte. Liefert bei leerer Anfrage, bei Abbruch und bei
  * jedem Fehler eine leere Liste - nie eine Ausnahme.
  */
+/** Ergebnis eines einzelnen Abrufs samt Grund, falls er nicht klappte. */
+interface RawLookup {
+  hits: GeocodeHit[]
+  problem: GeocodeProblem | null
+}
+
+/**
+ * Fuehrt einen Abruf aus und meldet den Grund eines Fehlschlags mit, statt ihn
+ * zu einer leeren Trefferliste einzuebnen.
+ */
+async function runLookup(
+  key: string,
+  params: URLSearchParams,
+  opts: AddressSearchOptions,
+): Promise<RawLookup> {
+  const cached = readCache(key)
+  if (cached) return { hits: cached, problem: null }
+
+  let body: unknown
+  try {
+    body = await fetchJson(`${NOMINATIM_BASE_URL}/search?${params.toString()}`, opts.signal)
+  } catch (error) {
+    if (isAbort(error)) return { hits: [], problem: null }
+    // Fehlgeschlagene Anfragen kommen nicht in den Cache: der naechste
+    // Versuch soll den Dienst erneut fragen duerfen.
+    return { hits: [], problem: error instanceof GeocodeError ? error.problem : 'network' }
+  }
+  if (!Array.isArray(body)) return { hits: [], problem: 'bad-response' }
+
+  const hits: GeocodeHit[] = []
+  for (const entry of body) {
+    const hit = parseHit(entry)
+    if (hit) hits.push(hit)
+  }
+  writeCache(key, hits)
+  return { hits: copyHits(hits), problem: null }
+}
+
+function isAbort(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && (error as { name?: unknown }).name === 'AbortError'
+}
+
 export async function searchAddress(
   query: string,
   opts: AddressSearchOptions = {},
 ): Promise<GeocodeHit[]> {
+  return (await searchAddressRaw(query, opts)).hits
+}
+
+async function searchAddressRaw(
+  query: string,
+  opts: AddressSearchOptions = {},
+): Promise<RawLookup> {
   const normalized = normalizeQuery(query)
-  if (normalized === '') return []
+  const leer: RawLookup = { hits: [], problem: null }
+  if (normalized === '') return leer
   // Vor dem Cache pruefen: eine abgebrochene Anfrage darf auch dann kein
   // Ergebnis melden, wenn die Antwort zufaellig schon vorliegt.
-  if (opts.signal?.aborted) return []
+  if (opts.signal?.aborted) return leer
 
   const limit = clampLimit(opts.limit)
   const countryCodes = normalizeCountryCodes(opts.countryCodes)
-  const key = `search|${countryCodes}|${limit}|${normalized}`
-  const cached = readCache(key)
-  if (cached) return cached
-
   const params = new URLSearchParams({
     q: query.trim(),
     format: 'jsonv2',
@@ -318,23 +407,7 @@ export async function searchAddress(
   })
   if (countryCodes !== '') params.set('countrycodes', countryCodes)
 
-  let body: unknown
-  try {
-    body = await fetchJson(`${NOMINATIM_BASE_URL}/search?${params.toString()}`, opts.signal)
-  } catch {
-    // Fehlgeschlagene Anfragen kommen nicht in den Cache: der naechste
-    // Versuch soll den Dienst erneut fragen duerfen.
-    return []
-  }
-  if (!Array.isArray(body)) return []
-
-  const hits: GeocodeHit[] = []
-  for (const entry of body) {
-    const hit = parseHit(entry)
-    if (hit) hits.push(hit)
-  }
-  writeCache(key, hits)
-  return copyHits(hits)
+  return runLookup(`search|${countryCodes}|${limit}|${normalized}`, params, opts)
 }
 
 /**
@@ -418,7 +491,7 @@ export function createAddressSearch(delayMs = 500): DebouncedAddressSearch {
     cancel()
     const trimmed = query.trim()
     if (trimmed === '') {
-      callback([], '')
+      callback({ matches: [], problem: null }, '')
       return
     }
 
@@ -427,11 +500,13 @@ export function createAddressSearch(delayMs = 500): DebouncedAddressSearch {
     controller = own
     timer = setTimeout(() => {
       timer = null
-      void searchAddress(trimmed, { ...opts, signal: own.signal }).then((hits) => {
+      // findAddress statt searchAddress: die entprellte Suche der Oberflaeche
+      // soll dieselbe Lockerung durchlaufen wie ein direkter Aufruf.
+      void findAddress(trimmed, { ...opts, signal: own.signal }).then((result) => {
         if (generationAtStart !== generation) return
         controller = null
         try {
-          callback(hits, trimmed)
+          callback(result, trimmed)
         } catch (error) {
           // Ein Fehler aus dem Callback gehoert in den globalen Fehlerkanal,
           // nicht in diese Promise-Kette - dort wuerde er als unbehandelte
@@ -446,3 +521,126 @@ export function createAddressSearch(delayMs = 500): DebouncedAddressSearch {
 
   return Object.assign(run, { cancel })
 }
+
+// --- Suchkaskade ------------------------------------------------------------
+
+/**
+ * Ein Treffer samt Angabe, wie genau er die Eingabe trifft. Ohne diese Angabe
+ * koennte eine Strassenmitte als exakte Hausnummer durchgehen — und der
+ * Standort landete stillschweigend am falschen Fleck.
+ */
+export interface AddressMatch extends GeocodeHit {
+  precision: SearchPrecision
+  /** Hinweistext, wenn der Treffer ungenauer ist als gesucht; sonst null. */
+  note: string | null
+}
+
+/**
+ * Strukturierte Suche (street/postalcode/city/country). Sie greift dort, wo
+ * die freie Suche an der Wortstellung scheitert, weil Nominatim die Felder
+ * dann nicht mehr raten muss.
+ */
+export async function searchStructured(
+  fields: Record<string, string>,
+  opts: AddressSearchOptions = {},
+): Promise<GeocodeHit[]> {
+  return (await searchStructuredRaw(fields, opts)).hits
+}
+
+async function searchStructuredRaw(
+  fields: Record<string, string>,
+  opts: AddressSearchOptions = {},
+): Promise<RawLookup> {
+  const entries = Object.entries(fields).filter(([, value]) => value.trim() !== '')
+  const leer: RawLookup = { hits: [], problem: null }
+  if (entries.length === 0) return leer
+  if (opts.signal?.aborted) return leer
+
+  const limit = clampLimit(opts.limit)
+  const key = `struct|${limit}|${entries.map(([k, v]) => `${k}=${v.toLowerCase()}`).sort().join('&')}`
+  const params = new URLSearchParams({
+    format: 'jsonv2',
+    addressdetails: '1',
+    limit: String(limit),
+    'accept-language': 'de',
+  })
+  for (const [field, value] of entries) params.set(field, value.trim())
+
+  return runLookup(key, params, opts)
+}
+
+/**
+ * Sucht eine Adresse und lockert die Anfrage schrittweise, solange nichts
+ * gefunden wird: wie eingegeben, dann strukturiert, dann ohne Hausnummer,
+ * zuletzt nur der Ort. Es wird beim ersten Treffer aufgehoert — die spaeteren
+ * Schritte kosten je eine weitere Sekunde Wartezeit und werden nur gegangen,
+ * wenn sonst gar nichts herauskaeme.
+ */
+export interface AddressLookup {
+  matches: AddressMatch[]
+  /**
+   * Grund, falls die Suche nicht durchgefuehrt werden konnte. Ohne diese
+   * Unterscheidung meldete die Oberflaeche "Keine Adresse gefunden", obwohl
+   * der Dienst nur gedrosselt hatte - die Adresse existiert sehr wohl.
+   */
+  problem: GeocodeProblem | null
+}
+
+export async function findAddress(
+  query: string,
+  opts: AddressSearchOptions = {},
+): Promise<AddressLookup> {
+  const wanted = wantedPrecision(query)
+  const steps = buildSearchSteps(query)
+  let problem: GeocodeProblem | null = null
+
+  for (const step of steps) {
+    if (opts.signal?.aborted) return { matches: [], problem: null }
+    const result =
+      step.kind === 'free'
+        ? await searchAddressRaw(step.query ?? '', opts)
+        : await searchStructuredRaw(step.params ?? {}, opts)
+
+    if (result.hits.length > 0) {
+      return { matches: result.hits.map((hit) => describeMatch(hit, wanted)), problem: null }
+    }
+    if (result.problem !== null) {
+      problem = result.problem
+      // Bei Drosselung oder Sperre haben weitere Schritte keinen Zweck - sie
+      // wuerden die Lage nur verschlimmern.
+      if (problem === 'rate-limit' || problem === 'blocked') break
+    }
+  }
+  return { matches: [], problem }
+}
+
+const PRECISION_RANK: Record<SearchPrecision, number> = { place: 0, street: 1, exact: 2 }
+
+/** Wie genau die Eingabe ueberhaupt sein kann. */
+function wantedPrecision(query: string): SearchPrecision {
+  const parts = parseGermanAddress(query)
+  if (parts.houseNumber !== null) return 'exact'
+  if (parts.street !== null) return 'street'
+  return 'place'
+}
+
+/** Wie genau der Treffer tatsaechlich ist. */
+function reachedPrecision(hit: GeocodeHit): SearchPrecision {
+  if (hit.houseNumber !== null) return 'exact'
+  if (hit.road !== null) return 'street'
+  return 'place'
+}
+
+/**
+ * Der springende Punkt: Nominatim liefert auf "Horstwiesen 999" bereitwillig
+ * die Strasse zurueck, ohne das kenntlich zu machen. Wer nach einer Hausnummer
+ * gefragt hat, muss erfahren, dass er die Strassenmitte bekommen hat - sonst
+ * landet der Standort stillschweigend am falschen Fleck.
+ */
+function describeMatch(hit: GeocodeHit, wanted: SearchPrecision): AddressMatch {
+  const reached = reachedPrecision(hit)
+  const genau = PRECISION_RANK[reached] >= PRECISION_RANK[wanted]
+  const precision = genau ? 'exact' : reached
+  return { ...hit, precision, note: genau ? null : precisionNote(reached) }
+}
+

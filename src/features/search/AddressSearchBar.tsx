@@ -12,8 +12,13 @@
  * gegen ihn misst.
  */
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
-import { EmptyState, IconButton, Spinner } from '@/components/ui'
-import { createAddressSearch, type DebouncedAddressSearch, type GeocodeHit } from '@/lib/geocode'
+import { Badge, EmptyState, IconButton, Spinner } from '@/components/ui'
+import {
+  createAddressSearch,
+  type AddressMatch,
+  type DebouncedAddressSearch,
+  type GeocodeProblem,
+} from '@/lib/geocode'
 import { pluralize } from '@/lib/format'
 import { useUi } from '@/lib/uiStore'
 import NearbyPanel from '@/features/search/NearbyPanel'
@@ -51,6 +56,20 @@ function popMode(trimmed: string, retyped: boolean, hasPoint: boolean): PopMode 
   return hasPoint ? 'nearby' : 'none'
 }
 
+/**
+ * Was der Nutzerin gesagt wird, wenn der Dienst nicht antwortet. "Keine
+ * Adresse gefunden" waere hier schlicht falsch.
+ */
+function problemText(problem: GeocodeProblem | null): string | null {
+  if (problem === 'rate-limit') {
+    return 'Der Adressdienst ist gerade ausgelastet. Bitte einen Moment warten und erneut suchen.'
+  }
+  if (problem === 'blocked') return 'Der Adressdienst hat die Anfrage abgewiesen.'
+  if (problem === 'network') return 'Der Adressdienst ist nicht erreichbar.'
+  if (problem === 'bad-response') return 'Der Adressdienst hat unverstaendlich geantwortet.'
+  return null
+}
+
 export default function AddressSearchBar() {
   // Jeder Wert einzeln aus dem Speicher: ein Objektliteral als Selektor waere
   // bei jedem Aufruf neu und triebe React in eine Endlosschleife.
@@ -59,7 +78,10 @@ export default function AddressSearchBar() {
   const focusPoint = useUi((s) => s.focusPoint)
 
   const [query, setQuery] = useState('')
-  const [hits, setHits] = useState<GeocodeHit[]>([])
+  const [hits, setHits] = useState<AddressMatch[]>([])
+  // Ein gedrosselter oder gesperrter Dienst ist etwas anderes als eine
+  // unbekannte Adresse und muss auch so benannt werden.
+  const [problem, setProblem] = useState<GeocodeProblem | null>(null)
   /** Anfrage, zu der die Treffer gehoeren — siehe `stale` weiter unten. */
   const [hitsQuery, setHitsQuery] = useState('')
   const [searching, setSearching] = useState(false)
@@ -133,18 +155,16 @@ export default function AddressSearchBar() {
       return
     }
     setSearching(true)
-    // searchAddress wirft nie: Netz- und Formatfehler enden in einer leeren
-    // Liste. Es gibt hier deshalb keinen eigenen Fehlerpfad, nur den leeren
-    // Zustand "Keine Adresse gefunden.".
-    search(next, (found, forQuery) => {
-      setHits(found)
+    search(next, (result, forQuery) => {
+      setHits(result.matches)
+      setProblem(result.problem)
       setHitsQuery(forQuery)
       setActiveIndex(-1)
       setSearching(false)
     })
   }
 
-  function applyHit(hit: GeocodeHit): void {
+  function applyHit(hit: AddressMatch): void {
     search.cancel()
     setSearchPoint({ lat: hit.lat, lng: hit.lng, label: hit.label })
     focusPoint({ lat: hit.lat, lng: hit.lng }, FOCUS_ZOOM)
@@ -234,7 +254,7 @@ export default function AddressSearchBar() {
       ? searching
         ? 'Adressen werden gesucht …'
         : hits.length === 0
-          ? 'Keine Adresse gefunden.'
+          ? (problemText(problem) ?? 'Keine Adresse gefunden.')
           : `${pluralize(hits.length, 'Adresse', 'Adressen')} gefunden.`
       : ''
 
@@ -300,7 +320,7 @@ export default function AddressSearchBar() {
                 )}
 
                 {!searching && hits.length === 0 && (
-                  <EmptyState>Keine Adresse gefunden.</EmptyState>
+                  <EmptyState>{problemText(problem) ?? 'Keine Adresse gefunden.'}</EmptyState>
                 )}
 
                 {showList && (
@@ -339,6 +359,13 @@ export default function AddressSearchBar() {
                               <span className="addr-hit-title truncate">{shortName(hit.label)}</span>
                               {detail !== '' && (
                                 <span className="addr-hit-sub truncate">{detail}</span>
+                              )}
+                              {/* Ohne diesen Hinweis ginge eine Strassenmitte
+                                  als exakte Hausnummer durch. */}
+                              {hit.note !== null && (
+                                <span className="addr-hit-sub" style={{ marginTop: 2 }}>
+                                  <Badge tone="warning">{hit.note}</Badge>
+                                </span>
                               )}
                             </span>
                           </button>
