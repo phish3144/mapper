@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Badge, Button, EmptyState } from '@/components/ui'
+import { Badge, Button, EmptyState, IconButton, useConfirm } from '@/components/ui'
 import { useStore, useCanEdit } from '@/lib/store'
 import { useUi } from '@/lib/uiStore'
 import * as db from '@/lib/db'
@@ -18,11 +18,38 @@ export default function RoutesPanel() {
   const setActiveRoute = useUi((s) => s.setActiveRoute)
 
   const [busy, setBusy] = useState(false)
+  const { confirm, confirmElement } = useConfirm()
 
   const active = useMemo(
     () => routes.find((r) => r.id === activeRouteId) ?? null,
     [routes, activeRouteId],
   )
+
+  /**
+   * Loescht eine Route nach Rueckfrage. Der Weg dorthin lag bisher im Editor
+   * hinter dem Aufklapper "Einstellungen" - man musste die Route also erst
+   * oeffnen, um sie loswerden zu koennen.
+   */
+  function askDelete(id: string, name: string) {
+    confirm(
+      'Route loeschen?',
+      <>
+        Die Route <strong>{name}</strong> und ihre Stoppliste werden geloescht. Die Standorte selbst
+        bleiben erhalten.
+      </>,
+      async () => {
+        try {
+          await db.deleteRoute(id)
+          // Erst die Auswahl aufheben, dann neu laden: sonst zeigt der Editor
+          // fuer einen Augenblick auf eine Route, die es nicht mehr gibt.
+          if (activeRouteId === id) setActiveRoute(null)
+          await refreshRoutes()
+        } catch (e) {
+          reportError(e)
+        }
+      },
+    )
+  }
 
   /**
    * Legt eine leere Route an und geht direkt hinein. Frueher stand hier ein
@@ -106,6 +133,19 @@ export default function RoutesPanel() {
                   </div>
                   {r.mode === 'rule' && <Badge tone="accent">Regel</Badge>}
                   {r.roundtrip && <Badge>Rundtour</Badge>}
+                  {canEdit && (
+                    <IconButton
+                      label={`Route ${r.name} loeschen`}
+                      onClick={(e) => {
+                        // Sonst oeffnet derselbe Klick die Route, die gerade
+                        // zur Loeschung ansteht.
+                        e.stopPropagation()
+                        askDelete(r.id, r.name)
+                      }}
+                    >
+                      ✕
+                    </IconButton>
+                  )}
                 </div>
               )
             })}
@@ -122,6 +162,7 @@ export default function RoutesPanel() {
     <>
       <QuickTourPanel route={active} />
       {active ? <RouteEditor route={active} onBack={() => setActiveRoute(null)} /> : liste}
+      {confirmElement}
     </>
   )
 }
