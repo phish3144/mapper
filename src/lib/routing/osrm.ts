@@ -122,7 +122,7 @@ function toNumber(value: unknown): number {
 }
 
 function toRow(value: unknown, size: number): number[] {
-  const row = Array.isArray(value) ? value : []
+  const row: unknown[] = Array.isArray(value) ? (value as unknown[]) : []
   const result: number[] = new Array<number>(size)
   for (let i = 0; i < size; i++) result[i] = toNumber(row[i])
   return result
@@ -162,19 +162,22 @@ export class OsrmProvider implements RouteProvider {
     if (!first) {
       throw new RoutingError('no-route', 'Zwischen diesen Punkten laesst sich keine Strecke berechnen.')
     }
-    if (typeof first.geometry !== 'string') {
+    const geometry: unknown = first.geometry
+    if (typeof geometry !== 'string') {
       throw new RoutingError('unknown', 'Die Antwort des Routing-Dienstes enthaelt keine Geometrie.')
     }
 
     return {
       durationSec: toNumber(first.duration),
       distanceM: toNumber(first.distance),
-      geometry: decodePolyline(first.geometry, 5),
+      // overview=full liefert die Geometrie als Polyline mit Praezision 5.
+      geometry: decodePolyline(geometry, 5),
     }
   }
 
   async matrix(points: LatLng[], profile: RouteProfile, signal?: AbortSignal): Promise<TravelMatrix> {
-    if (points.length === 1 && isValidLatLng(points[0])) {
+    if (points.length === 1) {
+      assertPoints(points, 1, 'Fuer eine Reisezeit-Matrix')
       return { durations: [[0]], distances: [[0]] }
     }
     assertPoints(points, 2, 'Fuer eine Reisezeit-Matrix')

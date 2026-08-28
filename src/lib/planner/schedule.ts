@@ -61,7 +61,10 @@ export interface WindowCheck {
   violation: StopViolation
 }
 
-const OPEN: WindowCheck = { waitMinutes: 0, violation: 'none' }
+/** Frisches Ergebnisobjekt, damit Aufrufer es gefahrlos weiterreichen koennen. */
+function noRestriction(): WindowCheck {
+  return { waitMinutes: 0, violation: 'none' }
+}
 
 /**
  * Prueft die Ankunft gegen die Zeitfenster des Standorts.
@@ -73,20 +76,20 @@ export function checkTimeWindows(
   arrival: Date,
   windows: readonly TimeWindow[] | null | undefined,
 ): WindowCheck {
-  if (!windows || windows.length === 0) return OPEN
+  if (!windows || windows.length === 0) return noRestriction()
 
   const dow = isoDayOfWeek(arrival)
   const today: ConcreteWindow[] = []
   let anyValid = false
 
-  for (const window of windows) {
-    if (!window) continue
-    const from = parseClock(window.from)
-    const to = parseClock(window.to)
+  for (const slot of windows) {
+    if (!slot) continue
+    const from = parseClock(slot.from)
+    const to = parseClock(slot.to)
     if (from === null || to === null) continue
-    if (!Number.isInteger(window.dow) || window.dow < 1 || window.dow > 7) continue
+    if (!Number.isInteger(slot.dow) || slot.dow < 1 || slot.dow > 7) continue
     anyValid = true
-    if (window.dow !== dow) continue
+    if (slot.dow !== dow) continue
     // to <= from laeuft ueber Mitternacht und endet am Folgetag.
     const spansMidnight = to <= from
     today.push({
@@ -97,18 +100,18 @@ export function checkTimeWindows(
     })
   }
 
-  if (!anyValid) return OPEN
+  if (!anyValid) return noRestriction()
   if (today.length === 0) return { waitMinutes: 0, violation: 'closed-day' }
 
   today.sort((a, b) => a.start.getTime() - b.start.getTime())
   const at = arrival.getTime()
 
-  for (const window of today) {
-    if (at >= window.start.getTime() && at < window.end.getTime()) return OPEN
+  for (const slot of today) {
+    if (at >= slot.start.getTime() && at < slot.end.getTime()) return noRestriction()
   }
 
-  for (const window of today) {
-    const start = window.start.getTime()
+  for (const slot of today) {
+    const start = slot.start.getTime()
     if (start > at) return { waitMinutes: (start - at) / MS_PER_MINUTE, violation: 'none' }
   }
 

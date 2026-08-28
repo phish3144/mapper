@@ -1,0 +1,241 @@
+/* ==========================================================================
+   Anwendungsgeruest: Kopfzeile, Seitenleiste, Karte.
+   Die Karte fuellt den Rest — deshalb Grid statt Float/Absolut.
+   ========================================================================== */
+
+.app {
+  display: grid;
+  grid-template-rows: var(--header-height) 1fr;
+  height: 100%;
+  overflow: hidden;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  z-index: 500;
+}
+
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  margin-right: 4px;
+}
+
+.app-body {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) 1fr;
+  min-height: 0;
+  overflow: hidden;
+}
+.app-body.is-collapsed { grid-template-columns: 0 1fr; }
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+}
+.app-body.is-collapsed .sidebar { display: none; }
+
+.sidebar-head { padding: 10px 12px 0; }
+.sidebar-scroll { flex: 1; overflow-y: auto; min-height: 0; }
+.sidebar-foot {
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-subtle);
+}
+
+.map-area { position: relative; min-width: 0; }
+.map-root { position: absolute; inset: 0; }
+
+/* Leaflet an die Farbtoken angleichen. */
+.leaflet-container { background: var(--bg-subtle); font: inherit; }
+.leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.82) !important;
+  color: #333 !important;
+  font-size: 10px !important;
+}
+.leaflet-control-attribution a { color: #0066cc !important; }
+.leaflet-bar a {
+  background: var(--bg-panel) !important;
+  color: var(--text) !important;
+  border-bottom-color: var(--border) !important;
+}
+.leaflet-bar a:hover { background: var(--bg-hover) !important; }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+  background: var(--bg-panel);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+.leaflet-popup-content { margin: 10px 12px; font: inherit; min-width: 180px; }
+.leaflet-popup-close-button { color: var(--text-muted) !important; }
+
+/* Kartennadel. Die Farbe kommt aus der Kategorie und wird als Inline-Stil
+   gesetzt, deshalb hier nur die Form. */
+.pin {
+  width: 22px; height: 22px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  display: flex; align-items: center; justify-content: center;
+}
+.pin-inner { transform: rotate(45deg); font-size: 10px; color: #fff; font-weight: 700; line-height: 1; }
+.pin.is-selected { outline: 3px solid var(--accent); outline-offset: 2px; }
+.pin.is-inactive { opacity: 0.45; }
+
+/* Nummerierte Nadeln der Routenstopps. */
+.stop-pin {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+.stop-pin.is-violation { background: var(--danger); }
+
+.map-overlay {
+  position: absolute;
+  z-index: 400;
+  display: flex;
+  gap: 6px;
+}
+.map-overlay.top-left { top: 10px; left: 10px; flex-direction: column; align-items: flex-start; }
+.map-overlay.top-right { top: 10px; right: 10px; flex-direction: column; align-items: flex-end; }
+.map-overlay.bottom-left { bottom: 22px; left: 10px; }
+
+.map-hint {
+  padding: 6px 11px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* --- Stoppliste mit Ziehen und Ablegen ---------------------------------- */
+
+.stop-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 5px;
+}
+.stop-row.is-dragging { opacity: 0.55; box-shadow: var(--shadow); }
+.stop-row.is-violation { border-left: 3px solid var(--danger); }
+.stop-handle {
+  cursor: grab;
+  color: var(--text-faint);
+  padding: 2px 3px;
+  touch-action: none;
+  user-select: none;
+  flex: 0 0 auto;
+}
+.stop-handle:active { cursor: grabbing; }
+.stop-index {
+  width: 21px; height: 21px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.stop-time { font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+/* --- Zeitfenster --------------------------------------------------------- */
+
+.tw-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 5px;
+}
+.dow-picker { display: flex; gap: 3px; flex-wrap: wrap; }
+.dow-btn {
+  width: 30px; height: 26px;
+  font-size: 11px; font-weight: 600;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-panel);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.dow-btn.is-on { background: var(--accent); border-color: var(--accent); color: var(--text-on-accent); }
+
+/* --- Kennzahlen ---------------------------------------------------------- */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(74px, 1fr));
+  gap: 8px;
+}
+.stat {
+  padding: 7px 9px;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-sm);
+}
+.stat-value { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat-label { font-size: 11px; color: var(--text-muted); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 2px 8px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-panel);
+  cursor: pointer;
+  color: var(--text);
+}
+.chip:hover { background: var(--bg-hover); }
+.chip.is-on { background: var(--accent-subtle); border-color: var(--accent); color: var(--accent); }
+.chip-x { color: var(--text-faint); font-weight: 700; }
+
+/* --- Anmeldung ----------------------------------------------------------- */
+
+.auth-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  padding: 20px;
+  background: var(--bg);
+}
+.auth-card { width: 100%; max-width: 380px; padding: 26px; }
+.auth-title { text-align: center; margin-bottom: 4px; }
+.auth-sub { text-align: center; color: var(--text-muted); font-size: 13px; margin-bottom: 20px; }
+
+/* --- Schmale Bildschirme ------------------------------------------------- */
+
+@media (max-width: 760px) {
+  :root { --sidebar-width: 100%; }
+  .app-body { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+  .app-body .sidebar { border-right: none; }
+  /* Auf kleinen Geraeten sind Liste und Karte nicht gleichzeitig sinnvoll —
+     es wird umgeschaltet statt nebeneinander gestellt. */
+  .app-body:not(.is-collapsed) .map-area { display: none; }
+  .app-body.is-collapsed { grid-template-columns: 1fr; }
+  .app-body.is-collapsed .map-area { display: block; }
+}

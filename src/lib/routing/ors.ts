@@ -54,6 +54,10 @@ function assertPoints(points: readonly LatLng[], minimum: number, context: strin
   }
 }
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === 'object' ? (value as Record<string, unknown>) : {}
+}
+
 function toNumber(value: unknown): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : Number.POSITIVE_INFINITY
 }
@@ -154,12 +158,11 @@ export class OrsProvider implements RouteProvider {
       throw new RoutingError('no-route', 'Zwischen diesen Punkten laesst sich keine Strecke berechnen.')
     }
 
-    const geometry = feature.geometry as Record<string, unknown> | undefined
-    const coordinates: unknown[] = Array.isArray(geometry?.coordinates)
+    const geometry = asRecord(feature.geometry)
+    const coordinates: unknown[] = Array.isArray(geometry.coordinates)
       ? (geometry.coordinates as unknown[])
       : []
-    const properties = (feature.properties ?? {}) as Record<string, unknown>
-    const summary = (properties.summary ?? {}) as Record<string, unknown>
+    const summary = asRecord(asRecord(feature.properties).summary)
 
     return {
       durationSec: toNumber(summary.duration),
@@ -174,7 +177,8 @@ export class OrsProvider implements RouteProvider {
   }
 
   async matrix(points: LatLng[], profile: RouteProfile, signal?: AbortSignal): Promise<TravelMatrix> {
-    if (points.length === 1 && isValidLatLng(points[0])) {
+    if (points.length === 1) {
+      assertPoints(points, 1, 'Fuer eine Reisezeit-Matrix')
       return { durations: [[0]], distances: [[0]] }
     }
     assertPoints(points, 2, 'Fuer eine Reisezeit-Matrix')
