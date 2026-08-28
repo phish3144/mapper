@@ -239,3 +239,53 @@
   .app-body.is-collapsed { grid-template-columns: 1fr; }
   .app-body.is-collapsed .map-area { display: block; }
 }
+
+/* --- Symbolauswahl ------------------------------------------------------- */
+
+.symbol-current {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+  margin-bottom: 8px;
+}
+.symbol-current-emoji { font-size: 20px; line-height: 1; }
+
+.symbol-groups { max-height: 210px; overflow-y: auto; padding-right: 4px; }
+.symbol-group-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+  margin: 10px 0 5px;
+}
+.symbol-group-title:first-child { margin-top: 0; }
+
+.symbol-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+  gap: 4px;
+}
+.symbol-btn {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-panel);
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+}
+.symbol-btn:hover { background: var(--bg-hover); border-color: var(--border-strong); }
+.symbol-btn.is-on {
+  border-color: var(--accent);
+  background: var(--accent-subtle);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}

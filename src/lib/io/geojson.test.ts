@@ -7,6 +7,7 @@ function makeLocation(partial: Partial<MapLocation> = {}): MapLocation {
     id: 'loc-1',
     workspace_id: 'ws-1',
     category_id: null,
+    icon: null,
     name: 'Lager Nord',
     lat: 52.520008,
     lng: 13.404954,
@@ -90,6 +91,7 @@ describe('locationsToGeoJson', () => {
       tags: ['kunde', 'nord'],
       aufenthalt_minuten: 15,
       aktiv: false,
+      symbol: null,
       zeitfenster: [{ dow: 1, von: '08:00', bis: '12:00' }],
     })
   })

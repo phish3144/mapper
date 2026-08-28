@@ -22,6 +22,7 @@ import {
 } from '@/lib/io'
 import type { ImportResult, ParsedLocation } from '@/lib/io'
 import { pluralize } from '@/lib/format'
+import { findSymbol } from '@/lib/symbols'
 import type { Group } from '@/types/domain'
 
 type ExportFormat = 'geojson' | 'csv'
@@ -182,6 +183,9 @@ export default function ImportExportDialog({ onClose }: { onClose: () => void })
       time_windows: row.timeWindows,
       tags: row.tags,
       is_active: row.isActive,
+      // Nur uebernehmen, wenn die Kennung wirklich existiert - sonst zeigte
+      // die Karte fuer einen Tippfehler in der Datei stumm die Nadel.
+      icon: row.icon && findSymbol(row.icon) ? row.icon : null,
       visibility: 'workspace',
     }
   }

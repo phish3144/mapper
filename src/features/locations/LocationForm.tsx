@@ -25,6 +25,8 @@ import * as db from '@/lib/db'
 import { isValidLatLng } from '@/lib/geo'
 import { createAddressSearch, reverseGeocode } from '@/lib/geocode'
 import type { GeocodeHit } from '@/lib/geocode'
+import SymbolPicker from '@/components/SymbolPicker'
+import { symbolEmoji } from '@/lib/symbols'
 import VisibilityEditor from '@/features/catalog/VisibilityEditor'
 import TimeWindowsEditor from './TimeWindowsEditor'
 import type { LatLng, MapLocation, TimeWindow, VisibilityLevel } from '@/types/domain'
@@ -68,6 +70,8 @@ export default function LocationForm({
     initialPoint ? String(initialPoint.lng) : location ? String(location.lng) : '',
   )
   const [categoryId, setCategoryId] = useState(location?.category_id ?? '')
+  const [icon, setIcon] = useState<string | null>(location?.icon ?? null)
+  const gewaehlteKategorie = categories.find((c) => c.id === categoryId)
   const [groupIds, setGroupIds] = useState<string[]>(() =>
     location
       ? locationGroups.filter((lg) => lg.location_id === location.id).map((lg) => lg.group_id)
@@ -219,6 +223,7 @@ export default function LocationForm({
         address: address.trim() || null,
         notes: notes.trim() || null,
         category_id: categoryId || null,
+        icon,
         service_minutes: Math.round(minutes),
         time_windows: windows,
         tags: finalTags,
@@ -406,6 +411,18 @@ export default function LocationForm({
           </option>
         ))}
       </SelectField>
+
+      <SymbolPicker
+        label="Symbol auf der Karte"
+        value={icon}
+        onChange={setIcon}
+        inherit={{
+          label: gewaehlteKategorie
+            ? `Von der Kategorie „${gewaehlteKategorie.name}" uebernehmen`
+            : 'Vorgabe (Nadel)',
+          emoji: symbolEmoji(gewaehlteKategorie?.icon),
+        }}
+      />
 
       <div className="field">
         <span id={groupsLabelId} className="small muted" style={{ fontWeight: 600 }}>

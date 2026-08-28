@@ -7,6 +7,7 @@ function makeLocation(partial: Partial<MapLocation> = {}): MapLocation {
     id: 'loc-1',
     workspace_id: 'ws-1',
     category_id: null,
+    icon: null,
     name: 'Lager Nord',
     lat: 52.520008,
     lng: 13.404954,
@@ -62,9 +63,9 @@ describe('toCsv', () => {
     const csv = toCsv([], [], NO_GROUPS)
     expect(csv.startsWith(CSV_BOM)).toBe(true)
     expect(csv.slice(CSV_BOM.length).split('\r\n')[0]).toBe(
-      'Name;Kategorie;Gruppen;Breite;Laenge;Adresse;Notizen;Tags;Aufenthalt (min);Aktiv;Zeitfenster',
+      'Name;Kategorie;Gruppen;Breite;Laenge;Adresse;Notizen;Tags;Aufenthalt (min);Aktiv;Zeitfenster;Symbol',
     )
-    expect(CSV_HEADER).toHaveLength(11)
+    expect(CSV_HEADER).toHaveLength(12)
   })
 
   it('schreibt Koordinaten mit Komma und maskiert Sonderzeichen', () => {
@@ -247,6 +248,22 @@ describe('parseCsv', () => {
     expect(parseCsv('Name;Breite;Laenge\n').errors).toEqual([
       'Die Datei enthaelt ausser der Kopfzeile keine Daten.',
     ])
+  })
+})
+
+describe('Symbol', () => {
+  it('uebersteht den Rundlauf und wird aus einer fremden Spaltenschreibweise gelesen', () => {
+    const csv = toCsv([makeLocation({ name: 'Werk Sued', icon: 'werk' })], [], NO_GROUPS)
+    expect(csv).toContain(';werk')
+    expect(parseCsv(csv).rows[0].icon).toBe('werk')
+
+    const fremd = 'Name;Breite;Laenge;icon\r\nHalle;52,5;13,4;lager\r\n'
+    expect(parseCsv(fremd).rows[0].icon).toBe('lager')
+  })
+
+  it('laesst das Symbol weg, wenn die Spalte leer ist', () => {
+    const csv = toCsv([makeLocation({ name: 'Ohne' })], [], NO_GROUPS)
+    expect(parseCsv(csv).rows[0].icon).toBeUndefined()
   })
 })
 

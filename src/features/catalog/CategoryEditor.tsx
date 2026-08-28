@@ -9,30 +9,17 @@ import { useId, useState } from 'react'
 import { Button, ColorPicker, Modal, TextAreaField, TextField } from '@/components/ui'
 import { useStore } from '@/lib/store'
 import * as db from '@/lib/db'
+import SymbolPicker from '@/components/SymbolPicker'
+import { DEFAULT_SYMBOL_ID } from '@/lib/symbols'
 import VisibilityEditor from './VisibilityEditor'
 import type { Category, VisibilityLevel } from '@/types/domain'
 
-export interface CategoryIcon {
-  id: string
-  emoji: string
-  label: string
-}
-
-export const CATEGORY_ICONS: readonly CategoryIcon[] = [
-  { id: 'pin', emoji: '📍', label: 'Nadel' },
-  { id: 'haus', emoji: '🏠', label: 'Haus' },
-  { id: 'werk', emoji: '🏭', label: 'Werk' },
-  { id: 'lager', emoji: '📦', label: 'Lager' },
-  { id: 'kunde', emoji: '🤝', label: 'Kunde' },
-  { id: 'stern', emoji: '⭐', label: 'Stern' },
-  { id: 'fahne', emoji: '🚩', label: 'Fahne' },
-  { id: 'werkzeug', emoji: '🔧', label: 'Werkzeug' },
-]
-
-/** Faellt auf die Nadel zurueck, damit unbekannte Kennungen nichts zerreissen. */
-export function categoryIconEmoji(icon: string): string {
-  return CATEGORY_ICONS.find((i) => i.id === icon)?.emoji ?? '📍'
-}
+/**
+ * Die Symbolliste liegt in @/lib/symbols — dieselbe Quelle, aus der die Karte
+ * zeichnet. Beides getrennt zu pflegen hatte zuvor dazu gefuehrt, dass ein
+ * Symbol in der Auswahl erschien, auf der Karte aber zur Nadel wurde.
+ */
+export { symbolEmoji as categoryIconEmoji } from '@/lib/symbols'
 
 /** Vorgabe wie in der Datenbank (categories.color). */
 const DEFAULT_COLOR = '#2563eb'
@@ -53,13 +40,12 @@ export default function CategoryEditor({
   const [name, setName] = useState(category?.name ?? '')
   const [description, setDescription] = useState(category?.description ?? '')
   const [color, setColor] = useState(category?.color ?? DEFAULT_COLOR)
-  const [icon, setIcon] = useState(category?.icon ?? 'pin')
+  const [icon, setIcon] = useState(category?.icon ?? DEFAULT_SYMBOL_ID)
   const [visibility, setVisibility] = useState<VisibilityLevel>(category?.visibility ?? 'workspace')
   const [nameError, setNameError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   const colorLabelId = useId()
-  const iconLabelId = useId()
 
   async function save() {
     // Die Eingabetaste im Namensfeld loest ebenfalls aus; ohne diese Sperre
@@ -148,25 +134,7 @@ export default function CategoryEditor({
         <span className="field-hint">Faerbt die Kartennadeln dieser Kategorie.</span>
       </div>
 
-      <div className="field">
-        <span id={iconLabelId} className="small muted" style={{ fontWeight: 600 }}>
-          Symbol
-        </span>
-        <div className="chips" role="group" aria-labelledby={iconLabelId}>
-          {CATEGORY_ICONS.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              className={`chip ${icon === option.id ? 'is-on' : ''}`}
-              aria-pressed={icon === option.id}
-              onClick={() => setIcon(option.id)}
-            >
-              <span aria-hidden="true">{option.emoji}</span>
-              {option.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <SymbolPicker value={icon} onChange={(id) => setIcon(id ?? DEFAULT_SYMBOL_ID)} />
 
       <hr className="divider" />
 

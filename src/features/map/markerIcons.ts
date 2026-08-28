@@ -9,25 +9,15 @@
  */
 import L from 'leaflet'
 
-/** Kennung der Kategorie (categories.icon) -> Darstellung. */
-const SYMBOLS: Record<string, string> = {
-  pin: '📍',
-  haus: '🏠',
-  werk: '🏭',
-  lager: '📦',
-  kunde: '🤝',
-  stern: '⭐',
-  fahne: '🚩',
-  werkzeug: '🔧',
-}
+/**
+ * Die Zuordnung Kennung -> Zeichen liegt in @/lib/symbols und NICHT hier.
+ * Zuvor stand sie doppelt - einmal fuer die Auswahl, einmal fuer die Karte -,
+ * sodass ein nur an einer Stelle ergaenztes Symbol stillschweigend auf die
+ * Nadel zurueckfiel.
+ */
+export { symbolEmoji as symbolFor } from '@/lib/symbols'
 
-const FALLBACK_SYMBOL = SYMBOLS.pin
-
-/** Unbekannte oder fehlende Kennungen bekommen die Nadel. */
-export function symbolFor(icon?: string | null): string {
-  if (!icon) return FALLBACK_SYMBOL
-  return SYMBOLS[icon] ?? FALLBACK_SYMBOL
-}
+import { symbolEmoji } from '@/lib/symbols'
 
 /** Standorte ohne Kategorie erben den gedaempften Textton des Designsystems. */
 const FALLBACK_COLOR = 'var(--text-muted)'
@@ -61,7 +51,7 @@ const pinCache = new Map<string, L.DivIcon>()
  */
 export function createPinIcon(color: string, opts: PinOptions = {}): L.DivIcon {
   const fill = safeColor(color)
-  const symbol = symbolFor(opts.symbol)
+  const symbol = symbolEmoji(opts.symbol)
   const selected = opts.selected === true
   const inactive = opts.inactive === true
 

@@ -31,6 +31,7 @@ export const CSV_HEADER: readonly string[] = [
   'Aufenthalt (min)',
   'Aktiv',
   'Zeitfenster',
+  'Symbol',
 ]
 
 const DELIMITER = ';'
@@ -76,6 +77,7 @@ export function toCsv(
       formatNumber(location.service_minutes),
       location.is_active ? 'ja' : 'nein',
       formatTimeWindows(location.time_windows),
+      location.icon ?? '',
     ]
     lines.push(cells.map(escapeCsv).join(DELIMITER))
   }
@@ -216,6 +218,7 @@ interface ColumnMap {
   serviceMinutes?: number
   active?: number
   timeWindows?: number
+  icon?: number
 }
 
 const COLUMN_ALIASES: [keyof ColumnMap, string[]][] = [
@@ -230,6 +233,7 @@ const COLUMN_ALIASES: [keyof ColumnMap, string[]][] = [
   ['serviceMinutes', ['aufenthaltmin', 'aufenthaltminuten', 'aufenthalt', 'aufenthaltsdauer', 'serviceminutes', 'servicetime', 'standzeit', 'dauer']],
   ['active', ['aktiv', 'active', 'isactive']],
   ['timeWindows', ['zeitfenster', 'timewindows', 'oeffnungszeiten', 'openinghours', 'zeiten']],
+  ['icon', ['symbol', 'icon', 'kartensymbol']],
 ]
 
 /** Spalten anhand der Kopfzeile zuordnen, unabhaengig von Schreibweise und Umlauten. */
@@ -353,6 +357,8 @@ export function parseCsv(text: string): ImportResult {
     if (notes !== '') row.notes = notes
     const categoryName = cell(columns.category)
     if (categoryName !== '') row.categoryName = categoryName
+    const icon = cell(columns.icon)
+    if (icon !== '') row.icon = icon
     rows.push(row)
   }
 

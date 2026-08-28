@@ -38,7 +38,8 @@ function iconFor(location: MapLocation, category: Category | undefined, selected
   return createPinIcon(category?.color ?? '', {
     selected,
     inactive: !location.is_active,
-    symbol: category?.icon,
+    // Ein am Standort gesetztes Symbol schlaegt das der Kategorie.
+    symbol: location.icon ?? category?.icon,
   })
 }
 

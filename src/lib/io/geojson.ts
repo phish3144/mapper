@@ -22,6 +22,8 @@ export interface ParsedLocation {
   categoryName?: string
   groupNames: string[]
   isActive: boolean
+  /** Kennung des Kartensymbols; ueberschreibt das der Kategorie. */
+  icon?: string
 }
 
 /** Ergebnis eines Imports: verwertbare Zeilen und Meldungen zu den uebrigen. */
@@ -45,6 +47,7 @@ export interface GeoJsonLocationProperties {
   tags: string[]
   aufenthalt_minuten: number
   aktiv: boolean
+  symbol: string | null
   zeitfenster: GeoJsonTimeWindow[]
 }
 
@@ -293,6 +296,7 @@ const TAG_KEYS = ['tags', 'tag', 'schlagworte', 'schlagwoerter', 'stichworte', '
 const SERVICE_KEYS = ['aufenthaltminuten', 'aufenthaltmin', 'aufenthalt', 'aufenthaltsdauer', 'serviceminutes', 'servicetime', 'standzeit', 'dauer']
 const ACTIVE_KEYS = ['aktiv', 'active', 'isactive']
 const WINDOW_KEYS = ['zeitfenster', 'timewindows', 'oeffnungszeiten', 'openinghours', 'zeiten']
+const ICON_KEYS = ['symbol', 'icon', 'kartensymbol']
 
 /** FeatureCollection mit Punkt-Geometrien in GeoJSON-Reihenfolge [lng, lat]. */
 export function locationsToGeoJson(
@@ -317,6 +321,7 @@ export function locationsToGeoJson(
         tags: [...location.tags],
         aufenthalt_minuten: location.service_minutes,
         aktiv: location.is_active,
+        symbol: location.icon,
         zeitfenster: location.time_windows.map((window) => ({
           dow: window.dow,
           von: window.from,
@@ -431,6 +436,8 @@ function parseFeature(feature: unknown, label: string): FeatureOutcome {
   if (notes !== '') row.notes = notes
   const categoryName = pickText(properties, CATEGORY_KEYS)
   if (categoryName !== '') row.categoryName = categoryName
+  const icon = pickText(properties, ICON_KEYS)
+  if (icon !== '') row.icon = icon
   return { ok: true, row }
 }
 

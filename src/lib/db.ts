@@ -257,6 +257,7 @@ export type LocationInput = Pick<MapLocation, 'name' | 'lat' | 'lng'> &
     Pick<
       MapLocation,
       | 'category_id'
+      | 'icon'
       | 'address'
       | 'notes'
       | 'service_minutes'

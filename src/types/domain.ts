@@ -95,6 +95,8 @@ export interface MapLocation {
   workspace_id: string
   category_id: string | null
   name: string
+  /** Eigenes Kartensymbol; null bedeutet: Symbol der Kategorie verwenden. */
+  icon: string | null
   lat: number
   lng: number
   address: string | null

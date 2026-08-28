@@ -10,6 +10,7 @@ function makeLocation(id: string, partial: Partial<MapLocation> = {}): MapLocati
     workspace_id: 'ws-1',
     category_id: null,
     name: id,
+    icon: null,
     lat: CENTER.lat,
     lng: CENTER.lng,
     address: null,
