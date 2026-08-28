@@ -121,13 +121,41 @@ export interface MemberWithProfile extends WorkspaceMember {
   profile: Pick<Profile, 'id' | 'email' | 'display_name'> | null
 }
 
+/**
+ * Mitglieder samt Profil - bewusst in zwei Abfragen statt als Einbettung.
+ *
+ * workspace_members.user_id zeigt auf auth.users, nicht auf public.profiles.
+ * Zwischen beiden Tabellen gibt es also keinen Fremdschluessel, und ohne den
+ * kennt PostgREST die Beziehung nicht: die eingebettete Fassung scheiterte mit
+ * "Could not find a relationship between 'workspace_members' and 'profiles' in
+ * the schema cache" - die Mitgliederliste blieb leer, obwohl die Rechte stimmen
+ * (profiles_select gibt Mitglieder desselben Bereichs frei).
+ */
 export async function fetchMembers(workspaceId: string): Promise<MemberWithProfile[]> {
   const { data, error } = await supabase
     .from('workspace_members')
-    .select('*, profile:profiles(id, email, display_name)')
+    .select('*')
     .eq('workspace_id', workspaceId)
   if (error) throw error
-  return (data ?? []) as MemberWithProfile[]
+
+  const members = (data ?? []) as WorkspaceMember[]
+  if (members.length === 0) return []
+
+  const { data: profiles, error: profileError } = await supabase
+    .from('profiles')
+    .select('id, email, display_name')
+    .in(
+      'id',
+      members.map((m) => m.user_id),
+    )
+  if (profileError) throw profileError
+
+  const byId = new Map(
+    (profiles ?? []).map((p) => [p.id, p as Pick<Profile, 'id' | 'email' | 'display_name'>]),
+  )
+  // Ein fehlendes Profil ist kein Fehler: das Mitglied bleibt in der Liste,
+  // nur ohne Namen - besser als eine Zeile, die stumm verschwindet.
+  return members.map((m) => ({ ...m, profile: byId.get(m.user_id) ?? null }))
 }
 
 export async function setMemberRole(workspaceId: string, userId: string, role: MemberRole): Promise<void> {
