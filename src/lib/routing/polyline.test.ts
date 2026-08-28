@@ -117,3 +117,24 @@ describe('Hin- und Rueckrichtung', () => {
     }
   })
 })
+
+describe('decodePolyline - Muell als Eingabe', () => {
+  it('liefert fuer Zeichen unterhalb des Alphabets eine leere Liste', () => {
+    expect(decodePolyline('!!!')).toEqual([])
+    expect(decodePolyline('   ')).toEqual([])
+  })
+
+  it('bricht bei einer endlosen Fortsetzungskette ab, statt zu haengen', () => {
+    // Jedes '~' traegt das Fortsetzungsbit - die Kette endet nie sauber.
+    expect(decodePolyline('~'.repeat(500))).toEqual([])
+  })
+
+  it('ignoriert einen abschliessenden Zeilenumbruch', () => {
+    expect(decodePolyline(`${REFERENCE_ENCODED}\n`)).toEqual(REFERENCE_POINTS)
+  })
+
+  it('verwirft ein Paar, dem die Laengengrad-Haelfte fehlt', () => {
+    const half = encodePolyline([{ lat: 52.52, lng: 13.405 }]).slice(0, 3)
+    expect(decodePolyline(half)).toEqual([])
+  })
+})

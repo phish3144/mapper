@@ -226,6 +226,37 @@ describe('optimizeOrder - Determinismus und Randfaelle', () => {
     expect(result.schedule.totalTravelSec).toBe(2 * 5 * 60)
   })
 
+  it('haelt ein fixiertes Ende auch ohne fixierten Start ein', () => {
+    const { stops, matrix } = lineCase([0, 3, 1, 7], 60)
+
+    const result = optimizeOrder(stops, matrix, makeOptions({ fixedEndIndex: 1 }))
+
+    expect(isPermutation(result.order, 4)).toBe(true)
+    expect(result.order[result.order.length - 1]).toBe(1)
+    // Von x=7 ueber x=1 und x=0 zurueck zum fixierten Ende bei x=3.
+    expect(result.order).toEqual([3, 2, 0, 1])
+    expect(result.schedule.totalTravelSec).toBe(10 * 60)
+  })
+
+  it('meidet eine als unerreichbar gemeldete Verbindung', () => {
+    // 1 und 2 liegen dicht beieinander, sind aber nicht direkt verbunden;
+    // der einzige Weg fuehrt ueber 3. Eine Luftlinienschaetzung fuer 1<->2
+    // wuerde die unmoegliche Tour 0-1-2-3 als die billigste ausweisen.
+    const stops = [makeStop(0), makeStop(1), makeStop(2), makeStop(3)]
+    const durations = [
+      [0, 600, 600, 900],
+      [600, 0, Infinity, 300],
+      [600, Infinity, 0, 300],
+      [900, 300, 300, 0],
+    ]
+    const matrix = { durations, distances: durations.map((row) => row.map((v) => v * 10)) }
+
+    const result = optimizeOrder(stops, matrix, makeOptions({ fixedStartIndex: 0 }))
+
+    expect(result.order).toEqual([0, 1, 3, 2])
+    expect(result.schedule.totalTravelSec).toBe(1200)
+  })
+
   it('ignoriert unbrauchbare Fixierungen', () => {
     const { stops, matrix } = lineCase([0, 3, 1, 7], 60)
 

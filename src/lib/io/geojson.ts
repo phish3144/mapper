@@ -79,14 +79,26 @@ const CLOCK = /^(\d{1,2})[:.](\d{2})(?::\d{2})?$/
 /** "Mo 08:00-12:00", "1 8:00 bis 12:00", "Montag 08:00 – 12:00". */
 const TIME_WINDOW = /^(.+?)[\s:]+(\d{1,2}[:.]\d{2}(?::\d{2})?)\s*(?:-|–|—|bis)\s*(\d{1,2}[:.]\d{2}(?::\d{2})?)$/i
 
-/** Vergleichsform fuer Schluessel und Woerter: klein, ohne Umlaute und Sonderzeichen. */
+/**
+ * Vergleichsform fuer Schluessel und Woerter: klein, ohne Umlaute und
+ * Sonderzeichen.
+ *
+ * Die Zusammensetzung (NFC) am Anfang ist noetig, weil Dateien von macOS die
+ * Umlaute zerlegt enthalten ("a" + kombinierendes Trema). Ohne sie wuerde eine
+ * Kopfzeile "Laenge" als "lange" ankommen und keiner Spalte zugeordnet. Nach
+ * der deutschen Umschrift werden verbliebene diakritische Zeichen entfernt,
+ * damit "Dépôt" und "Depot" denselben Schluessel ergeben.
+ */
 export function normalizeKey(value: string): string {
   return value
+    .normalize('NFC')
     .toLowerCase()
     .replace(/ä/g, 'ae')
     .replace(/ö/g, 'oe')
     .replace(/ü/g, 'ue')
     .replace(/ß/g, 'ss')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]/g, '')
 }
 
@@ -155,14 +167,21 @@ function parseDow(value: unknown): number | null {
   return found === undefined ? null : found
 }
 
-/** Uhrzeit auf "HH:MM" normieren; Sekunden werden verworfen. */
+/**
+ * Uhrzeit auf "HH:MM" normieren; Sekunden werden verworfen.
+ * "24:00" ist in fremden Oeffnungszeiten die uebliche Schreibweise fuer das
+ * Tagesende und wird zu "00:00" - ein Fenster mit to <= from laeuft laut
+ * Domaenenmodell ohnehin ueber Mitternacht, die Bedeutung bleibt also erhalten.
+ */
 function parseClockText(value: unknown): string | null {
   if (typeof value !== 'string') return null
   const match = CLOCK.exec(value.trim())
   if (!match) return null
   const hours = Number(match[1])
   const minutes = Number(match[2])
-  if (hours > 23 || minutes > 59) return null
+  if (minutes > 59) return null
+  if (hours === 24) return minutes === 0 ? '00:00' : null
+  if (hours > 23) return null
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
 }
 
@@ -187,14 +206,15 @@ function parseTimeWindowObject(value: unknown): TimeWindow | null {
 }
 
 /**
- * Zeitfenster aus Text ("Mo 08:00-12:00|Di 09:00-17:00") oder aus einem Array
- * von Objekten bzw. Texten. Gibt null zurueck, sobald ein Eintrag unlesbar ist.
+ * Zeitfenster aus Text ("Mo 08:00-12:00|Di 09:00-17:00"), aus einem Array von
+ * Objekten bzw. Texten oder aus einem einzelnen Objekt. Gibt null zurueck,
+ * sobald ein Eintrag unlesbar ist.
  */
 export function parseTimeWindows(value: unknown): TimeWindow[] | null {
   if (value === null || value === undefined) return []
   if (typeof value === 'string') {
     const entries = value
-      .split(/[|;\n\r]+|,(?![^,]*\d{1,2}[:.]\d{2}\s*$)/)
+      .split(/[|;,\n\r]+/)
       .map((entry) => entry.trim())
       .filter((entry) => entry !== '')
     const windows: TimeWindow[] = []
@@ -216,7 +236,9 @@ export function parseTimeWindows(value: unknown): TimeWindow[] | null {
     }
     return windows
   }
-  return null
+  // Ein einzelnes Fenster darf auch ohne umgebendes Array stehen.
+  const single = parseTimeWindowObject(value)
+  return single === null ? null : [single]
 }
 
 /** Textform der Zeitfenster fuer CSV: "Mo 08:00-12:00|Di 09:00-17:00". */
@@ -313,7 +335,10 @@ function collectFeatures(data: unknown): unknown[] | null {
   const root = data as Record<string, unknown>
   const type = typeof root.type === 'string' ? root.type.toLowerCase() : ''
   if (type === 'featurecollection') {
-    return Array.isArray(root.features) ? root.features : []
+    // Fehlt "features" ganz, ist die Sammlung leer; steht dort etwas anderes
+    // als eine Liste, ist der Aufbau falsch - das sind zwei Meldungen.
+    if (root.features === undefined || root.features === null) return []
+    return Array.isArray(root.features) ? root.features : null
   }
   if (type === 'feature' || root.geometry !== undefined) return [data]
   return null
@@ -416,7 +441,7 @@ function parseFeature(feature: unknown, label: string): FeatureOutcome {
 export function parseGeoJson(text: string): ImportResult {
   const rows: ParsedLocation[] = []
   const errors: string[] = []
-  const content = text.replace(/^﻿/, '').trim()
+  const content = text.replace(/^\uFEFF/, '').trim()
   if (content === '') return { rows, errors: ['Die Datei ist leer.'] }
 
   let data: unknown

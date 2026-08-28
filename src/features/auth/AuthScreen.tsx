@@ -5,7 +5,7 @@
  * gehoeren zu dem Formular, das sie ausgeloest hat, und muessen dort sichtbar
  * bleiben, solange die Eingabe korrigiert wird.
  */
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useStore } from '@/lib/store'
 import { describeError, supabase } from '@/lib/supabase'
 import { Button, Tabs, TextField } from '@/components/ui'
@@ -30,6 +30,39 @@ interface FieldErrors {
   confirm?: string
 }
 
+/**
+ * describeError kennt nur die drei haeufigsten Anmeldefehler; alles andere
+ * reicht es unuebersetzt durch. Hier stehen die restlichen Meldungen des
+ * Auth-Dienstes, damit auf diesem Bildschirm kein englischer Rohtext auftaucht.
+ */
+function describeAuthError(error: unknown): string {
+  const msg = (error as { message?: string } | null)?.message ?? ''
+
+  if (/Email not confirmed/i.test(msg)) {
+    return 'Diese Adresse ist noch nicht bestaetigt. Oeffne bitte zuerst den Link aus der Bestaetigungsmail.'
+  }
+  const throttled = /after (\d+) seconds/i.exec(msg)
+  if (throttled) {
+    return `Zu viele Versuche. Bitte warte ${throttled[1]} Sekunden und versuche es erneut.`
+  }
+  if (/rate limit|too many requests/i.test(msg)) {
+    return 'Zu viele Versuche. Bitte warte einen Moment und versuche es erneut.'
+  }
+  if (/Unable to validate email address|Email address .* is invalid|invalid format/i.test(msg)) {
+    return 'Diese E-Mail-Adresse akzeptiert der Server nicht.'
+  }
+  if (/Signup requires a valid password|Password cannot be empty/i.test(msg)) {
+    return 'Bitte gib ein Passwort ein.'
+  }
+  if (/weak.?password|password is too weak/i.test(msg)) {
+    return 'Dieses Passwort ist zu schwach. Waehle bitte ein laengeres oder ungewoehnlicheres.'
+  }
+  if (/Signups not allowed|Signup is disabled|signup_disabled/i.test(msg)) {
+    return 'Die Registrierung ist fuer diese Installation abgeschaltet. Bitte lass dich einladen.'
+  }
+  return describeError(error)
+}
+
 export default function AuthScreen() {
   const signIn = useStore((s) => s.signIn)
   const signUp = useStore((s) => s.signUp)
@@ -45,12 +78,32 @@ export default function AuthScreen() {
   /** Gesetzt, wenn die Registrierung noch auf eine Bestaetigungsmail wartet. */
   const [awaitingConfirmation, setAwaitingConfirmation] = useState<string | null>(null)
 
+  const confirmationHeading = useRef<HTMLHeadingElement>(null)
+
+  // Der Hinweisbildschirm ersetzt das Formular vollstaendig. Ohne diesen Griff
+  // faellt der Tastaturfokus auf den Seitenanfang zurueck und Vorlesegeraete
+  // melden den Wechsel gar nicht.
+  useEffect(() => {
+    if (awaitingConfirmation) confirmationHeading.current?.focus()
+  }, [awaitingConfirmation])
+
   function switchMode(next: Mode) {
     if (next === mode || busy) return
     setMode(next)
     setErrors({})
     setFormError(null)
     setConfirm('')
+  }
+
+  /** Beanstandungen verschwinden, sobald das betroffene Feld angefasst wird. */
+  function clearErrors(...fields: (keyof FieldErrors)[]) {
+    setErrors((prev) => {
+      if (!fields.some((f) => prev[f])) return prev
+      const next = { ...prev }
+      for (const f of fields) delete next[f]
+      return next
+    })
+    setFormError(null)
   }
 
   function validate(): FieldErrors {
@@ -102,7 +155,7 @@ export default function AuthScreen() {
         }
       }
     } catch (error) {
-      setFormError(describeError(error))
+      setFormError(describeAuthError(error))
     } finally {
       setBusy(false)
     }
@@ -112,7 +165,9 @@ export default function AuthScreen() {
     return (
       <div className="auth-screen">
         <div className="auth-card panel">
-          <h1 className="auth-title">Fast geschafft</h1>
+          <h1 className="auth-title" tabIndex={-1} ref={confirmationHeading}>
+            Fast geschafft
+          </h1>
           <p className="auth-sub">Noch ein Schritt bis zum ersten Standort.</p>
 
           <div className="notice notice-success" role="status">
@@ -158,12 +213,17 @@ export default function AuthScreen() {
             wuerden sonst als Absenden zaehlen. */}
         <Tabs tabs={MODES} active={mode} onChange={switchMode} />
 
-        <form onSubmit={handleSubmit} noValidate style={{ marginTop: 16 }}>
+        {/* key: der Moduswechsel baut die Felder neu auf, damit autoFocus
+            greift — sonst verliert die Tastatur beim Umschalten den Fokus. */}
+        <form key={mode} onSubmit={handleSubmit} noValidate style={{ marginTop: 16 }}>
           {mode === 'signup' && (
             <TextField
               label="Anzeigename"
               value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
+              onChange={(e) => {
+                setDisplayName(e.target.value)
+                clearErrors('displayName')
+              }}
               error={errors.displayName}
               aria-invalid={Boolean(errors.displayName)}
               autoComplete="name"
@@ -177,7 +237,10 @@ export default function AuthScreen() {
             label="E-Mail-Adresse"
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value)
+              clearErrors('email')
+            }}
             error={errors.email}
             aria-invalid={Boolean(errors.email)}
             autoComplete="email"
@@ -190,7 +253,10 @@ export default function AuthScreen() {
             label="Passwort"
             type="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value)
+              clearErrors('password', 'confirm')
+            }}
             error={errors.password}
             aria-invalid={Boolean(errors.password)}
             autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
@@ -203,7 +269,10 @@ export default function AuthScreen() {
               label="Passwort wiederholen"
               type="password"
               value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
+              onChange={(e) => {
+                setConfirm(e.target.value)
+                clearErrors('confirm')
+              }}
               error={errors.confirm}
               aria-invalid={Boolean(errors.confirm)}
               autoComplete="new-password"

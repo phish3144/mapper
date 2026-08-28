@@ -18,6 +18,14 @@ const MS_PER_MINUTE = 60_000
 /** Luftliniengeschwindigkeit, falls die Matrix eine Kante nicht kennt. */
 const FALLBACK_SPEED_KMH = 50
 
+/**
+ * Preis einer Kante, die die Matrix laut Vertrag als unerreichbar meldet
+ * (Infinity). Endlich, damit Summen, Uhrzeiten und Vergleiche rechenbar
+ * bleiben, aber hoch genug, dass jeder tatsaechlich befahrbare Umweg gewinnt.
+ */
+export const UNREACHABLE_SEC = 24 * 3600
+export const UNREACHABLE_M = 1_000_000
+
 const HHMM = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/
 
 /** Minuten seit Mitternacht aus "HH:MM" (Sekunden werden ignoriert), sonst null. */
@@ -69,8 +77,11 @@ function noRestriction(): WindowCheck {
 /**
  * Prueft die Ankunft gegen die Zeitfenster des Standorts.
  * Ohne (gueltige) Fenster gilt ein Standort als immer offen. Betrachtet werden
- * nur die Fenster des Wochentags der Ankunft; ein Fenster mit to <= from endet
- * am Folgetag.
+ * die Fenster des Wochentags der Ankunft und zusaetzlich der Auslaeufer eines
+ * Fensters vom Vortag: ein Fenster mit to <= from laeuft ueber Mitternacht und
+ * deckt damit auch die ersten Stunden des Folgetags ab (Mo 22:00-02:00 ist am
+ * Dienstag um 00:30 offen). Gewartet wird nur bis zu einem Fenster, das am Tag
+ * der Ankunft noch beginnt - ueber Nacht wird nicht gewartet.
  */
 export function checkTimeWindows(
   arrival: Date,
@@ -79,6 +90,7 @@ export function checkTimeWindows(
   if (!windows || windows.length === 0) return noRestriction()
 
   const dow = isoDayOfWeek(arrival)
+  const previousDow = dow === 1 ? 7 : dow - 1
   const today: ConcreteWindow[] = []
   let anyValid = false
 
@@ -89,15 +101,21 @@ export function checkTimeWindows(
     if (from === null || to === null) continue
     if (!Number.isInteger(slot.dow) || slot.dow < 1 || slot.dow > 7) continue
     anyValid = true
-    if (slot.dow !== dow) continue
     // to <= from laeuft ueber Mitternacht und endet am Folgetag.
     const spansMidnight = to <= from
-    today.push({
-      start: atLocalMinute(arrival, from, 0),
-      end: spansMidnight
-        ? atLocalMinute(arrival, to, 1)
-        : atLocalMinute(arrival, to, 0),
-    })
+    if (slot.dow === dow) {
+      today.push({
+        start: atLocalMinute(arrival, from, 0),
+        end: spansMidnight
+          ? atLocalMinute(arrival, to, 1)
+          : atLocalMinute(arrival, to, 0),
+      })
+    } else if (spansMidnight && slot.dow === previousDow) {
+      today.push({
+        start: atLocalMinute(arrival, from, -1),
+        end: atLocalMinute(arrival, to, 0),
+      })
+    }
   }
 
   if (!anyValid) return noRestriction()
@@ -118,17 +136,24 @@ export function checkTimeWindows(
   return { waitMinutes: 0, violation: 'late' }
 }
 
-/** Liest einen Wert aus der Matrix; null, wenn die Kante fehlt oder unbrauchbar ist. */
+/**
+ * Liest einen Wert aus der Matrix. 'unreachable' steht fuer das laut
+ * Routing-Vertrag als Infinity gemeldete "kein Weg vorhanden", null fuer eine
+ * schlicht unbekannte oder unbrauchbare Kante - beides muss getrennt bleiben,
+ * sonst wird eine nicht existierende Verbindung als kurze Luftlinie verkauft.
+ */
 function matrixValue(
   table: readonly (readonly number[])[] | null | undefined,
   from: number,
   to: number,
-): number | null {
+): number | 'unreachable' | null {
   if (!table) return null
   const row = table[from]
   if (!row) return null
   const value = row[to]
-  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return null
+  if (typeof value !== 'number' || Number.isNaN(value)) return null
+  if (value === Number.POSITIVE_INFINITY) return 'unreachable'
+  if (!Number.isFinite(value) || value < 0) return null
   return value
 }
 
@@ -140,7 +165,10 @@ function fallbackKm(stops: readonly PlanStopInput[], from: number, to: number): 
   return haversineKm(a.point, b.point)
 }
 
-/** Fahrzeit in Sekunden. Fehlt die Kante, wird aus der Luftlinie geschaetzt. */
+/**
+ * Fahrzeit in Sekunden. Fehlt die Kante, wird aus der Luftlinie geschaetzt;
+ * meldet die Matrix sie als unerreichbar, gilt der Strafwert.
+ */
 export function durationBetween(
   matrix: TravelMatrix,
   stops: readonly PlanStopInput[],
@@ -148,6 +176,7 @@ export function durationBetween(
   to: number,
 ): number {
   const value = matrixValue(matrix?.durations, from, to)
+  if (value === 'unreachable') return UNREACHABLE_SEC
   if (value !== null) return value
   return (fallbackKm(stops, from, to) / FALLBACK_SPEED_KMH) * 3600
 }
@@ -160,6 +189,7 @@ export function distanceBetween(
   to: number,
 ): number {
   const value = matrixValue(matrix?.distances, from, to)
+  if (value === 'unreachable') return UNREACHABLE_M
   if (value !== null) return value
   return fallbackKm(stops, from, to) * 1000
 }

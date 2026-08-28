@@ -16,6 +16,8 @@ export {
   durationBetween,
   isoDayOfWeek,
   parseClock,
+  UNREACHABLE_M,
+  UNREACHABLE_SEC,
 } from './schedule'
 
 export { isBetterSchedule, optimizeOrder, scheduleCostSeconds } from './optimize'

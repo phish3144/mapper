@@ -62,6 +62,15 @@ function toNumber(value: unknown): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : Number.POSITIVE_INFINITY
 }
 
+/**
+ * Fuer die Zusammenfassung einer gefundenen Strecke. ORS laesst `distance` und
+ * `duration` weg, wenn beide 0 sind (Start und Ziel schnappen auf denselben
+ * Punkt). Infinity waere hier falsch: die Strecke existiert, sie ist nur leer.
+ */
+function toSummaryNumber(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0
+}
+
 function toRow(value: unknown, size: number): number[] {
   const row: unknown[] = Array.isArray(value) ? (value as unknown[]) : []
   const result: number[] = new Array<number>(size)
@@ -130,11 +139,15 @@ export class OrsProvider implements RouteProvider {
   readonly name = 'OpenRouteService'
   readonly supportsProfiles: readonly RouteProfile[] = ALL_PROFILES
   readonly baseUrl: string
+  readonly id: string
   private readonly apiKey: string
 
   constructor(apiKey?: string, baseUrl?: string) {
     this.apiKey = (apiKey ?? readRoutingEnv('VITE_ORS_API_KEY')).trim()
     this.baseUrl = stripTrailingSlash(baseUrl?.trim() || ORS_BASE_URL)
+    // Der Schluessel gehoert bewusst NICHT in die Kennung - sie landet in
+    // Cache-Schluesseln und darf kein Geheimnis mitschleppen.
+    this.id = `ors|${this.baseUrl}`
   }
 
   /** ORS haelt fuer jedes Profil ein eigenes Strassennetz vor. */
@@ -165,8 +178,8 @@ export class OrsProvider implements RouteProvider {
     const summary = asRecord(asRecord(feature.properties).summary)
 
     return {
-      durationSec: toNumber(summary.duration),
-      distanceM: toNumber(summary.distance),
+      durationSec: toSummaryNumber(summary.duration),
+      distanceM: toSummaryNumber(summary.distance),
       geometry: coordinates.reduce<LatLng[]>((acc, entry) => {
         if (Array.isArray(entry) && typeof entry[0] === 'number' && typeof entry[1] === 'number') {
           acc.push({ lat: entry[1], lng: entry[0] })

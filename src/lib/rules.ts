@@ -111,8 +111,9 @@ function hasRadiusFilter(rule: NormalizedRule): boolean {
 }
 
 /**
- * `onlyActive` zaehlt hier bewusst nicht mit: `true` ist die Vorgabe und `false`
- * schraenkt nichts ein - eine Regel, die nur daran ruehrt, waehlt weiterhin alles.
+ * `onlyActive` zaehlt hier bewusst nicht mit: es ist kein vom Nutzer gesetzter
+ * Filter, sondern die Vorgabe jeder Regel. Dass die Vorgabe inaktive Standorte
+ * ausblendet, sagt stattdessen describeRule ("Alle aktiven Standorte").
  */
 function isEmpty(rule: NormalizedRule): boolean {
   return (
@@ -209,15 +210,23 @@ function labelled(singular: string, plural: string, names: string[]): string {
   return `${names.length === 1 ? singular : plural} ${names.join(', ')}`
 }
 
-/** Kilometer mit deutschem Dezimalkomma, ohne ueberfluessige Nullen. */
+/**
+ * Kilometer mit deutschem Dezimalkomma, ohne ueberfluessige Nullen. Ein winziger,
+ * aber echter Radius darf nicht als "0 km" erscheinen - das waere die Aussage,
+ * dass nichts getroffen wird.
+ */
 function formatKm(km: number): string {
-  return String(Math.round(km * 100) / 100).replace('.', ',')
+  const rounded = Math.round(km * 100) / 100
+  if (rounded === 0) return 'unter 0,01'
+  return String(rounded).replace('.', ',')
 }
 
 /** Ein deutscher Satz, der die Regel fuer die Anzeige zusammenfasst. */
 export function describeRule(rule: RouteRule, categories: Category[], groups: Group[]): string {
   const normalized = normalize(rule)
-  if (isEmpty(normalized)) return 'Alle Standorte'
+  // Die leere Regel waehlt trotzdem nur aktive Standorte aus, solange onlyActive
+  // gilt - "Alle Standorte" waere hier schlicht falsch.
+  if (isEmpty(normalized)) return normalized.onlyActive ? 'Alle aktiven Standorte' : 'Alle Standorte'
 
   const parts: string[] = []
 

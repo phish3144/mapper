@@ -33,11 +33,11 @@ function coordinateKey(points: readonly LatLng[]): string {
 
 function cacheKey(
   kind: CacheEntry['kind'],
-  providerName: string,
+  providerId: string,
   profile: RouteProfile,
   points: readonly LatLng[],
 ): string {
-  return `${kind}|${providerName}|${profile}|${coordinateKey(points)}`
+  return `${kind}|${providerId}|${profile}|${coordinateKey(points)}`
 }
 
 /** Zugriff schiebt den Eintrag ans Ende - damit verdraengt set() den aeltesten. */
@@ -67,9 +67,17 @@ export function routingCacheSize(): number {
   return cache.size
 }
 
-/** Kopien herausgeben, damit Aufrufer den Cache-Inhalt nicht versehentlich veraendern. */
+/**
+ * Kopien herausgeben, damit Aufrufer den Cache-Inhalt nicht versehentlich
+ * veraendern. Die Punkte werden mitkopiert - eine flache Kopie der Liste
+ * schuetzt nur vor Umsortieren, nicht vor dem Schreiben in einen Punkt.
+ */
 function copyLeg(leg: RouteLeg): RouteLeg {
-  return { durationSec: leg.durationSec, distanceM: leg.distanceM, geometry: leg.geometry.slice() }
+  return {
+    durationSec: leg.durationSec,
+    distanceM: leg.distanceM,
+    geometry: leg.geometry.map((p) => ({ lat: p.lat, lng: p.lng })),
+  }
 }
 
 function copyMatrix(matrix: TravelMatrix): TravelMatrix {
@@ -82,11 +90,12 @@ function copyMatrix(matrix: TravelMatrix): TravelMatrix {
 /** Legt eine Cache-Schicht um einen Anbieter, ohne dessen Verhalten zu aendern. */
 export function withCache(provider: RouteProvider): RouteProvider {
   return {
+    id: provider.id,
     name: provider.name,
     supportsProfiles: provider.supportsProfiles,
     profileIsDistinct: (profile) => provider.profileIsDistinct(profile),
     route: async (points, profile, signal) => {
-      const key = cacheKey('route', provider.name, profile, points)
+      const key = cacheKey('route', provider.id, profile, points)
       const hit = readCache(key)
       if (hit && hit.kind === 'route') return copyLeg(hit.value)
       const leg = await provider.route(points, profile, signal)
@@ -94,7 +103,7 @@ export function withCache(provider: RouteProvider): RouteProvider {
       return copyLeg(leg)
     },
     matrix: async (points, profile, signal) => {
-      const key = cacheKey('matrix', provider.name, profile, points)
+      const key = cacheKey('matrix', provider.id, profile, points)
       const hit = readCache(key)
       if (hit && hit.kind === 'matrix') return copyMatrix(hit.value)
       const matrix = await provider.matrix(points, profile, signal)
@@ -143,8 +152,7 @@ const PROFILE_LABEL: Record<RouteProfile, string> = {
  * Hinweistext, wenn der aktive Dienst Rad- oder Fussprofile nicht wirklich
  * rechnet. Gibt null zurueck, wenn alle Profile echt unterschieden werden.
  */
-export function providerNotice(): string | null {
-  const provider = getRouteProvider()
+export function providerNotice(provider: RouteProvider = getRouteProvider()): string | null {
   const fallbacks: RouteProfile[] = (['cycling', 'walking'] as const).filter(
     (profile) => !provider.profileIsDistinct(profile),
   )
@@ -152,8 +160,8 @@ export function providerNotice(): string | null {
 
   const names = fallbacks.map((profile) => PROFILE_LABEL[profile]).join(' und ')
   return (
-    `Der Dienst "${provider.name}" kennt nur das Auto-Profil: Strecken fuer ${names} ` +
-    'werden mit denselben Zeiten und Distanzen wie fuer das Auto berechnet. ' +
+    `Der Dienst "${provider.name}" berechnet Strecken fuer ${names} nicht eigenstaendig - ` +
+    'sie bekommen dieselben Zeiten und Distanzen wie das Auto-Profil. ' +
     'Fuer echte Rad- und Fusswege einen OpenRouteService-Schluessel (VITE_ORS_API_KEY) ' +
     'hinterlegen oder eine eigene OSRM-Instanz ueber VITE_OSRM_BASE_URL eintragen.'
   )

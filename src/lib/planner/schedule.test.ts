@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import type { TimeWindow } from '@/types/domain'
-import { checkTimeWindows, computeSchedule, isoDayOfWeek, parseClock } from './schedule'
+import {
+  checkTimeWindows,
+  computeSchedule,
+  distanceBetween,
+  durationBetween,
+  isoDayOfWeek,
+  parseClock,
+  UNREACHABLE_M,
+  UNREACHABLE_SEC,
+} from './schedule'
 import type { PlanOptions, PlanStopInput } from './types'
 
 /** Montag, 16. Maerz 2026. */
@@ -147,11 +156,37 @@ describe('computeSchedule', () => {
     expect(early.stops[0].waitMinutes).toBe(60)
     expect(early.stops[0].departure).toEqual(new Date(2026, 2, 16, 22, 0))
 
-    // Massgeblich ist der Wochentag der Ankunft: am Dienstag um 00:30 gibt es kein Fenster.
+    // Der Auslaeufer des Montagsfensters deckt den Dienstag bis 02:00 ab.
     const nextDay = computeSchedule([0], stops, SINGLE, makeOptions({
       departAt: new Date(2026, 2, 17, 0, 30),
     }))
-    expect(nextDay.stops[0].violation).toBe('closed-day')
+    expect(nextDay.stops[0].violation).toBe('none')
+    expect(nextDay.stops[0].waitMinutes).toBe(0)
+
+    // Nach 02:00 ist der Auslaeufer vorbei; der Dienstag hat kein eigenes Fenster.
+    const tooLate = computeSchedule([0], stops, SINGLE, makeOptions({
+      departAt: new Date(2026, 2, 17, 2, 0),
+    }))
+    expect(tooLate.stops[0].violation).toBe('late')
+  })
+
+  it('zieht den Sonntagsauslaeufer auf den Montag herueber', () => {
+    // Sonntag ist ISO 7, Montag ISO 1 - der Vortag muss ueber die Woche hinweg stimmen.
+    const windows: TimeWindow[] = [{ dow: 7, from: '23:00', to: '01:00' }]
+
+    expect(checkTimeWindows(new Date(2026, 2, 16, 0, 30), windows)).toEqual({
+      waitMinutes: 0,
+      violation: 'none',
+    })
+    expect(checkTimeWindows(new Date(2026, 2, 16, 1, 30), windows)).toEqual({
+      waitMinutes: 0,
+      violation: 'late',
+    })
+    // Der Dienstag bleibt unberuehrt.
+    expect(checkTimeWindows(new Date(2026, 2, 17, 0, 30), windows)).toEqual({
+      waitMinutes: 0,
+      violation: 'closed-day',
+    })
   })
 
   it('behandelt Sonntag als ISO-Wochentag 7', () => {
@@ -243,5 +278,58 @@ describe('computeSchedule', () => {
 
     expect(schedule.totalTravelSec).toBeGreaterThan(0)
     expect(schedule.totalDistanceM).toBeGreaterThan(0)
+  })
+
+  it('bestraft eine als unerreichbar gemeldete Kante, statt sie zu schaetzen', () => {
+    const stops = [makeStop(0), makeStop(1)]
+    const matrix = {
+      durations: [[0, Infinity], [Infinity, 0]],
+      distances: [[0, Infinity], [Infinity, 0]],
+    }
+
+    const schedule = computeSchedule([0, 1], stops, matrix, makeOptions())
+
+    expect(schedule.stops[1].travelSecFromPrev).toBe(UNREACHABLE_SEC)
+    expect(schedule.stops[1].travelMetersFromPrev).toBe(UNREACHABLE_M)
+    // Die Luftlinie zwischen den beiden Punkten waere nur gut eine Minute lang.
+    expect(durationBetween(matrix, stops, 0, 1)).toBeGreaterThan(3600)
+  })
+
+  it('behandelt NaN und negative Matrixwerte als unbekannte Kante', () => {
+    const stops = [makeStop(0), makeStop(1)]
+    const matrix = {
+      durations: [[0, Number.NaN], [-5, 0]],
+      distances: [[0, Number.NaN], [-5, 0]],
+    }
+
+    const estimated = durationBetween(matrix, stops, 0, 1)
+    expect(estimated).toBeGreaterThan(0)
+    expect(estimated).toBeLessThan(UNREACHABLE_SEC)
+    expect(durationBetween(matrix, stops, 1, 0)).toBe(estimated)
+    expect(distanceBetween(matrix, stops, 0, 1)).toBeGreaterThan(0)
+  })
+
+  it('behandelt eine ungueltige Abfahrtszeit wie eine fehlende', () => {
+    const stops = [makeStop(0, 10)]
+
+    const schedule = computeSchedule([0], stops, SINGLE, makeOptions({
+      departAt: new Date('kein Datum'),
+    }))
+
+    expect(schedule.stops[0].arrival).toBeNull()
+    expect(schedule.stops[0].departure).toBeNull()
+    expect(schedule.finishAt).toBeNull()
+    expect(schedule.violations).toBe(0)
+    expect(schedule.totalServiceMinutes).toBe(10)
+  })
+
+  it('ueberspringt Indizes ausserhalb der Stoppliste', () => {
+    const stops = [makeStop(0), makeStop(1)]
+    const matrix = lineMatrix([0, 1], 600)
+
+    const schedule = computeSchedule([0, 7, 1], stops, matrix, makeOptions({ departAt: MONDAY }))
+
+    expect(schedule.stops.map((entry) => entry.index)).toEqual([0, 1])
+    expect(schedule.totalTravelSec).toBe(600)
   })
 })

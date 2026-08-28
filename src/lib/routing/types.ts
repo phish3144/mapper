@@ -52,6 +52,13 @@ export function isRoutingError(value: unknown): value is RoutingError {
 }
 
 export interface RouteProvider {
+  /**
+   * Stabile Kennung inklusive Basis-URL. Der Anzeigename allein genuegt nicht:
+   * zwei OSRM-Instanzen heissen beide "OSRM", liefern aber verschiedene
+   * Ergebnisse - im gemeinsamen Zwischenspeicher wuerden sie sich vermischen.
+   */
+  id: string
+  /** Nutzersichtbarer Name des Dienstes. */
   name: string
   supportsProfiles: readonly RouteProfile[]
   /** true, wenn das Profil echt unterschieden wird und nicht auf driving zurueckfaellt */

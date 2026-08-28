@@ -131,6 +131,7 @@ function toRow(value: unknown, size: number): number[] {
 export class OsrmProvider implements RouteProvider {
   readonly baseUrl: string
   readonly isPublicDemo: boolean
+  readonly id: string
   readonly name: string
   readonly supportsProfiles: readonly RouteProfile[] = ALL_PROFILES
 
@@ -138,6 +139,7 @@ export class OsrmProvider implements RouteProvider {
     const configured = baseUrl?.trim() || readRoutingEnv('VITE_OSRM_BASE_URL') || OSRM_PUBLIC_DEMO_URL
     this.baseUrl = stripTrailingSlash(configured)
     this.isPublicDemo = isPublicDemoUrl(this.baseUrl)
+    this.id = `osrm|${this.baseUrl}`
     this.name = this.isPublicDemo ? 'OSRM (Demoserver)' : 'OSRM'
   }
 

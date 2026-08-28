@@ -267,3 +267,68 @@ describe('OsrmProvider.matrix', () => {
     expect((error as RoutingError).kind).toBe('unknown')
   })
 })
+
+describe('OsrmProvider - Kennung und Randfaelle der Matrix', () => {
+  it('traegt die Basis-URL in die Kennung, damit zwei Instanzen unterscheidbar bleiben', () => {
+    expect(new OsrmProvider('https://a.example.org').id).toBe('osrm|https://a.example.org')
+    expect(new OsrmProvider('https://b.example.org').id).not.toBe(
+      new OsrmProvider('https://a.example.org').id,
+    )
+    // Beide heissen gleich - allein am Namen waeren sie nicht zu trennen.
+    expect(new OsrmProvider('https://a.example.org').name).toBe(
+      new OsrmProvider('https://b.example.org').name,
+    )
+  })
+
+  it('fuellt fehlende Zeilen und Spalten mit Infinity auf', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({ code: 'Ok', durations: [[0]], distances: [[0]] }),
+    )
+    const matrix = await new OsrmProvider().matrix(BERLIN, 'driving')
+    expect(matrix.durations).toEqual([
+      [0, Number.POSITIVE_INFINITY],
+      [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY],
+    ])
+    expect(matrix.distances[1][0]).toBe(Number.POSITIVE_INFINITY)
+  })
+
+  it('lehnt auch bei route() mehr als 100 Punkte ab', async () => {
+    const many: LatLng[] = Array.from({ length: 101 }, (_unused, i) => ({
+      lat: 52.5 + i * 0.001,
+      lng: 13.4 + i * 0.001,
+    }))
+    const error = await new OsrmProvider().route(many, 'driving').catch((e: unknown) => e)
+    expect((error as RoutingError).kind).toBe('bad-request')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('lehnt eine leere Punktliste ab, statt eine kaputte URL zu bauen', async () => {
+    await expect(new OsrmProvider().matrix([], 'driving')).rejects.toMatchObject({
+      kind: 'bad-request',
+    })
+    await expect(new OsrmProvider().route([], 'driving')).rejects.toMatchObject({
+      kind: 'bad-request',
+    })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('meldet eine Antwort ohne Geometrie als unknown', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({ code: 'Ok', routes: [{ duration: 1, distance: 2 }] }),
+    )
+    const error = await new OsrmProvider().route(BERLIN, 'driving').catch((e: unknown) => e)
+    expect((error as RoutingError).kind).toBe('unknown')
+  })
+
+  it('meldet einen unlesbaren Rumpf bei HTTP 200 als unknown', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => {
+        throw new SyntaxError('Unexpected token <')
+      },
+    } as unknown as Response)
+    const error = await new OsrmProvider().route(BERLIN, 'driving').catch((e: unknown) => e)
+    expect((error as RoutingError).kind).toBe('unknown')
+  })
+})

@@ -1,0 +1,84 @@
+name: Auf GitHub Pages veroeffentlichen
+
+on:
+  push:
+    branches:
+      - main
+      - claude/standorte-routen-karte-ifidfy
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Laeuft ein Deployment bereits, wird es nicht abgebrochen, sondern das neue
+# wartet: ein abgebrochenes Pages-Deployment kann die Seite halb aktualisiert
+# zuruecklassen.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Typen und Tests pruefen
+        run: |
+          pnpm exec tsc -b --pretty false
+          pnpm exec vitest run
+
+      - name: Pages einrichten
+        id: pages
+        uses: actions/configure-pages@v5
+        with:
+          # Aktiviert Pages beim ersten Lauf selbsttaetig, damit dafuer kein
+          # Griff in die Repository-Einstellungen noetig ist.
+          enablement: true
+
+      - name: Bauen
+        env:
+          # Beide Werte sind bewusst oeffentlich: der publishable key ist fuer
+          # den Browser gedacht und wird allein durch Row Level Security
+          # abgesichert. Wer eigene Werte verwenden will, hinterlegt sie als
+          # Repository-Secrets - sie haben dann Vorrang.
+          VITE_BASE: ${{ steps.pages.outputs.base_path }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://iisiaoexusvoecytznwg.supabase.co' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_fpGmNfPEo6g1JIpfRbNQ7g_FyHGdfSd' }}
+          VITE_OSRM_BASE_URL: ${{ secrets.VITE_OSRM_BASE_URL || 'https://router.project-osrm.org' }}
+          VITE_ORS_API_KEY: ${{ secrets.VITE_ORS_API_KEY }}
+          VITE_NOMINATIM_BASE_URL: ${{ secrets.VITE_NOMINATIM_BASE_URL || 'https://nominatim.openstreetmap.org' }}
+        run: pnpm exec vite build
+
+      - name: Einstiegspunkt auch als 404 hinterlegen
+        # Pages liefert bei unbekannten Pfaden 404.html aus. Dieselbe Seite
+        # dort abzulegen sorgt dafuer, dass ein direkt aufgerufener Unterpfad
+        # nicht ins Leere laeuft.
+        run: cp dist/index.html dist/404.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
