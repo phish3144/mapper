@@ -11,7 +11,7 @@
  * Liegt eine Route offen, haengt der Kasten an sie an, statt eine zweite
  * danebenzustellen.
  */
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Badge, Button, PALETTE } from '@/components/ui'
 import { useCanEdit, useStore } from '@/lib/store'
 import { useUi } from '@/lib/uiStore'
@@ -32,6 +32,7 @@ import {
   findByText,
   locationName,
   needsReview,
+  normalizeAddressKey,
   orderedUnique,
   parseAddressLines,
   tourName,
@@ -41,6 +42,10 @@ import type { LatLng, MapLocation, Route, RouteStop } from '@/types/domain'
 
 const START_ADDRESS_KEY = 'mapper.startAddress'
 const MAX_SHOWN_LINES = 8
+/** So viele gespeicherte Standorte schlaegt das Startfeld hoechstens vor. */
+const MAX_START_SUGGESTIONS = 8
+
+const ADDR_HIT_CLASS = (aktiv: boolean): string => (aktiv ? 'addr-hit is-active' : 'addr-hit')
 
 interface TourReport {
   created: number
@@ -50,19 +55,36 @@ interface TourReport {
   note: string | null
 }
 
-function readStartAddress(): string {
+interface GemerkterStart {
+  text: string
+  /** Kennung des gewaehlten Standorts; null bei frei eingegebener Adresse. */
+  id: string | null
+}
+
+/**
+ * Der zuletzt benutzte Start. Frueher stand hier nur Text; seit der Start
+ * waehlbar ist, gehoert die Kennung dazu - sonst muesste ein wiedergefundener
+ * Standort erneut geokodiert werden, obwohl seine Koordinaten laengst
+ * vorliegen. Alte Eintraege sind reiner Text und werden weiter gelesen.
+ */
+function readStart(): GemerkterStart {
   try {
-    return localStorage.getItem(START_ADDRESS_KEY) ?? ''
+    const roh = localStorage.getItem(START_ADDRESS_KEY)
+    if (!roh) return { text: '', id: null }
+    if (!roh.startsWith('{')) return { text: roh, id: null }
+    const gelesen = JSON.parse(roh) as Partial<GemerkterStart>
+    return { text: typeof gelesen.text === 'string' ? gelesen.text : '', id: gelesen.id ?? null }
   } catch {
-    // Privates Fenster, gesperrte Speicherung: kein Grund, das Feld zu verweigern.
-    return ''
+    // Privates Fenster, gesperrte Speicherung, Unsinn im Speicher: kein Grund,
+    // das Feld zu verweigern.
+    return { text: '', id: null }
   }
 }
 
-function rememberStartAddress(value: string): void {
+function rememberStart(text: string, id: string | null): void {
   try {
-    if (value.trim() === '') localStorage.removeItem(START_ADDRESS_KEY)
-    else localStorage.setItem(START_ADDRESS_KEY, value.trim())
+    if (text.trim() === '') localStorage.removeItem(START_ADDRESS_KEY)
+    else localStorage.setItem(START_ADDRESS_KEY, JSON.stringify({ text: text.trim(), id }))
   } catch {
     /* Kein Speicher, kein Beinbruch. */
   }
@@ -71,16 +93,21 @@ function rememberStartAddress(value: string): void {
 export default function QuickTourPanel({ route }: { route: Route | null }) {
   const canEdit = useCanEdit()
   const workspaceId = useStore((s) => s.currentWorkspaceId)
+  const locations = useStore((s) => s.locations)
   const notify = useStore((s) => s.notify)
   const setActiveRoute = useUi((s) => s.setActiveRoute)
   const focusBounds = useUi((s) => s.focusBounds)
 
-  const [startText, setStartText] = useState(readStartAddress)
+  const [startText, setStartText] = useState(() => readStart().text)
+  const [startLocationId, setStartLocationId] = useState<string | null>(() => readStart().id)
+  const [startOffen, setStartOffen] = useState(false)
+  const [startAktiv, setStartAktiv] = useState(-1)
   const [text, setText] = useState('')
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState({ done: 0, total: 0 })
   const [report, setReport] = useState<TourReport | null>(null)
 
+  const startRef = useRef<HTMLDivElement | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   // Rettungsanker: scheitert ein Schritt NACH createRoute, darf der naechste
   // Versuch keine zweite Tour anlegen.
@@ -89,6 +116,45 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
   const parsed = useMemo(() => parseAddressLines(text, MAX_ADDRESSES), [text])
   const anhaengen = route !== null
   const mitStart = !anhaengen && startText.trim() !== ''
+
+  /**
+   * Vorschlaege aus dem eigenen Bestand. Ein leeres Feld zeigt die ersten
+   * Standorte, damit ueberhaupt sichtbar wird, dass hier etwas zu waehlen ist -
+   * ein Feld, das nur auf Eingabe reagiert, sieht aus wie ein blosses Textfeld.
+   */
+  const startVorschlaege = useMemo(() => {
+    if (!startOffen) return []
+    const suche = normalizeAddressKey(startText)
+    const bewertet: { ort: MapLocation; rang: number }[] = []
+    for (const ort of locations) {
+      if (suche === '') {
+        bewertet.push({ ort, rang: 2 })
+        continue
+      }
+      const name = normalizeAddressKey(ort.name)
+      const adresse = normalizeAddressKey(ort.address ?? '')
+      if (name.startsWith(suche) || adresse.startsWith(suche)) bewertet.push({ ort, rang: 0 })
+      else if (name.includes(suche) || adresse.includes(suche)) bewertet.push({ ort, rang: 1 })
+    }
+    bewertet.sort((a, b) => a.rang - b.rang || a.ort.name.localeCompare(b.ort.name, 'de'))
+    return bewertet.slice(0, MAX_START_SUGGESTIONS).map((x) => x.ort)
+  }, [locations, startText, startOffen])
+
+  useEffect(() => {
+    if (!startOffen) return
+    const zu = (e: MouseEvent) => {
+      if (!startRef.current?.contains(e.target as Node)) setStartOffen(false)
+    }
+    document.addEventListener('mousedown', zu)
+    return () => document.removeEventListener('mousedown', zu)
+  }, [startOffen])
+
+  function waehleStart(ort: MapLocation): void {
+    setStartText(ort.name)
+    setStartLocationId(ort.id)
+    setStartOffen(false)
+    setStartAktiv(-1)
+  }
 
   if (!canEdit) return null
 
@@ -163,9 +229,25 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
     const aufgeloest: ResolvedLine[] = []
 
     try {
-      for (const zeile of zeilen) {
+      // Ein aus der Liste gewaehlter Start hat seine Koordinaten bereits - der
+      // darf keine Anfrage kosten und kann auch nicht danebengreifen.
+      const gewaehlterStart =
+        mitStart && startLocationId ? (bestand.find((l) => l.id === startLocationId) ?? null) : null
+
+      for (const [i, zeile] of zeilen.entries()) {
         if (controller.signal.aborted) break
-        aufgeloest.push(await resolveLine(zeile, index, bestand, controller.signal))
+        if (i === 0 && gewaehlterStart) {
+          aufgeloest.push({
+            raw: zeile,
+            kind: 'reused',
+            locationId: gewaehlterStart.id,
+            point: { lat: gewaehlterStart.lat, lng: gewaehlterStart.lng },
+            label: gewaehlterStart.name,
+            hint: null,
+          })
+        } else {
+          aufgeloest.push(await resolveLine(zeile, index, bestand, controller.signal))
+        }
         setProgress((p) => ({ ...p, done: p.done + 1 }))
       }
 
@@ -310,7 +392,7 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
       await useStore.getState().refreshRoutes()
       setActiveRoute(routeId)
       focusBounds(stopps.map((e) => ({ lat: e.location.lat, lng: e.location.lng })))
-      if (mitStart) rememberStartAddress(startText)
+      if (mitStart) rememberStart(startText, startZeile?.locationId ?? null)
 
       const erzeugt = aufgeloest.filter((l) => l.kind === 'created' || l.kind === 'unsure').length
       const wiederverwendet = aufgeloest.filter((l) => l.kind === 'reused').length
@@ -364,15 +446,82 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
         </div>
 
         {!anhaengen && (
-          <input
-            className="input"
-            value={startText}
-            disabled={running}
-            aria-label="Startadresse, optional"
-            placeholder="Start (optional), z. B. Musterweg 1, 12345 Musterstadt"
-            style={{ marginBottom: 6 }}
-            onChange={(e) => setStartText(e.target.value)}
-          />
+          <div
+            className="addr-search"
+            ref={startRef}
+            style={{ flex: 'none', maxWidth: 'none', marginBottom: 6 }}
+          >
+            <input
+              className="input"
+              value={startText}
+              disabled={running}
+              role="combobox"
+              aria-label="Startadresse, optional"
+              aria-expanded={startOffen && startVorschlaege.length > 0}
+              aria-haspopup="listbox"
+              aria-autocomplete="list"
+              placeholder="Start (optional) — Standort waehlen oder Adresse tippen"
+              onFocus={() => setStartOffen(true)}
+              onChange={(e) => {
+                setStartText(e.target.value)
+                // Getippt heisst: nicht mehr der gewaehlte Standort.
+                setStartLocationId(null)
+                setStartOffen(true)
+                setStartAktiv(-1)
+              }}
+              onKeyDown={(e) => {
+                if (startVorschlaege.length === 0) return
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault()
+                  setStartOffen(true)
+                  setStartAktiv((i) => (i + 1) % startVorschlaege.length)
+                } else if (e.key === 'ArrowUp') {
+                  e.preventDefault()
+                  setStartAktiv((i) => (i <= 0 ? startVorschlaege.length - 1 : i - 1))
+                } else if (e.key === 'Enter' && startAktiv >= 0) {
+                  e.preventDefault()
+                  waehleStart(startVorschlaege[startAktiv])
+                } else if (e.key === 'Escape') {
+                  setStartOffen(false)
+                  setStartAktiv(-1)
+                }
+              }}
+            />
+            {startLocationId !== null && (
+              <div className="field-hint" style={{ marginTop: 4 }}>
+                Gespeicherter Standort — wird nicht neu gesucht.
+              </div>
+            )}
+            {startOffen && startVorschlaege.length > 0 && (
+              <div className="addr-pop">
+                <div className="addr-section">
+                  <span className="addr-section-title">Gespeicherte Standorte</span>
+                </div>
+                <div className="addr-pop-scroll" role="listbox" aria-label="Gespeicherte Standorte">
+                  {startVorschlaege.map((ort, i) => (
+                    <button
+                      key={ort.id}
+                      type="button"
+                      role="option"
+                      aria-selected={i === startAktiv}
+                      tabIndex={-1}
+                      className={ADDR_HIT_CLASS(i === startAktiv)}
+                      // Ohne dies nimmt der Klick dem Feld den Fokus, noch bevor
+                      // die Auswahl ankommt.
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => waehleStart(ort)}
+                    >
+                      <span aria-hidden="true">📍</span>
+                      <span className="addr-hit-main" style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span className="addr-hit-title truncate">{ort.name}</span>
+                        {ort.address && <span className="addr-hit-sub truncate">{ort.address}</span>}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         <textarea
