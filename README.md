@@ -1,6 +1,7 @@
 # mapper
 
-**Live: https://phish3144.github.io/mapper/**
+**Live: https://mapper-jet.vercel.app**
+(Zweitausgabe auf GitHub Pages: https://phish3144.github.io/mapper/)
 
 Web-Anwendung, um feste Standorte nach Kategorie auf einer Karte zu pflegen, sie
 frei zu gruppieren und daraus Routen zu planen — manuell wie regelbasiert.
@@ -9,8 +10,9 @@ frei zu gruppieren und daraus Routen zu planen — manuell wie regelbasiert.
 > 1. **Authentication → URL Configuration → Site URL** steht ab Werk auf
 >    `http://localhost:3000`. Sie bestimmt, wohin Bestätigungs- und
 >    Passwort-Links weiterleiten — deshalb landen sie sonst im Leeren.
->    Auf die Adresse der Anwendung setzen und dieselbe unter
->    *Redirect URLs* eintragen. (Die Bestätigung selbst funktioniert auch
+>    Auf `https://mapper-jet.vercel.app` setzen und dieselbe Adresse unter
+>    *Redirect URLs* eintragen (wer die Pages-Ausgabe ebenfalls nutzt, traegt
+>    `https://phish3144.github.io/mapper/` zusaetzlich dort ein). (Die Bestätigung selbst funktioniert auch
 >    ohne das: Supabase bestätigt das Konto, *bevor* es weiterleitet — nur die
 >    Landeseite danach ist tot.)
 > 2. Optional, aber empfohlen — siehe unten.
@@ -54,17 +56,20 @@ frei zu gruppieren und daraus Routen zu planen — manuell wie regelbasiert.
 
 ## Veröffentlichung
 
-### Vercel
+### Vercel — die Hauptausgabe
 
-`vercel.json` liegt bei und ist fertig konfiguriert (Build, Ausgabeordner,
-SPA-Rewrite, Cache-Regeln, Supabase-Werte). Nötig ist nur einmal: auf
-vercel.com das Repository importieren — Vercel erkennt Vite selbst und baut
-bei jedem Push. Anschließend die Vercel-Adresse in Supabase als *Site URL*
-und *Redirect URL* eintragen.
+Projekt `mapper` im Team `phish3144's projects`, verknüpft mit diesem
+Repository. Produktions-Branch ist `claude/standorte-routen-karte-ifidfy`
+(zugleich der Standard-Branch); jeder Push dorthin löst ein neues
+Produktions-Deployment aus.
 
-Gegenüber GitHub Pages hat Vercel zwei Vorteile: die Anwendung liegt im
-Wurzelpfad statt unter `/mapper/`, und Umgebungsvariablen lassen sich im
-Dashboard pflegen statt im Workflow.
+Die Konfiguration steht in `vercel.json`: Build, Ausgabeordner, SPA-Rewrite,
+unveränderliche Cache-Regeln für `/assets/*` und die Supabase-Werte als
+Build-Variablen. Im Dashboard gesetzte Variablen haben Vorrang — dort gehört
+auch `VITE_ORS_API_KEY` hin, falls echte Rad- und Fußprofile gewünscht sind.
+
+Gegenüber GitHub Pages liegt die Anwendung hier im Wurzelpfad statt unter
+`/mapper/`, weshalb `VITE_BASE` ungesetzt bleibt.
 
 ### GitHub Pages
 
