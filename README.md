@@ -1,7 +1,21 @@
 # mapper
 
+**Live: https://phish3144.github.io/mapper/**
+
 Web-Anwendung, um feste Standorte nach Kategorie auf einer Karte zu pflegen, sie
 frei zu gruppieren und daraus Routen zu planen — manuell wie regelbasiert.
+
+> **Vor der ersten Anmeldung — eine Einstellung ist nötig.**
+> Im Supabase-Projekt ist die E-Mail-Bestätigung aktiv (`mailer_autoconfirm: false`).
+> Der eingebaute Mailversand des Free Tiers ist hart limitiert, die Bestätigungsmail
+> kommt also in aller Regel nicht an — und ohne sie ist keine Anmeldung möglich.
+> Abhilfe, einmalig: Supabase-Dashboard → **Authentication → Sign In / Providers →
+> Email → „Confirm email" ausschalten**. Danach ist die Registrierung sofort nutzbar.
+> Diese Einstellung liegt in GoTrue und lässt sich nicht per SQL oder Migration setzen.
+>
+> Das **erste** registrierte Konto wird automatisch App-Administrator und kann
+> anschließend alle weiteren Konten selbst anlegen — dafür ist dann keine E-Mail
+> mehr im Spiel, weil die Kontenverwaltung die Adressen direkt bestätigt.
 
 ## Was sie kann
 
@@ -27,6 +41,16 @@ frei zu gruppieren und daraus Routen zu planen — manuell wie regelbasiert.
 - Einladung per E-Mail-Adresse, ohne das Nutzerverzeichnis offenzulegen
 - Sichtbarkeit je Objekt: für alle im Bereich, nur für Ausgewählte, oder privat
 - App-Administratoren können Konten anlegen und verwalten
+
+## Veröffentlichung
+
+Die Seite liegt auf GitHub Pages und wird vom Workflow `.github/workflows/deploy.yml`
+bei jedem Push gebaut und in den Branch `gh-pages` geschrieben. Typecheck und Tests
+laufen vorher; schlägt eines davon fehl, wird nichts veröffentlicht.
+
+Der naheliegendere Weg über `actions/deploy-pages` funktioniert hier nicht: der
+Actions-Token darf die Pages-Seite nicht selbst anlegen (`Resource not accessible by
+integration`). Den Branch `gh-pages` bedient GitHub dagegen von sich aus.
 
 ## Einrichtung
 

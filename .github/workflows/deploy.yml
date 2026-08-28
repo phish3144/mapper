@@ -7,20 +7,19 @@ on:
       - claude/standorte-routen-karte-ifidfy
   workflow_dispatch:
 
+# Der Weg ueber actions/deploy-pages scheiterte daran, dass der Actions-Token
+# die Pages-Seite nicht selbst anlegen darf ("Resource not accessible by
+# integration"). GitHub bedient den Branch gh-pages dagegen von sich aus,
+# deshalb wird das gebaute Ergebnis dorthin geschrieben.
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
-# Laeuft ein Deployment bereits, wird es nicht abgebrochen, sondern das neue
-# wartet: ein abgebrochenes Pages-Deployment kann die Seite halb aktualisiert
-# zuruecklassen.
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
-  build:
+  veroeffentlichen:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -41,21 +40,14 @@ jobs:
           pnpm exec tsc -b --pretty false
           pnpm exec vitest run
 
-      - name: Pages einrichten
-        id: pages
-        uses: actions/configure-pages@v5
-        with:
-          # Aktiviert Pages beim ersten Lauf selbsttaetig, damit dafuer kein
-          # Griff in die Repository-Einstellungen noetig ist.
-          enablement: true
-
       - name: Bauen
         env:
-          # Beide Werte sind bewusst oeffentlich: der publishable key ist fuer
-          # den Browser gedacht und wird allein durch Row Level Security
-          # abgesichert. Wer eigene Werte verwenden will, hinterlegt sie als
-          # Repository-Secrets - sie haben dann Vorrang.
-          VITE_BASE: ${{ steps.pages.outputs.base_path }}
+          # Bei Projektseiten liegt die Anwendung unter /<repo>/.
+          VITE_BASE: /${{ github.event.repository.name }}/
+          # Beide Supabase-Werte sind bewusst oeffentlich: der publishable key
+          # ist fuer den Browser gedacht und wird allein durch Row Level
+          # Security abgesichert. Eigene Werte lassen sich als
+          # Repository-Secrets hinterlegen, sie haben dann Vorrang.
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://iisiaoexusvoecytznwg.supabase.co' }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_fpGmNfPEo6g1JIpfRbNQ7g_FyHGdfSd' }}
           VITE_OSRM_BASE_URL: ${{ secrets.VITE_OSRM_BASE_URL || 'https://router.project-osrm.org' }}
@@ -63,22 +55,26 @@ jobs:
           VITE_NOMINATIM_BASE_URL: ${{ secrets.VITE_NOMINATIM_BASE_URL || 'https://nominatim.openstreetmap.org' }}
         run: pnpm exec vite build
 
-      - name: Einstiegspunkt auch als 404 hinterlegen
-        # Pages liefert bei unbekannten Pfaden 404.html aus. Dieselbe Seite
-        # dort abzulegen sorgt dafuer, dass ein direkt aufgerufener Unterpfad
-        # nicht ins Leere laeuft.
-        run: cp dist/index.html dist/404.html
+      - name: Auslieferung vorbereiten
+        run: |
+          # Sourcemaps legen den vollstaendigen Quelltext offen und haben auf
+          # einer oeffentlichen Seite nichts verloren.
+          rm -f dist/assets/*.map
+          # Pages liefert bei unbekannten Pfaden 404.html aus.
+          cp dist/index.html dist/404.html
+          # Ohne diese Datei laesst Pages die Ausgabe durch Jekyll laufen und
+          # verwirft dabei Verzeichnisse, die mit einem Unterstrich beginnen.
+          touch dist/.nojekyll
 
-      - uses: actions/upload-pages-artifact@v3
+      - name: Nach gh-pages schreiben
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          publish_branch: gh-pages
+          # Der Branch traegt nur Bauergebnisse; eine Historie davon nuetzt
+          # niemandem und laesst das Repository unnoetig wachsen.
+          force_orphan: true
+          user_name: github-actions[bot]
+          user_email: github-actions[bot]@users.noreply.github.com
+          commit_message: "Veroeffentlichung aus ${{ github.sha }}"
