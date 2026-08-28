@@ -3,6 +3,7 @@ import { useStore } from '@/lib/store'
 import { Tabs, IconButton } from '@/components/ui'
 import WorkspaceMenu from '@/features/workspace/WorkspaceMenu'
 import UserMenu from '@/features/workspace/UserMenu'
+import AddressSearchBar from '@/features/search/AddressSearchBar'
 
 const TABS = [
   { id: 'locations' as const, label: 'Standorte' },
@@ -30,6 +31,10 @@ export default function Header() {
           <Tabs tabs={TABS} active={tab} onChange={setTab} />
         </div>
       )}
+
+      {/* Die Adresssuche steht in der Kopfzeile und ist damit auf jedem
+          Reiter erreichbar, nicht nur in der Standortliste. */}
+      {hasWorkspace && <AddressSearchBar />}
 
       <div className="grow" />
 

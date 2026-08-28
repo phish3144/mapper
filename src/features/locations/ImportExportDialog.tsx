@@ -16,8 +16,11 @@ import {
   downloadText,
   locationsToGeoJson,
   normalizeKey,
+  looksLikeKml,
   parseCsv,
   parseGeoJson,
+  parseKml,
+  readKmzText,
   toCsv,
 } from '@/lib/io'
 import type { ImportResult, ParsedLocation } from '@/lib/io'
@@ -127,13 +130,17 @@ export default function ImportExportDialog({ onClose }: { onClose: () => void })
   const parsed = useMemo<ImportResult | null>(() => {
     const content = text.trim()
     if (content === '') return null
-    return content.startsWith('{') || content.startsWith('[') ? parseGeoJson(text) : parseCsv(text)
+    if (content.startsWith('{') || content.startsWith('[')) return parseGeoJson(text)
+    if (looksLikeKml(content)) return parseKml(text)
+    return parseCsv(text)
   }, [text])
 
   const detectedFormat = useMemo(() => {
     const content = text.trim()
     if (content === '') return null
-    return content.startsWith('{') || content.startsWith('[') ? 'GeoJSON' : 'CSV'
+    if (content.startsWith('{') || content.startsWith('[')) return 'GeoJSON'
+    if (looksLikeKml(content)) return 'KML (Google My Maps)'
+    return 'CSV'
   }, [text])
 
   function runExport() {
@@ -162,7 +169,11 @@ export default function ImportExportDialog({ onClose }: { onClose: () => void })
 
   async function readFile(file: File) {
     try {
-      const content = await file.text()
+      // KMZ ist ein ZIP-Archiv. Es wird gleich hier ausgepackt, damit
+      // anschliessend nur ein Weg existiert: alles ist Text.
+      const content = /\.kmz$/i.test(file.name)
+        ? await readKmzText(await file.arrayBuffer())
+        : await file.text()
       setFileName(file.name)
       setText(content)
       setReport(null)
@@ -405,7 +416,7 @@ export default function ImportExportDialog({ onClose }: { onClose: () => void })
                 id={id}
                 className="input"
                 type="file"
-                accept=".json,.geojson,.csv,.txt"
+                accept=".json,.geojson,.csv,.txt,.kml,.kmz"
                 disabled={running}
                 onChange={(e) => {
                   const file = e.target.files?.[0]
@@ -422,7 +433,7 @@ export default function ImportExportDialog({ onClose }: { onClose: () => void })
             hint={
               detectedFormat
                 ? `Erkanntes Format: ${detectedFormat}`
-                : 'Beginnt der Inhalt mit { oder [, wird er als GeoJSON gelesen, sonst als CSV.'
+                : 'GeoJSON (beginnt mit { oder [), KML aus Google My Maps, sonst CSV.'
             }
           >
             {(id) => (

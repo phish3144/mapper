@@ -289,3 +289,99 @@
   background: var(--accent-subtle);
   box-shadow: inset 0 0 0 1px var(--accent);
 }
+
+/* --- Adresssuche in der Kopfzeile ---------------------------------------- */
+
+.addr-search {
+  position: relative;
+  flex: 1 1 260px;
+  min-width: 130px;
+  max-width: 420px;
+}
+.addr-search input { padding-right: 30px; }
+.addr-search-clear {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+}
+
+/* Aufklappliste und Umgebungsliste teilen sich die Darstellung. */
+.addr-pop {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
+  z-index: 900;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+.addr-pop-scroll { max-height: min(58vh, 460px); overflow-y: auto; }
+
+.addr-hit {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 11px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.addr-hit:last-child { border-bottom: none; }
+.addr-hit:hover,
+.addr-hit.is-active { background: var(--bg-hover); }
+.addr-hit-main { flex: 1; min-width: 0; }
+.addr-hit-title { font-weight: 500; }
+.addr-hit-sub { font-size: 12px; color: var(--text-muted); }
+
+.addr-section {
+  padding: 8px 11px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-subtle);
+}
+.addr-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+}
+
+.addr-dist {
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  text-align: right;
+  line-height: 1.35;
+}
+.addr-dist strong { display: block; color: var(--text); font-size: 13px; }
+
+/* Nadel der gesuchten Adresse — bewusst anders als die der Standorte, damit
+   sie nicht mit einem gespeicherten Eintrag verwechselt wird. */
+.search-pin {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 3px solid var(--bg-panel);
+  background: var(--danger);
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  line-height: 1;
+}
+
+@media (max-width: 760px) {
+  .addr-search { flex-basis: 100%; max-width: none; }
+  .addr-pop { position: fixed; left: 8px; right: 8px; top: calc(var(--header-height) + 6px); }
+}

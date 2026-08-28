@@ -34,6 +34,17 @@ export const EMPTY_FILTER: LocationFilter = {
   radiusKm: null,
 }
 
+/**
+ * Eine gesuchte Adresse. Sie ist KEIN gespeicherter Standort, sondern nur ein
+ * Bezugspunkt: die Karte zeigt sie an, und die Umgebungsliste misst gegen sie.
+ */
+export interface SearchPoint {
+  lat: number
+  lng: number
+  /** Beschriftung, wie der Geocoder sie geliefert hat. */
+  label: string
+}
+
 /** Auftrag an die Karte, einen Ausschnitt anzuspringen. */
 export interface MapFocus {
   /** Zaehler, damit derselbe Punkt zweimal hintereinander erneut angesprungen wird. */
@@ -54,6 +65,10 @@ interface UiState {
   draftPoint: LatLng | null
   pickingPoint: boolean
   filter: LocationFilter
+  /** Gesuchte Adresse, gegen die die Umgebungsliste misst. */
+  searchPoint: SearchPoint | null
+  /** Umgebungsliste auf die aktuell gefilterten Standorte beschraenken. */
+  searchWithinFilter: boolean
   focus: MapFocus | null
   sidebarOpen: boolean
   theme: 'light' | 'dark' | 'system'
@@ -69,6 +84,8 @@ interface UiState {
   setPickingPoint: (on: boolean) => void
   patchFilter: (patch: Partial<LocationFilter>) => void
   resetFilter: () => void
+  setSearchPoint: (point: SearchPoint | null) => void
+  setSearchWithinFilter: (on: boolean) => void
   focusPoint: (point: LatLng, zoom?: number) => void
   focusBounds: (points: LatLng[]) => void
   setSidebarOpen: (open: boolean) => void
@@ -99,6 +116,8 @@ export const useUi = create<UiState>()((set) => ({
   draftPoint: null,
   pickingPoint: false,
   filter: EMPTY_FILTER,
+  searchPoint: null,
+  searchWithinFilter: false,
   focus: null,
   sidebarOpen: true,
   theme: readTheme(),
@@ -119,6 +138,8 @@ export const useUi = create<UiState>()((set) => ({
   setPickingPoint: (on) => set({ pickingPoint: on }),
   patchFilter: (patch) => set((s) => ({ filter: { ...s.filter, ...patch } })),
   resetFilter: () => set({ filter: EMPTY_FILTER }),
+  setSearchPoint: (point) => set({ searchPoint: point }),
+  setSearchWithinFilter: (on) => set({ searchWithinFilter: on }),
   focusPoint: (point, zoom) => set({ focus: { nonce: ++focusNonce, point, zoom } }),
   focusBounds: (points) => set({ focus: { nonce: ++focusNonce, points } }),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),

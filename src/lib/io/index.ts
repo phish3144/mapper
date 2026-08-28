@@ -45,3 +45,19 @@ export function downloadText(filename: string, mime: string, content: string): v
   anchor.remove()
   window.setTimeout(() => URL.revokeObjectURL(url), REVOKE_DELAY_MS)
 }
+
+// KML und KMZ — das Ausgabeformat von Google My Maps.
+export {
+  parseKml,
+  parseKmz,
+  looksLikeKml,
+  readKmzText,
+  parseXml,
+  stripHtml,
+  parseCoordinates,
+  decodeEntities,
+  childText,
+  firstNamed,
+  childrenNamed,
+} from './kml'
+export type { KmlResult, XmlNode } from './kml'

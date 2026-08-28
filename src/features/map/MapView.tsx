@@ -12,6 +12,7 @@ import { Button, Spinner } from '@/components/ui'
 import { useStore } from '@/lib/store'
 import { useUi } from '@/lib/uiStore'
 import RouteLayer from '@/features/routes/RouteLayer'
+import SearchMarker from '@/features/search/SearchMarker'
 import MapControls, {
   BASE_LAYERS,
   DEFAULT_RADIUS_KM,
@@ -86,6 +87,7 @@ export default function MapView() {
 
         <MarkerLayer />
         <RouteLayer />
+        <SearchMarker />
         <RadiusCircle />
 
         <MapClicks radiusPicking={radiusActive} onRadiusPicked={() => changeRadiusPicking(false)} />
