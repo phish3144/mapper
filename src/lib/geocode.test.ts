@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  buildProxyRequest,
   GEOCODE_CACHE_LIMIT,
   clearGeocodeCache,
   MIN_REQUEST_INTERVAL_MS,
@@ -744,6 +745,47 @@ describe('findAddress — Kaskade und Fehlerarten', () => {
 
     expect(fetchMock.mock.calls.length).toBeGreaterThan(2)
     expect(result.matches[0].precision).toBe('street')
+  })
+})
+
+describe('Anfrage an den Boten', () => {
+  // Der Bote muss dieselben Treffer liefern wie der Direktweg. Faellt
+  // unterwegs ein Feld weg, merkt das niemand: es kaeme eine plausible
+  // Antwort zurueck, nur eben die falsche - und sie landete im
+  // Zwischenspeicher unter einem Schluessel, der die Einschraenkung behauptet.
+  it('nimmt die Laendereinschraenkung der freien Suche mit', () => {
+    const request = buildProxyRequest('nominatim', 5, {
+      q: '  Hauptstrasse 1  ',
+      countryCodes: 'de,at,ch',
+    })
+    expect(request).toEqual({
+      provider: 'nominatim',
+      limit: 5,
+      q: 'Hauptstrasse 1',
+      countryCodes: 'de,at,ch',
+    })
+  })
+
+  it('laesst leere Angaben weg, statt sie als leeren Text zu schicken', () => {
+    expect(buildProxyRequest('nominatim', 8, { q: '   ', countryCodes: '' })).toEqual({
+      provider: 'nominatim',
+      limit: 8,
+    })
+    expect(buildProxyRequest('nominatim', 8, { structured: {} })).toEqual({
+      provider: 'nominatim',
+      limit: 8,
+    })
+  })
+
+  it('reicht strukturierte Felder unveraendert durch', () => {
+    const request = buildProxyRequest('nominatim', 8, {
+      structured: { street: 'Horstwiesen 14', postalcode: '29336', city: 'Nienhagen' },
+    })
+    expect(request.structured).toEqual({
+      street: 'Horstwiesen 14',
+      postalcode: '29336',
+      city: 'Nienhagen',
+    })
   })
 })
 

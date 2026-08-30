@@ -31,9 +31,16 @@ POST /functions/v1/geocode
 Authorization: Bearer <Sitzungstoken einer angemeldeten Person>
 
 { "q": "Horstwiesen 14, 29336 Nienhagen", "limit": 8 }
+{ "q": "Hauptstraße 1", "limit": 8, "countryCodes": "de,at,ch" }
 { "structured": { "street": "Horstwiesen 14", "postalcode": "29336" }, "limit": 8 }
 { "q": "Nienhagen", "provider": "photon" }
 ```
+
+`countryCodes` schränkt auf Länder ein (nur Nominatim, nur die freie Suche —
+genau wie auf dem Direktweg) und geht in den Cache-Schlüssel ein: dieselbe
+Anfrage liefert mit und ohne Einschränkung andere Treffer. Nicht anerkannte
+Werte werden stillschweigend verworfen, es muss aus genau zwei Buchstaben
+bestehen.
 
 Antwort:
 

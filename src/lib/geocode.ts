@@ -386,11 +386,39 @@ function proxyEnabled(): boolean {
   return String(env?.VITE_GEOCODE_PROXY ?? '').trim().toLowerCase() !== 'off'
 }
 
-interface ProxyRequest {
+export interface ProxyRequest {
   provider: GeocodeProvider
   q?: string
   structured?: Record<string, string>
   limit: number
+  /**
+   * Nur bei der freien Suche gesetzt - so wie auf dem Direktweg. Der
+   * strukturierte Weg schraenkt nie auf Laender ein, und der Bote muss sich
+   * exakt so verhalten wie der Direktweg: sonst lieferte er andere Treffer,
+   * die dann unter einem Schluessel landen, der die Einschraenkung behauptet.
+   */
+  countryCodes?: string
+}
+
+/**
+ * Baut die Anfrage an den Boten. Eigene Funktion, damit sich an einer Stelle
+ * pruefen laesst, dass kein Feld des Direktwegs unterwegs verlorengeht - genau
+ * das war hier schon einmal passiert.
+ */
+export function buildProxyRequest(
+  provider: GeocodeProvider,
+  limit: number,
+  source: { q?: string; structured?: Record<string, string>; countryCodes?: string },
+): ProxyRequest {
+  const request: ProxyRequest = { provider, limit }
+  if (source.q !== undefined && source.q.trim() !== '') request.q = source.q.trim()
+  if (source.structured !== undefined && Object.keys(source.structured).length > 0) {
+    request.structured = source.structured
+  }
+  if (source.countryCodes !== undefined && source.countryCodes !== '') {
+    request.countryCodes = source.countryCodes
+  }
+  return request
 }
 
 /**
@@ -499,7 +527,8 @@ async function photonLookup(query: string, opts: AddressSearchOptions): Promise<
     `photon|${limit}|${normalized}`,
     'photon',
     async () => {
-      const durchBoten = await viaProxy({ provider: 'photon', q: query.trim(), limit }, opts.signal)
+      // Photon kennt keine Laendereinschraenkung - auf dem Direktweg ebenso wenig.
+      const durchBoten = await viaProxy(buildProxyRequest('photon', limit, { q: query }), opts.signal)
       if (durchBoten !== null) return durchBoten
       return fetchJson(photonSearchUrl(query.trim(), limit), opts.signal, PHOTON_MIN_INTERVAL_MS)
     },
@@ -543,7 +572,10 @@ async function searchAddressRaw(
     `search|${countryCodes}|${limit}|${normalized}`,
     'nominatim',
     async () => {
-      const durchBoten = await viaProxy({ provider: 'nominatim', q: query.trim(), limit }, opts.signal)
+      const durchBoten = await viaProxy(
+        buildProxyRequest('nominatim', limit, { q: query, countryCodes }),
+        opts.signal,
+      )
       if (durchBoten !== null) return durchBoten
       return fetchJson(`${NOMINATIM_BASE_URL}/search?${params.toString()}`, opts.signal)
     },
@@ -711,7 +743,7 @@ async function searchStructuredRaw(
     key,
     'nominatim',
     async () => {
-      const durchBoten = await viaProxy({ provider: 'nominatim', structured, limit }, opts.signal)
+      const durchBoten = await viaProxy(buildProxyRequest('nominatim', limit, { structured }), opts.signal)
       if (durchBoten !== null) return durchBoten
       return fetchJson(`${NOMINATIM_BASE_URL}/search?${params.toString()}`, opts.signal)
     },

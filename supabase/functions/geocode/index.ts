@@ -62,6 +62,7 @@ interface RequestBody {
   structured?: unknown
   limit?: unknown
   provider?: unknown
+  countryCodes?: unknown
 }
 
 function json(payload: unknown, status: number, extra: Record<string, string> = {}): Response {
@@ -104,6 +105,21 @@ function clampLimit(value: unknown): number {
   return Math.min(20, Math.max(1, Math.trunc(n)))
 }
 
+/**
+ * Laendercodes wie "de,at,ch". Streng gefiltert, weil der Wert unveraendert in
+ * die Anfrage an Nominatim wandert: alles, was nicht aus genau zwei Buchstaben
+ * besteht, fliegt raus.
+ */
+function normalizeCountryCodes(value: unknown): string {
+  if (typeof value !== 'string') return ''
+  return value
+    .split(',')
+    .map((code) => code.trim().toLowerCase())
+    .filter((code) => /^[a-z]{2}$/.test(code))
+    .slice(0, 20)
+    .join(',')
+}
+
 function structuredFields(value: unknown): Record<string, string> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return {}
   const allowed = ['street', 'postalcode', 'city', 'country', 'state', 'county']
@@ -116,13 +132,21 @@ function structuredFields(value: unknown): Record<string, string> {
 }
 
 /** Gleiche Anfrage, gleicher Schluessel — unabhaengig von Schreibweise und Feldreihenfolge. */
-function cacheKey(provider: Provider, query: string, fields: Record<string, string>, limit: number): string {
+function cacheKey(
+  provider: Provider,
+  query: string,
+  fields: Record<string, string>,
+  limit: number,
+  countryCodes: string,
+): string {
   const structured = Object.entries(fields)
     .map(([k, v]) => `${k}=${v.toLowerCase()}`)
     .sort()
     .join('&')
   const normalized = query.trim().replace(/\s+/g, ' ').toLowerCase()
-  return `${provider}|${limit}|${normalized}|${structured}`
+  // Die Laendereinschraenkung gehoert in den Schluessel: dieselbe Anfrage
+  // liefert mit und ohne sie andere Treffer.
+  return `${provider}|${limit}|${normalized}|${structured}|${countryCodes}`
 }
 
 function buildUrl(
@@ -130,6 +154,7 @@ function buildUrl(
   query: string,
   fields: Record<string, string>,
   limit: number,
+  countryCodes: string,
 ): string | null {
   if (provider === 'photon') {
     // Photon kennt keine strukturierte Suche; die Felder werden zu einer
@@ -151,6 +176,7 @@ function buildUrl(
   })
   if (query.trim() !== '') params.set('q', query.trim())
   for (const [field, value] of Object.entries(fields)) params.set(field, value)
+  if (countryCodes !== '') params.set('countrycodes', countryCodes)
   if (!params.has('q') && Object.keys(fields).length === 0) return null
   return `${NOMINATIM_URL}/search?${params.toString()}`
 }
@@ -249,6 +275,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
   const query = typeof body.q === 'string' ? body.q.slice(0, 300) : ''
   const fields = structuredFields(body.structured)
   const limit = clampLimit(body.limit)
+  const countryCodes = normalizeCountryCodes(body.countryCodes)
   if (query.trim() === '' && Object.keys(fields).length === 0) {
     return fail('Es wurde keine Anfrage uebergeben.', 400)
   }
@@ -259,7 +286,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
   // 1. Zwischenspeicher — beide Dienste, denn welcher geantwortet hat, ist der
   //    Anruferin gleich.
   for (const provider of order) {
-    const key = cacheKey(provider, query, fields, limit)
+    const key = cacheKey(provider, query, fields, limit, countryCodes)
     const cached = await readCache(service, key)
     if (cached !== null) {
       void service.rpc('geocode_cache_sweep').then(() => undefined, () => undefined)
@@ -270,7 +297,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
   // 2. Nach draussen, aber nur wenn die Bremse es erlaubt.
   let lastError = ''
   for (const provider of order) {
-    const target = buildUrl(provider, query, fields, limit)
+    const target = buildUrl(provider, query, fields, limit, countryCodes)
     if (target === null) continue
 
     if (wanted === 'auto' && !(await mayCall(service, provider))) {
@@ -285,7 +312,12 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     try {
       const fetched = await callProvider(provider, target)
-      await writeCache(service, cacheKey(provider, query, fields, limit), fetched.body, fetched.empty)
+      await writeCache(
+        service,
+        cacheKey(provider, query, fields, limit, countryCodes),
+        fetched.body,
+        fetched.empty,
+      )
       return json({ data: { provider, body: fetched.body, cached: false } }, 200)
     } catch (error) {
       lastError = error instanceof Error ? error.message : 'unbekannter Fehler'
