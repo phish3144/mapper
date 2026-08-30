@@ -815,6 +815,32 @@ describe('Ausweichen auf Photon', () => {
     expect(calledUrl(0).host).toContain('photon')
   })
 
+  it('unterscheidet eine leere Photon-Antwort von einer kaputten', async () => {
+    // Leeres features-Feld: Photon hat geantwortet und nichts gefunden. Das
+    // ist ein Ergebnis, kein Fehler - und darf gemerkt werden.
+    routeByHost(
+      () => jsonResponse([]),
+      () => jsonResponse({ features: [] }),
+    )
+    const leer = await settleCascade(findAddress('Gibtsnichtweg 1, 12345 Nirgendwo'))
+    expect(leer.matches).toHaveLength(0)
+    expect(leer.problem).toBeNull()
+
+    fetchMock.mockClear()
+    resetGeocodeState()
+
+    // Ganz ohne features-Feld ist die Antwort kaputt. Das muss als Problem
+    // durchschlagen, sonst sieht die Nutzerin "nicht gefunden", wo in
+    // Wahrheit der Dienst Unsinn geliefert hat.
+    routeByHost(
+      () => jsonResponse([]),
+      () => jsonResponse({ irgendwas: true }),
+    )
+    const kaputt = await settleCascade(findAddress('Gibtsnichtweg 1, 12345 Nirgendwo'))
+    expect(kaputt.matches).toHaveLength(0)
+    expect(kaputt.problem).toBe('bad-response')
+  })
+
   it('meldet ein Problem erst, wenn BEIDE Dienste ausfallen', async () => {
     routeByHost(
       () => jsonResponse({}, 429),

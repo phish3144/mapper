@@ -12,6 +12,7 @@ import { create } from 'zustand'
 import type { Session } from '@supabase/supabase-js'
 import * as db from './db'
 import { supabase, describeError, appRedirectUrl } from './supabase'
+import { resetProxyState } from './geocode'
 import type {
   Category,
   Group,
@@ -118,6 +119,10 @@ export const useStore = create<State & Actions>()((set, get) => ({
     supabase.auth.onAuthStateChange((_event, session) => {
       const had = get().session?.user.id
       set({ session })
+      // Der Bote fuer die Adresssuche verlangt ein angemeldetes Konto. Wer
+      // vor der Anmeldung suchte, hat ihn abgeschaltet - mit der Anmeldung
+      // bekommt er seine Chance zurueck.
+      resetProxyState()
       if (!session) {
         set({ profile: null, workspaces: [], myRoles: {}, currentWorkspaceId: null, ...EMPTY_WORKSPACE_DATA })
       } else if (session.user.id !== had) {

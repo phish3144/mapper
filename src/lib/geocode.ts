@@ -361,30 +361,117 @@ interface RawLookup {
  * Fuehrt einen Abruf aus und meldet den Grund eines Fehlschlags mit, statt ihn
  * zu einer leeren Trefferliste einzuebnen.
  */
+// --- Bote ueber die eigene Edge Function ------------------------------------
+
+/**
+ * Ist der Bote einmal gescheitert, wird fuer den Rest der Sitzung unmittelbar
+ * gefragt. Sonst kostete eine nicht ausgerollte Funktion jede Suche einen
+ * vergeblichen Umweg.
+ */
+let proxyDisabled = false
+
+export function resetProxyState(): void {
+  proxyDisabled = false
+}
+
+/**
+ * Der Bote laeuft nur im Browser. In Tests und Skripten gibt es kein window,
+ * dort wird unmittelbar gefragt - so bleibt die Testumgebung frei von
+ * Supabase und die Auswertung an einer Stelle pruefbar.
+ */
+function proxyEnabled(): boolean {
+  if (proxyDisabled) return false
+  if (typeof window === 'undefined') return false
+  const env = (import.meta as unknown as { env?: Record<string, unknown> }).env
+  return String(env?.VITE_GEOCODE_PROXY ?? '').trim().toLowerCase() !== 'off'
+}
+
+interface ProxyRequest {
+  provider: GeocodeProvider
+  q?: string
+  structured?: Record<string, string>
+  limit: number
+}
+
+/**
+ * Fragt ueber die eigene Edge Function. Gibt den Rohtext des Dienstes zurueck,
+ * damit die Auswertung dieselbe bleibt wie beim Direktweg.
+ *
+ * Wirft NICHT bei einem Ausfall des Boten, sondern liefert null - der Aufrufer
+ * nimmt dann den unmittelbaren Weg. Ein fehlender Bote darf die Suche nicht
+ * verhindern, er soll sie nur verlaesslicher machen.
+ */
+async function viaProxy(request: ProxyRequest, signal?: AbortSignal): Promise<unknown | null> {
+  if (!proxyEnabled()) return null
+  if (signal?.aborted) throw createAbortError()
+  try {
+    const { supabase } = await import('./supabase')
+    const { data, error } = await supabase.functions.invoke('geocode', {
+      body: request,
+    })
+    if (error) throw error
+    const payload = data as { data?: { body?: unknown }; error?: string }
+    if (payload?.error) throw new Error(payload.error)
+    if (payload?.data === undefined) throw new Error('Der Bote antwortete unerwartet.')
+    return payload.data.body ?? null
+  } catch (error) {
+    if (isAbort(error)) throw error
+    // Einmal gescheitert heisst: fuer diese Sitzung unmittelbar fragen.
+    proxyDisabled = true
+    console.warn('geocode: Bote nicht verfuegbar, es wird unmittelbar gefragt.', error)
+    return null
+  }
+}
+
+/** Wandelt die Rohantwort eines Dienstes in Treffer um. */
+function parseProviderBody(provider: GeocodeProvider, body: unknown): GeocodeHit[] | null {
+  if (provider === 'photon') {
+    // Eine Photon-Antwort ohne features-Feld ist kaputt; eine mit leerem
+    // features-Feld ist schlicht ohne Treffer. Der Unterschied entscheidet,
+    // ob 'bad-response' gemeldet oder ein leeres Ergebnis gemerkt wird.
+    if (!Array.isArray((body as { features?: unknown })?.features)) return null
+    const hits: GeocodeHit[] = []
+    for (const feature of photonFeatures(body)) {
+      const hit = photonToHit(feature)
+      if (hit) hits.push(hit)
+    }
+    return hits
+  }
+  if (!Array.isArray(body)) return null
+  const hits: GeocodeHit[] = []
+  for (const entry of body) {
+    const hit = parseHit(entry)
+    if (hit) hits.push(hit)
+  }
+  return hits
+}
+
+/**
+ * Gemeinsamer Kern jeder Suche: Zwischenspeicher lesen, laden lassen,
+ * auswerten, Zwischenspeicher schreiben. Wie geladen wird — ueber den Boten
+ * oder unmittelbar — entscheidet der Aufrufer.
+ */
 async function runLookup(
   key: string,
-  params: URLSearchParams,
-  opts: AddressSearchOptions,
+  provider: GeocodeProvider,
+  load: () => Promise<unknown>,
 ): Promise<RawLookup> {
   const cached = readCache(key)
   if (cached) return { hits: cached, problem: null }
 
   let body: unknown
   try {
-    body = await fetchJson(`${NOMINATIM_BASE_URL}/search?${params.toString()}`, opts.signal)
+    body = await load()
   } catch (error) {
     if (isAbort(error)) return { hits: [], problem: null }
     // Fehlgeschlagene Anfragen kommen nicht in den Cache: der naechste
     // Versuch soll den Dienst erneut fragen duerfen.
     return { hits: [], problem: error instanceof GeocodeError ? error.problem : 'network' }
   }
-  if (!Array.isArray(body)) return { hits: [], problem: 'bad-response' }
 
-  const hits: GeocodeHit[] = []
-  for (const entry of body) {
-    const hit = parseHit(entry)
-    if (hit) hits.push(hit)
-  }
+  const hits = parseProviderBody(provider, body)
+  if (hits === null) return { hits: [], problem: 'bad-response' }
+
   writeCache(key, hits)
   return { hits: copyHits(hits), problem: null }
 }
@@ -403,29 +490,15 @@ async function photonLookup(query: string, opts: AddressSearchOptions): Promise<
   if (opts.signal?.aborted) return leer
 
   const limit = clampLimit(opts.limit)
-  const key = `photon|${limit}|${normalized}`
-  const cached = readCache(key)
-  if (cached) return { hits: cached, problem: null }
-
-  let body: unknown
-  try {
-    body = await fetchJson(
-      photonSearchUrl(query.trim(), limit),
-      opts.signal,
-      PHOTON_MIN_INTERVAL_MS,
-    )
-  } catch (error) {
-    if (isAbort(error)) return leer
-    return { hits: [], problem: error instanceof GeocodeError ? error.problem : 'network' }
-  }
-
-  const hits: GeocodeHit[] = []
-  for (const feature of photonFeatures(body)) {
-    const hit = photonToHit(feature)
-    if (hit) hits.push(hit)
-  }
-  writeCache(key, hits)
-  return { hits: copyHits(hits), problem: null }
+  return runLookup(
+    `photon|${limit}|${normalized}`,
+    'photon',
+    async () => {
+      const durchBoten = await viaProxy({ provider: 'photon', q: query.trim(), limit }, opts.signal)
+      if (durchBoten !== null) return durchBoten
+      return fetchJson(photonSearchUrl(query.trim(), limit), opts.signal, PHOTON_MIN_INTERVAL_MS)
+    },
+  )
 }
 
 function isAbort(error: unknown): boolean {
@@ -461,7 +534,15 @@ async function searchAddressRaw(
   })
   if (countryCodes !== '') params.set('countrycodes', countryCodes)
 
-  return runLookup(`search|${countryCodes}|${limit}|${normalized}`, params, opts)
+  return runLookup(
+    `search|${countryCodes}|${limit}|${normalized}`,
+    'nominatim',
+    async () => {
+      const durchBoten = await viaProxy({ provider: 'nominatim', q: query.trim(), limit }, opts.signal)
+      if (durchBoten !== null) return durchBoten
+      return fetchJson(`${NOMINATIM_BASE_URL}/search?${params.toString()}`, opts.signal)
+    },
+  )
 }
 
 /**
@@ -620,7 +701,16 @@ async function searchStructuredRaw(
   })
   for (const [field, value] of entries) params.set(field, value.trim())
 
-  return runLookup(key, params, opts)
+  const structured = Object.fromEntries(entries.map(([field, value]) => [field, value.trim()]))
+  return runLookup(
+    key,
+    'nominatim',
+    async () => {
+      const durchBoten = await viaProxy({ provider: 'nominatim', structured, limit }, opts.signal)
+      if (durchBoten !== null) return durchBoten
+      return fetchJson(`${NOMINATIM_BASE_URL}/search?${params.toString()}`, opts.signal)
+    },
+  )
 }
 
 /**
