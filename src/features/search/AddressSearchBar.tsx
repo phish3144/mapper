@@ -11,7 +11,7 @@
  * nicht hier, weil die Karte ihn als Nadel zeigen muss und die Umgebungsliste
  * gegen ihn misst.
  */
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { Badge, EmptyState, IconButton, Spinner } from '@/components/ui'
 import {
   createAddressSearch,
@@ -20,14 +20,27 @@ import {
   type GeocodeProblem,
 } from '@/lib/geocode'
 import { pluralize } from '@/lib/format'
+import { useStore } from '@/lib/store'
+import { symbolEmoji } from '@/lib/symbols'
 import { useUi } from '@/lib/uiStore'
+import type { MapLocation } from '@/types/domain'
 import NearbyPanel from '@/features/search/NearbyPanel'
 
 /** Kuerzere Eingaben treffen fast alles und kosten den Geocoder nur Anfragen. */
 const MIN_QUERY_LENGTH = 3
 
 /** Entprellung: lang genug, dass ein Wort zu Ende getippt wird. */
-const DEBOUNCE_MS = 400
+// Gemessen: Nominatim antwortet in rund 120 ms. Die Entprellung darf deshalb
+// kurz sein - sie ist der groessere Anteil an der gefuehlten Wartezeit.
+const DEBOUNCE_MS = 250
+/**
+ * Erst wenn nach der schnellen Suche eine Weile nichts mehr getippt wird,
+ * lohnt die volle Lockerungskaskade. Waehrend des Tippens kostete sie bis zu
+ * vier zusaetzliche Nominatim-Anfragen im Ein-Sekunden-Abstand.
+ */
+const DEEP_DEBOUNCE_MS = 600
+/** Mehr als eine Handvoll eigener Treffer draengt die Adressen aus dem Blick. */
+const OWN_MATCH_LIMIT = 5
 
 /** Zoomstufe fuer die gewaehlte Adresse — Hausnummernebene. */
 const FOCUS_ZOOM = 16
@@ -80,9 +93,15 @@ export default function AddressSearchBar() {
   const searchPoint = useUi((s) => s.searchPoint)
   const setSearchPoint = useUi((s) => s.setSearchPoint)
   const focusPoint = useUi((s) => s.focusPoint)
+  const selectLocation = useUi((s) => s.selectLocation)
+  // Einzeln auswaehlen: ein Selektor, der ein neues Objekt baut, loest in
+  // React 19 eine Endlosschleife aus.
+  const locations = useStore((s) => s.locations)
+  const categories = useStore((s) => s.categories)
 
   const [query, setQuery] = useState('')
   const [hits, setHits] = useState<AddressMatch[]>([])
+  const [deepening, setDeepening] = useState(false)
   // Ein gedrosselter oder gesperrter Dienst ist etwas anderes als eine
   // unbekannte Adresse und muss auch so benannt werden.
   const [problem, setProblem] = useState<GeocodeProblem | null>(null)
@@ -110,7 +129,18 @@ export default function AddressSearchBar() {
   if (searchRef.current === null) searchRef.current = createAddressSearch(DEBOUNCE_MS)
   const search = searchRef.current
 
-  useEffect(() => () => search.cancel(), [search])
+  // Eigene Instanz mit laengerer Entprellung fuer die gruendliche Nachsuche.
+  const deepRef = useRef<DebouncedAddressSearch | null>(null)
+  if (deepRef.current === null) deepRef.current = createAddressSearch(DEEP_DEBOUNCE_MS)
+  const deepSearch = deepRef.current
+
+  useEffect(
+    () => () => {
+      search.cancel()
+      deepSearch.cancel()
+    },
+    [search, deepSearch],
+  )
 
   const trimmed = query.trim()
   const mode = popMode(trimmed, retyped, searchPoint !== null)
@@ -144,6 +174,33 @@ export default function AddressSearchBar() {
     if (node instanceof HTMLElement) node.scrollIntoView({ block: 'nearest' })
   }, [activeIndex])
 
+  /**
+   * Treffer aus dem eigenen Bestand. Kosten null und stehen sofort da - haeufig
+   * ist der gesuchte Ort ohnehin schon gespeichert.
+   */
+  const ownMatches = useMemo(() => {
+    const needle = query.trim().toLowerCase()
+    if (needle.length < MIN_QUERY_LENGTH) return []
+    const byId = new Map(categories.map((c) => [c.id, c]))
+    return locations
+      .filter((l) =>
+        `${l.name} ${l.address ?? ''} ${l.tags.join(' ')}`.toLowerCase().includes(needle),
+      )
+      .slice(0, OWN_MATCH_LIMIT)
+      .map((location) => ({
+        location,
+        category: location.category_id ? byId.get(location.category_id) : undefined,
+      }))
+  }, [query, locations, categories])
+
+  function applyOwn(location: MapLocation): void {
+    search.cancel()
+    deepSearch.cancel()
+    selectLocation(location.id)
+    focusPoint({ lat: location.lat, lng: location.lng }, FOCUS_ZOOM)
+    setOpen(false)
+  }
+
   function runSearch(value: string): void {
     setQuery(value)
     setRetyped(true)
@@ -153,23 +210,50 @@ export default function AddressSearchBar() {
     const next = value.trim()
     if (next.length < MIN_QUERY_LENGTH) {
       search.cancel()
+      deepSearch.cancel()
       setHits([])
       setHitsQuery(next)
       setSearching(false)
       return
     }
     setSearching(true)
-    search(next, (result, forQuery) => {
-      setHits(result.matches)
-      setProblem(result.problem)
-      setHitsQuery(forQuery)
-      setActiveIndex(-1)
-      setSearching(false)
-    })
+    setDeepening(false)
+    deepSearch.cancel()
+
+    // Schnell: nur der erste Schritt beim bevorzugten Dienst.
+    search(
+      next,
+      (result, forQuery) => {
+        setHits(result.matches)
+        setProblem(result.problem)
+        setHitsQuery(forQuery)
+        setActiveIndex(-1)
+        setSearching(false)
+
+        // Bleibt es leer und lag kein Fehler vor, war die Eingabe vermutlich
+        // nur noch nicht vollstaendig. Nach einer Pause wird gruendlich
+        // gesucht - waehrend des Tippens waere das reine Wartezeit.
+        if (result.matches.length === 0 && result.problem === null) {
+          setDeepening(true)
+          deepSearch(
+            forQuery,
+            (deep, deepQuery) => {
+              setDeepening(false)
+              setHits(deep.matches)
+              setProblem(deep.problem)
+              setHitsQuery(deepQuery)
+            },
+            { mode: 'full' },
+          )
+        }
+      },
+      { mode: 'quick' },
+    )
   }
 
   function applyHit(hit: AddressMatch): void {
     search.cancel()
+    deepSearch.cancel()
     setSearchPoint({ lat: hit.lat, lng: hit.lng, label: hit.label })
     focusPoint({ lat: hit.lat, lng: hit.lng }, FOCUS_ZOOM)
     setQuery(shortName(hit.label))
@@ -185,6 +269,7 @@ export default function AddressSearchBar() {
 
   function clearInput(): void {
     search.cancel()
+    deepSearch.cancel()
     setQuery('')
     setHits([])
     setHitsQuery('')
@@ -258,7 +343,9 @@ export default function AddressSearchBar() {
       ? searching
         ? 'Adressen werden gesucht …'
         : hits.length === 0
-          ? (problemText(problem) ?? 'Keine Adresse gefunden.')
+          ? deepening
+            ? 'Suche wird erweitert …'
+            : (problemText(problem) ?? 'Keine Adresse gefunden.')
           : `${pluralize(hits.length, 'Adresse', 'Adressen')} gefunden.`
       : ''
 
@@ -314,6 +401,34 @@ export default function AddressSearchBar() {
               </div>
             )}
 
+            {mode === 'hits' && ownMatches.length > 0 && (
+              <>
+                <div className="addr-section">
+                  <span className="addr-section-title">Eigene Standorte</span>
+                </div>
+                {ownMatches.map((entry) => (
+                  <button
+                    key={entry.location.id}
+                    type="button"
+                    className="addr-hit"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => applyOwn(entry.location)}
+                  >
+                    <span aria-hidden="true" style={{ fontSize: 16, lineHeight: '20px' }}>
+                      {symbolEmoji(entry.location.icon ?? entry.category?.icon)}
+                    </span>
+                    <span className="addr-hit-main">
+                      <span className="addr-hit-title truncate">{entry.location.name}</span>
+                      <span className="addr-hit-sub truncate">
+                        {[entry.category?.name, entry.location.address].filter(Boolean).join(' · ') ||
+                          'Ohne Kategorie'}
+                      </span>
+                    </span>
+                  </button>
+                ))}
+              </>
+            )}
+
             {mode === 'hits' && (
               <>
                 {searching && (
@@ -324,7 +439,15 @@ export default function AddressSearchBar() {
                 )}
 
                 {!searching && hits.length === 0 && (
-                  <EmptyState>{problemText(problem) ?? 'Keine Adresse gefunden.'}</EmptyState>
+                  <EmptyState>
+                    {deepening ? (
+                      <span className="row" style={{ gap: 8, justifyContent: 'center' }}>
+                        <Spinner /> Suche wird erweitert …
+                      </span>
+                    ) : (
+                      (problemText(problem) ?? 'Keine Adresse gefunden.')
+                    )}
+                  </EmptyState>
                 )}
 
                 {showList && (

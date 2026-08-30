@@ -47,6 +47,16 @@ export interface GeocodeHit {
 }
 
 export interface AddressSearchOptions {
+  /**
+   * 'quick' fragt nur den ersten Schritt beim bevorzugten Dienst ab — gedacht
+   * fuer die Eingabe waehrend des Tippens. 'full' (Vorgabe) geht die ganze
+   * Lockerungskaskade ueber beide Dienste.
+   *
+   * Der Unterschied ist erheblich: eine Teileingabe wie "Horstwiesen 14, 29"
+   * liefert nichts, und die volle Kaskade kostet dann vier weitere
+   * Nominatim-Anfragen im Ein-Sekunden-Abstand.
+   */
+  mode?: 'quick' | 'full'
   /** Hoechstzahl der Treffer, 1 bis 40 (Nominatims Obergrenze). Vorgabe 8. */
   limit?: number
   signal?: AbortSignal
@@ -710,11 +720,16 @@ export async function findAddress(
 
   const order: GeocodeProvider[] =
     preferredProvider === 'photon' ? ['photon', 'nominatim'] : ['nominatim', 'photon']
+  // Im schnellen Modus nur der erste Schritt: waehrend des Tippens ist eine
+  // leere Antwort der Normalfall und kein Anlass, vier weitere Anfragen zu
+  // stellen.
+  const quick = opts.mode === 'quick'
+  const plan = quick ? steps.slice(0, 1) : steps
 
   let problem: GeocodeProblem | null = null
   for (const provider of order) {
     if (opts.signal?.aborted) return { matches: [], problem: null }
-    const result = provider === 'photon' ? await runPhoton(steps, opts) : await runNominatim(steps, opts)
+    const result = provider === 'photon' ? await runPhoton(plan, opts) : await runNominatim(plan, opts)
 
     if (result.hits.length > 0) {
       preferredProvider = provider
@@ -727,6 +742,10 @@ export async function findAddress(
     // Der erste gemeldete Grund ist der aussagekraeftigste: er stammt vom
     // bevorzugten Dienst.
     if (problem === null) problem = result.problem
+    // Im schnellen Modus wird nur bei einem echten Fehler gewechselt. Eine
+    // bloss leere Antwort ist beim Tippen normal - der zweite Dienst wuerde
+    // die Antwortzeit verdoppeln, ohne mehr zu wissen.
+    if (quick && result.problem === null) break
   }
   return { matches: [], problem }
 }
