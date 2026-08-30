@@ -405,6 +405,11 @@ async function viaProxy(request: ProxyRequest, signal?: AbortSignal): Promise<un
   if (!proxyEnabled()) return null
   if (signal?.aborted) throw createAbortError()
   try {
+    // Bewusst dynamisch, obwohl Vite anmerkt, dass daraus kein eigenes
+    // Buendel wird: so bleibt supabase aus dem Modulgraphen der Tests. Die
+    // Auswertung der Geocoder-Antworten ist damit ohne Anmeldung und ohne
+    // gesetzte Umgebungsvariablen pruefbar. Nicht in einen festen Import
+    // umschreiben.
     const { supabase } = await import('./supabase')
     const { data, error } = await supabase.functions.invoke('geocode', {
       body: request,
