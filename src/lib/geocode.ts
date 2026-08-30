@@ -232,6 +232,7 @@ export function resetGeocodeState(): void {
   lastRequestAt = 0
   preferredProvider = 'nominatim'
   providerDownAt.clear()
+  proxyDownAt = null
 }
 
 // --- Warteschlange mit Mindestabstand ---------------------------------------
@@ -364,14 +365,23 @@ interface RawLookup {
 // --- Bote ueber die eigene Edge Function ------------------------------------
 
 /**
- * Ist der Bote einmal gescheitert, wird fuer den Rest der Sitzung unmittelbar
- * gefragt. Sonst kostete eine nicht ausgerollte Funktion jede Suche einen
+ * Wann der Bote zuletzt gescheitert ist. Danach wird eine Weile unmittelbar
+ * gefragt, sonst kostete eine nicht ausgerollte Funktion jede Suche einen
  * vergeblichen Umweg.
+ *
+ * Bewusst eine Abkuehlung und keine dauerhafte Abschaltung: der Bote ist fuer
+ * genau die Anwenderin da, in deren Netz der Direktweg gesperrt ist. Sie nach
+ * einem einzelnen Aussetzer fuer den Rest der Sitzung auf einen Weg
+ * festzunageln, den sie gar nicht gehen kann, waere das schlechteste beider
+ * Verhalten.
  */
-let proxyDisabled = false
+let proxyDownAt: number | null = null
+
+/** So lange nach einem Fehlschlag unmittelbar gefragt wird. */
+export const PROXY_COOLDOWN_MS = 5 * 60_000
 
 export function resetProxyState(): void {
-  proxyDisabled = false
+  proxyDownAt = null
 }
 
 /**
@@ -380,7 +390,7 @@ export function resetProxyState(): void {
  * Supabase und die Auswertung an einer Stelle pruefbar.
  */
 function proxyEnabled(): boolean {
-  if (proxyDisabled) return false
+  if (proxyDownAt !== null && Date.now() - proxyDownAt < PROXY_COOLDOWN_MS) return false
   if (typeof window === 'undefined') return false
   const env = (import.meta as unknown as { env?: Record<string, unknown> }).env
   return String(env?.VITE_GEOCODE_PROXY ?? '').trim().toLowerCase() !== 'off'
@@ -449,9 +459,8 @@ async function viaProxy(request: ProxyRequest, signal?: AbortSignal): Promise<un
     return payload.data.body ?? null
   } catch (error) {
     if (isAbort(error)) throw error
-    // Einmal gescheitert heisst: fuer diese Sitzung unmittelbar fragen.
-    proxyDisabled = true
-    console.warn('geocode: Bote nicht verfuegbar, es wird unmittelbar gefragt.', error)
+    proxyDownAt = Date.now()
+    console.warn('geocode: Bote nicht verfuegbar, es wird vorerst unmittelbar gefragt.', error)
     return null
   }
 }

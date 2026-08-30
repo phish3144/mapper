@@ -84,8 +84,11 @@ Die Funktion spricht die Tabellen nicht unmittelbar an, sondern über drei
 ## Abschalten
 
 `VITE_GEOCODE_PROXY=off` im Frontend. Der Client fragt dann wieder unmittelbar.
-Dasselbe geschieht selbsttätig, wenn die Funktion nicht erreichbar ist: Nach
-dem ersten Fehlschlag wird für den Rest der Sitzung der Direktweg genommen —
-ein fehlender Bote darf die Suche nicht verhindern. Eine Anmeldung setzt diese
-Abschaltung zurück: Wer vor dem Anmelden gesucht hat, bekam zwangsläufig eine
-Abfuhr, und die soll nicht die ganze Sitzung nachwirken.
+Ähnliches geschieht selbsttätig, wenn die Funktion nicht erreichbar ist: nach
+einem Fehlschlag wird fünf Minuten lang der Direktweg genommen, dann bekommt
+der Bote wieder eine Chance. Bewusst eine Abkühlung und keine dauerhafte
+Abschaltung — der Bote ist für genau die Anwenderin da, in deren Netz der
+Direktweg gesperrt ist; sie nach einem einzelnen Aussetzer für den Rest der
+Sitzung auf einen Weg festzunageln, den sie gar nicht gehen kann, wäre das
+schlechteste beider Verhalten. Eine Anmeldung hebt die Abkühlung sofort auf:
+Wer vor dem Anmelden gesucht hat, bekam zwangsläufig eine Abfuhr.
