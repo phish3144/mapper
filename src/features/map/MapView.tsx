@@ -15,8 +15,6 @@ import RouteLayer from '@/features/routes/RouteLayer'
 import SearchMarker from '@/features/search/SearchMarker'
 import MapControls, {
   BASE_LAYERS,
-  DEFAULT_RADIUS_KM,
-  RadiusCircle,
   readStoredBaseLayer,
   type BaseLayer,
   type BaseLayerId,
@@ -33,30 +31,13 @@ const BOUNDS_PADDING: [number, number] = [48, 48]
 
 export default function MapView() {
   const [baseLayer, setBaseLayer] = useState<BaseLayerId>(readStoredBaseLayer)
-  const [radiusPicking, setRadiusPicking] = useState(false)
   const pickingPoint = useUi((s) => s.pickingPoint)
   const setPickingPoint = useUi((s) => s.setPickingPoint)
   const loading = useStore((s) => s.loadingWorkspace)
   const total = useStore((s) => s.locations.length)
   const visibleCount = useVisibleLocations().length
 
-  // Beide Werkzeuge beanspruchen denselben Kartenklick. Das Setzen eines
-  // Standorts ist die ausdruecklichere Absicht und hat deshalb Vorrang.
-  const radiusActive = radiusPicking && !pickingPoint
   const layer = BASE_LAYERS[baseLayer]
-
-  // Das Umkreiswerkzeug wird dabei nicht nur stillgelegt, sondern beendet -
-  // sonst waere es nach dem Setzen des Standorts unbemerkt wieder scharf.
-  useEffect(() => {
-    if (pickingPoint) setRadiusPicking(false)
-  }, [pickingPoint])
-
-  // ... und es darf waehrenddessen auch nicht neu scharf gestellt werden:
-  // sonst laege es nach dem Setzen des Standorts still bereit und der
-  // naechste Kartenklick setzte unerwartet einen Umkreisfilter.
-  function changeRadiusPicking(on: boolean) {
-    setRadiusPicking(on && !pickingPoint)
-  }
 
   const hint = loading
     ? 'Standorte werden geladen'
@@ -78,7 +59,7 @@ export default function MapView() {
           // Eigener Stapelkontext: die Leaflet-Ebenen reichen bis z-index 700
           // und wuerden die Overlays (400) sonst verdecken.
           isolation: 'isolate',
-          cursor: pickingPoint || radiusActive ? 'crosshair' : undefined,
+          cursor: pickingPoint ? 'crosshair' : undefined,
         }}
       >
         <BaseTiles layer={layer} />
@@ -88,9 +69,8 @@ export default function MapView() {
         <MarkerLayer />
         <RouteLayer />
         <SearchMarker />
-        <RadiusCircle />
 
-        <MapClicks radiusPicking={radiusActive} onRadiusPicked={() => changeRadiusPicking(false)} />
+        <MapClicks />
         <FocusHandler />
         <SizeWatcher />
       </MapContainer>
@@ -116,25 +96,13 @@ export default function MapView() {
         </div>
       )}
 
-      <MapControls
-        baseLayer={baseLayer}
-        onBaseLayerChange={setBaseLayer}
-        radiusPicking={radiusActive}
-        onRadiusPickingChange={changeRadiusPicking}
-        radiusBlocked={pickingPoint}
-      />
+      <MapControls baseLayer={baseLayer} onBaseLayerChange={setBaseLayer} />
     </>
   )
 }
 
 /** Kartenklicks - je nach aktivem Werkzeug. */
-function MapClicks({
-  radiusPicking,
-  onRadiusPicked,
-}: {
-  radiusPicking: boolean
-  onRadiusPicked: () => void
-}) {
+function MapClicks() {
   useMapEvents({
     click(event) {
       const ui = useUi.getState()
@@ -144,11 +112,6 @@ function MapClicks({
         ui.setDraftPoint(point)
         ui.setPickingPoint(false)
         ui.setTab('locations')
-        return
-      }
-      if (radiusPicking) {
-        ui.patchFilter({ center: point, radiusKm: ui.filter.radiusKm ?? DEFAULT_RADIUS_KM })
-        onRadiusPicked()
         return
       }
       ui.selectLocation(null)

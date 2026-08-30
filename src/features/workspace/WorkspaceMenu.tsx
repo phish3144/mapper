@@ -8,6 +8,7 @@ import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 
 import { createPortal } from 'react-dom'
 import { useCurrentWorkspace, useStore } from '@/lib/store'
 import { Button, ColorPicker, Dot, Modal, PALETTE, TextField } from '@/components/ui'
+import MembersDialog from '@/features/workspace/MembersDialog'
 
 export default function WorkspaceMenu() {
   const workspaces = useStore((s) => s.workspaces)
@@ -19,6 +20,7 @@ export default function WorkspaceMenu() {
 
   const [open, setOpen] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [sharing, setSharing] = useState(false)
   const [name, setName] = useState('')
   const [color, setColor] = useState<string>(PALETTE[0])
   const [nameError, setNameError] = useState<string | null>(null)
@@ -47,6 +49,10 @@ export default function WorkspaceMenu() {
       document.removeEventListener('keydown', onKeyDown)
     }
   }, [open])
+
+  // Stabile Kennung, aus demselben Grund wie beim Anlegen-Dialog: Modal haengt
+  // seinen Fokus-Effekt an die Identitaet von onClose.
+  const closeSharing = useCallback(() => setSharing(false), [])
 
   async function switchTo(id: string) {
     setOpen(false)
@@ -155,6 +161,24 @@ export default function WorkspaceMenu() {
 
           <div className="divider" style={{ margin: '4px 0' }} />
 
+          {/* Teilen gehoert dorthin, wo der Arbeitsbereich steht. Bisher lag es
+              nur im Benutzermenue unter "Mitglieder & Freigaben" - dort sucht
+              es niemand, der seinen Bereich freigeben will. */}
+          {current && (
+            <button
+              type="button"
+              className="btn btn-ghost"
+              style={{ width: '100%', justifyContent: 'flex-start' }}
+              onClick={() => {
+                setOpen(false)
+                setSharing(true)
+              }}
+            >
+              <span aria-hidden="true">&#128101;</span>
+              <span>Teilen und Mitglieder ...</span>
+            </button>
+          )}
+
           <button
             type="button"
             className="btn btn-ghost"
@@ -218,6 +242,8 @@ export default function WorkspaceMenu() {
           </Modal>,
           document.body,
         )}
+
+      {sharing && <MembersDialog onClose={closeSharing} />}
     </div>
   )
 }

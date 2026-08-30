@@ -7,7 +7,7 @@
  * Ausrollen die einzig hilfreiche Meldung.
  */
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 'react'
-import { admin } from '@/lib/db'
+import { admin, looksUndeployed } from '@/lib/db'
 import type { AdminAccount } from '@/lib/db'
 import { formatDateShort, pluralize } from '@/lib/format'
 import { describeError } from '@/lib/supabase'
@@ -35,22 +35,6 @@ const ROLE_LABEL: Record<MemberRole, string> = {
 }
 const ROLE_ORDER: MemberRole[] = ['viewer', 'editor', 'owner']
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
-
-/**
- * Erkennt den Fall "Funktion nicht erreichbar". supabase-js verpackt das je
- * nach Ursache unterschiedlich: als Netzwerkfehler ohne Status oder als
- * HTTP-Fehler mit 404.
- */
-function looksUndeployed(error: unknown): boolean {
-  const e = error as { name?: string; message?: string; status?: number; context?: { status?: number } }
-  const status = typeof e?.status === 'number' ? e.status : e?.context?.status
-  if (status === 404) return true
-  // Nur Netzwerk- und Transportfehler, keine Textsuche nach "nicht gefunden":
-  // die Funktion antwortet mit genau solchen Saetzen, wenn ein Konto fehlt -
-  // das ist eine echte Ablehnung und kein fehlender Ausrollstand.
-  const text = `${e?.name ?? ''} ${e?.message ?? ''}`.trim() || String(error)
-  return /Failed to send a request|Failed to fetch|NetworkError|FunctionsFetchError/i.test(text)
-}
 
 export default function AdminDialog({ onClose }: { onClose: () => void }) {
   const myUserId = useStore((s) => s.session?.user.id ?? null)

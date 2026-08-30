@@ -121,13 +121,57 @@ export interface MemberWithProfile extends WorkspaceMember {
   profile: Pick<Profile, 'id' | 'email' | 'display_name'> | null
 }
 
+/**
+ * Mitglieder samt Profil - bewusst in zwei Abfragen statt als Einbettung.
+ *
+ * workspace_members.user_id zeigt auf auth.users, nicht auf public.profiles.
+ * Zwischen beiden Tabellen gibt es also keinen Fremdschluessel, und ohne den
+ * kennt PostgREST die Beziehung nicht: die eingebettete Fassung scheiterte mit
+ * "Could not find a relationship between 'workspace_members' and 'profiles' in
+ * the schema cache" - die Mitgliederliste blieb leer, obwohl die Rechte stimmen
+ * (profiles_select gibt Mitglieder desselben Bereichs frei).
+ */
 export async function fetchMembers(workspaceId: string): Promise<MemberWithProfile[]> {
   const { data, error } = await supabase
     .from('workspace_members')
-    .select('*, profile:profiles(id, email, display_name)')
+    .select('*')
     .eq('workspace_id', workspaceId)
   if (error) throw error
-  return (data ?? []) as MemberWithProfile[]
+
+  const members = (data ?? []) as WorkspaceMember[]
+  if (members.length === 0) return []
+
+  const { data: profiles, error: profileError } = await supabase
+    .from('profiles')
+    .select('id, email, display_name')
+    .in(
+      'id',
+      members.map((m) => m.user_id),
+    )
+  if (profileError) throw profileError
+
+  const byId = new Map(
+    (profiles ?? []).map((p) => [p.id, p as Pick<Profile, 'id' | 'email' | 'display_name'>]),
+  )
+  // Ein fehlendes Profil ist kein Fehler: das Mitglied bleibt in der Liste,
+  // nur ohne Namen - besser als eine Zeile, die stumm verschwindet.
+  return members.map((m) => ({ ...m, profile: byId.get(m.user_id) ?? null }))
+}
+
+/**
+ * Traegt ein vorhandenes Konto unmittelbar als Mitglied ein.
+ *
+ * Der Umweg ueber eine Einladung bleibt fuer Adressen, hinter denen noch kein
+ * Konto steht - dort ist nur die E-Mail bekannt. Wer die Kennung eines Kontos
+ * hat, braucht ihn nicht: das Konto existiert ja bereits, und die Einladung
+ * wuerde nur darauf warten, dass sich jemand anmeldet, der laengst angemeldet
+ * ist.
+ */
+export async function addMember(workspaceId: string, userId: string, role: MemberRole): Promise<void> {
+  const { error } = await supabase
+    .from('workspace_members')
+    .insert({ workspace_id: workspaceId, user_id: userId, role })
+  if (error) throw error
 }
 
 export async function setMemberRole(workspaceId: string, userId: string, role: MemberRole): Promise<void> {
@@ -566,6 +610,22 @@ async function callAdmin<T>(body: Record<string, unknown>): Promise<T> {
   const payload = data as { data?: T; error?: string }
   if (payload?.error) throw new Error(payload.error)
   return payload?.data as T
+}
+
+/**
+ * Erkennt den Fall "Funktion nicht erreichbar". supabase-js verpackt das je
+ * nach Ursache unterschiedlich: als Netzwerkfehler ohne Status oder als
+ * HTTP-Fehler mit 404.
+ */
+export function looksUndeployed(error: unknown): boolean {
+  const e = error as { name?: string; message?: string; status?: number; context?: { status?: number } }
+  const status = typeof e?.status === 'number' ? e.status : e?.context?.status
+  if (status === 404) return true
+  // Nur Netzwerk- und Transportfehler, keine Textsuche nach "nicht gefunden":
+  // die Funktion antwortet mit genau solchen Saetzen, wenn ein Konto fehlt -
+  // das ist eine echte Ablehnung und kein fehlender Ausrollstand.
+  const text = `${e?.name ?? ''} ${e?.message ?? ''}`.trim() || String(error)
+  return /Failed to send a request|Failed to fetch|NetworkError|FunctionsFetchError/i.test(text)
 }
 
 export const admin = {

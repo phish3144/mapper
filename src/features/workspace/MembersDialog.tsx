@@ -5,9 +5,9 @@
  * die Datenbank lehnt etwa das Herabstufen des letzten Eigentuemers ab, und
  * diese Auskunft gehoert neben die Zeile, die sie ausgeloest hat.
  */
-import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react'
 import * as db from '@/lib/db'
-import type { MemberWithProfile } from '@/lib/db'
+import type { AdminAccount, MemberWithProfile } from '@/lib/db'
 import { describeError } from '@/lib/supabase'
 import { useIsOwner, useStore } from '@/lib/store'
 import type { MemberRole, WorkspaceInvite } from '@/types/domain'
@@ -33,6 +33,12 @@ const ROLE_ORDER: MemberRole[] = ['viewer', 'editor', 'owner']
 /** Grobpruefung. Die endgueltige Pruefung macht ohnehin die Anmeldung. */
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
+/**
+ * So viele Konten stehen hoechstens in der Liste. Bei vielen Konten ist eine
+ * endlose Liste keine Auswahl mehr - dann fuehrt die Suche schneller zum Ziel.
+ */
+const MAX_ACCOUNT_ROWS = 8
+
 function memberName(m: MemberWithProfile): string {
   return m.profile?.display_name?.trim() || m.profile?.email || 'Unbekanntes Konto'
 }
@@ -55,6 +61,11 @@ export default function MembersDialog({ onClose }: { onClose: () => void }) {
   const reportError = useStore((s) => s.reportError)
   const loadWorkspaces = useStore((s) => s.loadWorkspaces)
   const isOwner = useIsOwner()
+  const profile = useStore((s) => s.profile)
+  // Das Verzeichnis aller Konten liegt hinter der Kontenverwaltung und ist
+  // App-Administratoren vorbehalten. Eintragen darf nur, wer den Bereich
+  // besitzt - beides muss also zusammenkommen.
+  const kannKontenWaehlen = isOwner && profile?.is_app_admin === true
 
   const [members, setMembers] = useState<MemberWithProfile[] | null>(null)
   const [invites, setInvites] = useState<WorkspaceInvite[]>([])
@@ -67,8 +78,35 @@ export default function MembersDialog({ onClose }: { onClose: () => void }) {
   const [emailError, setEmailError] = useState<string | null>(null)
   const [inviting, setInviting] = useState(false)
 
+  const [accounts, setAccounts] = useState<AdminAccount[] | null>(null)
+  const [accountsNote, setAccountsNote] = useState<string | null>(null)
+  const [accountQuery, setAccountQuery] = useState('')
+  const [addRole, setAddRole] = useState<MemberRole>('editor')
+  const [addingId, setAddingId] = useState<string | null>(null)
+
   const [pendingRemove, setPendingRemove] = useState<MemberWithProfile | null>(null)
   const [removing, setRemoving] = useState(false)
+
+  /**
+   * Konten, die noch nicht Mitglied sind, gefiltert nach der Suche. Wer schon
+   * dabei ist, gehoert nicht in eine Liste zum Hinzufuegen - er steht oben.
+   */
+  const kandidaten = useMemo(() => {
+    if (accounts === null) return []
+    const drin = new Set((members ?? []).map((m) => m.user_id))
+    const suche = accountQuery.trim().toLowerCase()
+    return accounts
+      .filter((a) => !drin.has(a.id))
+      .filter(
+        (a) =>
+          suche === '' ||
+          a.email.toLowerCase().includes(suche) ||
+          (a.display_name ?? '').toLowerCase().includes(suche),
+      )
+      .sort((a, b) =>
+        (a.display_name?.trim() || a.email).localeCompare(b.display_name?.trim() || b.email, 'de'),
+      )
+  }, [accounts, members, accountQuery])
 
   const formId = useId()
 
@@ -105,6 +143,41 @@ export default function MembersDialog({ onClose }: { onClose: () => void }) {
       if (initial) setLoading(false)
     }
   }, [workspaceId, isOwner, reportError])
+
+  const loadAccounts = useCallback(async () => {
+    if (!kannKontenWaehlen) return
+    try {
+      setAccounts((await db.admin.listAccounts()) ?? [])
+      setAccountsNote(null)
+    } catch (e) {
+      setAccounts([])
+      setAccountsNote(
+        db.looksUndeployed(e)
+          ? 'Das Benutzerverzeichnis ist derzeit nicht erreichbar. Einladen per E-Mail geht weiterhin.'
+          : describeError(e),
+      )
+    }
+  }, [kannKontenWaehlen])
+
+  useEffect(() => {
+    void loadAccounts()
+  }, [loadAccounts])
+
+  async function addAccount(account: AdminAccount) {
+    if (!workspaceId) return
+    setAddingId(account.id)
+    setError(null)
+    try {
+      await db.addMember(workspaceId, account.id, addRole)
+      await load()
+      await loadWorkspaces()
+      notify('success', `${account.display_name?.trim() || account.email} hinzugefuegt.`)
+    } catch (e) {
+      setError(friendly(e))
+    } finally {
+      setAddingId(null)
+    }
+  }
 
   useEffect(() => {
     void load(true)
@@ -278,6 +351,85 @@ export default function MembersDialog({ onClose }: { onClose: () => void }) {
         </p>
       )}
 
+      {kannKontenWaehlen && (
+        <>
+          <div className="divider" />
+          <h4 style={{ marginBottom: 6 }}>Registrierte Benutzer</h4>
+
+          {accountsNote !== null ? (
+            <p className="small faint" style={{ marginTop: 0 }}>
+              {accountsNote}
+            </p>
+          ) : accounts === null ? (
+            <div className="row" style={{ gap: 8 }}>
+              <Spinner />
+              <span className="small muted">Konten werden geladen …</span>
+            </div>
+          ) : (
+            <>
+              <div className="field-row">
+                <TextField
+                  label="Suchen"
+                  value={accountQuery}
+                  placeholder="Name oder E-Mail"
+                  autoComplete="off"
+                  onChange={(e) => setAccountQuery(e.target.value)}
+                />
+                <SelectField
+                  label="Rolle beim Hinzufuegen"
+                  value={addRole}
+                  onChange={(e) => setAddRole(e.target.value as MemberRole)}
+                >
+                  {ROLE_ORDER.map((r) => (
+                    <option key={r} value={r}>
+                      {ROLE_LABEL[r]}
+                    </option>
+                  ))}
+                </SelectField>
+              </div>
+
+              {kandidaten.length === 0 ? (
+                <EmptyState>
+                  {accounts.length === 0
+                    ? 'Keine Konten gefunden.'
+                    : accountQuery.trim() !== ''
+                      ? 'Kein Konto passt zur Suche.'
+                      : 'Alle registrierten Konten sind bereits Mitglied.'}
+                </EmptyState>
+              ) : (
+                <div className="list panel">
+                  {kandidaten.slice(0, MAX_ACCOUNT_ROWS).map((a) => (
+                    <div key={a.id} className="list-item" style={{ cursor: 'default' }}>
+                      <div className="list-item-main">
+                        <div className="list-item-title truncate">
+                          {a.display_name?.trim() || a.email}
+                        </div>
+                        <div className="list-item-sub truncate">{a.email}</div>
+                      </div>
+                      {a.is_app_admin && <Badge tone="accent">App-Admin</Badge>}
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        busy={addingId === a.id}
+                        disabled={addingId !== null}
+                        onClick={() => void addAccount(a)}
+                      >
+                        Hinzufuegen
+                      </Button>
+                    </div>
+                  ))}
+                  {kandidaten.length > MAX_ACCOUNT_ROWS && (
+                    <div className="list-item small faint" style={{ cursor: 'default' }}>
+                      … und {kandidaten.length - MAX_ACCOUNT_ROWS} weitere. Suche eingrenzen.
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </>
+      )}
+
       {isOwner && (
         <>
           <div className="divider" />
@@ -308,7 +460,9 @@ export default function MembersDialog({ onClose }: { onClose: () => void }) {
           )}
 
           <div className="divider" />
-          <h4 style={{ marginBottom: 6 }}>Person einladen</h4>
+          <h4 style={{ marginBottom: 6 }}>
+            {kannKontenWaehlen ? 'Person ohne Konto einladen' : 'Person einladen'}
+          </h4>
 
           <form id={formId} onSubmit={submitInvite}>
             <div className="field-row">

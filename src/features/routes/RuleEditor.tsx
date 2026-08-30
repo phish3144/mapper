@@ -155,7 +155,7 @@ export default function RuleEditor({
           {describeRule(value, categories, groups)}
         </div>
         <div>
-          <strong>{matched.length}</strong> {pluralize(matched.length, 'Standort', 'Standorte')} treffen zu
+          <strong>{pluralize(matched.length, 'Standort', 'Standorte')}</strong> treffen zu
           {value.center && (
             <span className="faint small"> · Mittelpunkt {formatLatLng(value.center)}</span>
           )}

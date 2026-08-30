@@ -231,6 +231,7 @@ export function resetGeocodeState(): void {
   queueTail = Promise.resolve()
   lastRequestAt = 0
   preferredProvider = 'nominatim'
+  providerDownAt.clear()
 }
 
 // --- Warteschlange mit Mindestabstand ---------------------------------------
@@ -649,8 +650,30 @@ export type GeocodeProvider = 'nominatim' | 'photon'
  */
 let preferredProvider: GeocodeProvider = 'nominatim'
 
+/**
+ * Wann ein Dienst zuletzt am TRANSPORT gescheitert ist - also nicht "nichts
+ * gefunden", sondern "hat nicht geantwortet, war gesperrt oder gedrosselt".
+ *
+ * Ohne dieses Gedaechtnis kostet ein toter Dienst bei JEDER Adresse erneut die
+ * volle Schrittkaskade, und der Mindestabstand von gut einer Sekunde wird auch
+ * dann eingehalten, wenn ueberhaupt keine Antwort kommt. Bei zehn eingefuegten
+ * Adressen summiert sich das auf ueber eine halbe Minute Warten auf einen
+ * Dienst, von dem schon nach der ersten Zeile feststeht, dass er stumm bleibt.
+ * Die Vorliebe oben half dagegen nicht: sie wird nur im Trefferfall gesetzt.
+ */
+const providerDownAt = new Map<GeocodeProvider, number>()
+
+/** Wie lange ein gescheiterter Dienst hintanstehen muss, ehe er wieder vorn steht. */
+export const PROVIDER_COOLDOWN_MS = 5 * 60_000
+
+function providerIsDown(provider: GeocodeProvider, now: number): boolean {
+  const since = providerDownAt.get(provider)
+  return since !== undefined && now - since < PROVIDER_COOLDOWN_MS
+}
+
 export function resetProviderPreference(): void {
   preferredProvider = 'nominatim'
+  providerDownAt.clear()
 }
 
 /** Arbeitet die Kaskade mit Nominatim ab. */
@@ -718,8 +741,15 @@ export async function findAddress(
   const steps = buildSearchSteps(query)
   if (steps.length === 0) return { matches: [], problem: null }
 
-  const order: GeocodeProvider[] =
+  const bevorzugt: GeocodeProvider[] =
     preferredProvider === 'photon' ? ['photon', 'nominatim'] : ['nominatim', 'photon']
+  // Wer zuletzt am Transport gescheitert ist, rueckt nach hinten - versucht
+  // wird er trotzdem noch, denn er kann sich inzwischen erholt haben.
+  const jetzt = Date.now()
+  const order: GeocodeProvider[] = [
+    ...bevorzugt.filter((p) => !providerIsDown(p, jetzt)),
+    ...bevorzugt.filter((p) => providerIsDown(p, jetzt)),
+  ]
   // Im schnellen Modus nur der erste Schritt: waehrend des Tippens ist eine
   // leere Antwort der Normalfall und kein Anlass, vier weitere Anfragen zu
   // stellen.
@@ -733,12 +763,16 @@ export async function findAddress(
 
     if (result.hits.length > 0) {
       preferredProvider = provider
+      providerDownAt.delete(provider)
       return {
         matches: result.hits.map((hit) => describeMatch(hit, wanted)),
         problem: null,
         provider,
       }
     }
+    // Ein Transportfehler heisst: dieser Dienst ist gerade nicht zu gebrauchen.
+    // "Nichts gefunden" heisst das ausdruecklich NICHT - dann bleibt er vorn.
+    if (result.problem !== null) providerDownAt.set(provider, Date.now())
     // Der erste gemeldete Grund ist der aussagekraeftigste: er stammt vom
     // bevorzugten Dienst.
     if (problem === null) problem = result.problem

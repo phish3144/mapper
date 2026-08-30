@@ -72,7 +72,7 @@ export default function RouteEditor({ route, onBack }: { route: Route; onBack: (
       const matched = applyRule(route.rule, locations, membership)
       await db.replaceRouteStops(route.id, matched.map((l) => l.id))
       await loadStops(route.id)
-      notify('success', `${matched.length} ${pluralize(matched.length, 'Stopp', 'Stopps')} aus der Regel uebernommen.`)
+      notify('success', `${pluralize(matched.length, 'Stopp', 'Stopps')} aus der Regel uebernommen.`)
     } catch (e) {
       reportError(e)
     } finally {
@@ -299,7 +299,7 @@ export default function RouteEditor({ route, onBack }: { route: Route; onBack: (
 
         <div className="row-between" style={{ marginBottom: 8 }}>
           <h4>
-            {plan.entries.length} {pluralize(plan.entries.length, 'Stopp', 'Stopps')}
+            {pluralize(plan.entries.length, 'Stopp', 'Stopps')}
           </h4>
           <div className="row" style={{ gap: 4 }}>
             {plan.entries.length > 0 && (
