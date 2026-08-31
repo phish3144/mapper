@@ -17,12 +17,12 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { IconButton, Badge } from '@/components/ui'
-import { useStore } from '@/lib/store'
+import { IconButton, Badge, GroupStripe } from '@/components/ui'
+import { useLocationColors, useStore } from '@/lib/store'
 import { useUi } from '@/lib/uiStore'
 import { formatTime, formatDuration, formatMinutes } from '@/lib/format'
 import type { Schedule, ScheduledStop } from '@/lib/planner'
-import type { Category, MapLocation, RouteStop } from '@/types/domain'
+import type { MapLocation, RouteStop } from '@/types/domain'
 
 interface Entry {
   stop: RouteStop
@@ -39,14 +39,14 @@ function SortableStop({
   entry,
   index,
   scheduled,
-  category,
+  colors,
   canEdit,
   onRemove,
 }: {
   entry: Entry
   index: number
   scheduled: ScheduledStop | undefined
-  category: Category | undefined
+  colors: string[]
   canEdit: boolean
   onRemove: (stopId: string) => void
 }) {
@@ -87,7 +87,7 @@ function SortableStop({
         }}
       >
         <span className="row" style={{ gap: 6 }}>
-          {category && <span className="dot" style={{ background: category.color }} aria-hidden="true" />}
+          <GroupStripe colors={colors} />
           <span className="truncate">{entry.location.name}</span>
         </span>
         <span className="stop-time">
@@ -127,6 +127,7 @@ export default function StopList({
 }) {
   const categories = useStore((s) => s.categories)
   const catIndex = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories])
+  const colorsOf = useLocationColors()
 
   const sensors = useSensors(
     // Erst ab 5 px Bewegung ziehen, sonst verschluckt der Zieh-Handler jeden Klick.
@@ -173,7 +174,10 @@ export default function StopList({
               entry={entry}
               index={i}
               scheduled={scheduledByIndex.get(i)}
-              category={entry.location.category_id ? catIndex.get(entry.location.category_id) : undefined}
+              colors={colorsOf(
+                entry.location,
+                entry.location.category_id ? catIndex.get(entry.location.category_id) : undefined,
+              )}
               canEdit={canEdit}
               onRemove={onRemove}
             />

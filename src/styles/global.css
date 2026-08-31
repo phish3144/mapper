@@ -236,6 +236,17 @@ a:hover { text-decoration: underline; }
 
 .dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
 
+/* Gruppenfarben eines Standorts: breiter als der runde Punkt, weil bis zu drei
+   Farben nebeneinander Platz brauchen. Die Breite ist FEST, unabhaengig von
+   der Zahl der Gruppen - sonst franst die linke Kante der Titel aus.
+   Die Haarlinie ersetzt hier den weissen Rand, der die Kartennadel traegt:
+   ohne sie steht #9333ea im dunklen Thema bei etwa 3:1 gegen den Panelton. */
+.dot.is-groups {
+  width: 14px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px var(--border);
+}
+
 .empty {
   padding: 28px 18px;
   text-align: center;

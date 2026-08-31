@@ -16,6 +16,13 @@ import {
   type TextareaHTMLAttributes,
 } from 'react'
 import { useStore } from '@/lib/store'
+import { bandsBackground } from '@/lib/colors'
+
+/** Der Listenstreifen ist nicht gedreht - der Verlauf steht direkt quer. */
+const STRIPE_ANGLE = 90
+
+/** Die Fuge nimmt den Panelton auf und fuegt sich so in beide Themen ein. */
+const STRIPE_SEAM = 'var(--bg-panel)'
 
 // --- Schaltflaeche ---------------------------------------------------------
 
@@ -343,6 +350,33 @@ export function Badge({
 
 export function Dot({ color }: { color: string }) {
   return <span className="dot" style={{ background: color }} aria-hidden="true" />
+}
+
+/**
+ * Die Gruppenfarben eines Standorts in Listen.
+ *
+ * Ein Streifen statt des runden Punktes, und zwar aus zwei Gruenden. Erstens
+ * passen bis zu drei Farben nebeneinander: bei 9px Durchmesser waere das
+ * aeussere Drittel nur noch eine schmale Sichel, weil der Kreis nach aussen
+ * wegfaellt. Zweitens unterscheidet die Form die Bedeutung - der runde .dot
+ * steht weiterhin fuer EINE Sache (eine Kategorie, eine Gruppenplakette),
+ * der Streifen fuer die Zugehoerigkeit eines Standorts.
+ *
+ * Die Breite ist fest, unabhaengig von null bis drei Farben. Sonst haetten die
+ * Titel in der Liste eine ausgefranste linke Kante.
+ */
+export function GroupStripe({ colors, label }: { colors: readonly string[]; label?: string }) {
+  const style = { background: bandsBackground(colors, { angle: STRIPE_ANGLE, seam: STRIPE_SEAM }) }
+
+  // Ohne Beschriftung ist der Streifen reine Zierde und gehoert nicht in den
+  // Barrierefreiheitsbaum. MIT Beschriftung muss er hinein - sonst waere die
+  // Gruppenzugehoerigkeit ausschliesslich ueber die Farbe zu erfahren, und
+  // ein title allein hilft nicht: neben aria-hidden wird er gar nicht erst
+  // ausgeliefert und bliebe ein reiner Maus-Tooltip.
+  if (label === undefined) {
+    return <span className="dot is-groups" style={style} aria-hidden="true" />
+  }
+  return <span className="dot is-groups" style={style} role="img" title={label} aria-label={label} />
 }
 
 export function EmptyState({ children }: { children: ReactNode }) {

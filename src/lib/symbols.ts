@@ -148,7 +148,20 @@ export function findSymbol(id?: string | null): MapSymbol | undefined {
 
 /** Unbekannte oder fehlende Kennungen bekommen die Nadel. */
 export function symbolEmoji(id?: string | null): string {
-  return findSymbol(id)?.emoji ?? '📍'
+  return findSymbol(id)?.emoji ?? '\u{1F4CD}'
+}
+
+/**
+ * Wie symbolEmoji, aber ohne Ersatzzeichen: nichts gewaehlt heisst nichts.
+ *
+ * Der Unterschied zaehlt auf der Kartennadel. Seit die Nadel die Gruppenfarben
+ * traegt, verdeckt ein Zeichen in ihrer Mitte genau die Aussage, um die es
+ * geht - und das rote Ersatz-\u{1F4CD} bringt zusaetzlich eine vierte Farbe ins
+ * Spiel, die keine Gruppe meint. Wer ausdruecklich das Symbol "Nadel" waehlt,
+ * bekommt es weiterhin; wer nie eines gewaehlt hat, bekommt reine Farbe.
+ */
+export function symbolEmojiOrNone(id?: string | null): string {
+  return findSymbol(id)?.emoji ?? ''
 }
 
 export function symbolLabel(id?: string | null): string {

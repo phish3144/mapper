@@ -11,8 +11,8 @@
  * Liste garantiert dieselbe Adresse meinen.
  */
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
-import { Button, Checkbox, Dot, EmptyState, Spinner } from '@/components/ui'
-import { buildMembershipMap, categoryById, useCanEdit, useStore } from '@/lib/store'
+import { Button, Checkbox, EmptyState, GroupStripe, Spinner } from '@/components/ui'
+import { buildMembershipMap, categoryById, useCanEdit, useLocationColors, useStore } from '@/lib/store'
 import { filterLocations, isFilterActive, useUi, type SearchPoint } from '@/lib/uiStore'
 import { directionLabel, nearestLocations, withTravel, type NearbyEntry } from '@/lib/nearby'
 import { getRouteProvider } from '@/lib/routing'
@@ -28,7 +28,6 @@ const NEARBY_LIMIT = 8
 const FOCUS_ZOOM = 16
 
 /** Ohne Kategorie gibt es keine Farbe; der Punkt bleibt dann neutral. */
-const NEUTRAL_DOT = 'var(--border-strong)'
 
 type TravelStatus = 'idle' | 'loading' | 'ready' | 'failed'
 
@@ -60,10 +59,12 @@ function subLine(
 function NearbyRow({
   entry,
   category,
+  colors,
   onSelect,
 }: {
   entry: NearbyEntry
   category: Category | undefined
+  colors: string[]
   onSelect: (entry: NearbyEntry) => void
 }) {
   const { location } = entry
@@ -92,7 +93,7 @@ function NearbyRow({
     >
       <span className="row" style={{ gap: 4, flex: '0 0 auto' }} aria-hidden="true">
         <span>{symbolEmoji(location.icon ?? category?.icon)}</span>
-        <Dot color={category?.color ?? NEUTRAL_DOT} />
+        <GroupStripe colors={colors} />
       </span>
 
       <span className="addr-hit-main" style={{ display: 'flex', flexDirection: 'column' }}>
@@ -136,6 +137,7 @@ export default function NearbyPanel({ point }: { point: SearchPoint }) {
 
   const membership = useMemo(() => buildMembershipMap(locationGroups), [locationGroups])
   const catIndex = useMemo(() => categoryById(categories), [categories])
+  const colorsOf = useLocationColors()
   const filterActive = isFilterActive(filter)
 
   // Beide Mengen werden immer gebildet, damit der Unterschied zwischen "alle"
@@ -373,6 +375,10 @@ export default function NearbyPanel({ point }: { point: SearchPoint }) {
               category={
                 entry.location.category_id ? catIndex.get(entry.location.category_id) : undefined
               }
+              colors={colorsOf(
+                entry.location,
+                entry.location.category_id ? catIndex.get(entry.location.category_id) : undefined,
+              )}
               onSelect={openLocation}
             />
           ))}

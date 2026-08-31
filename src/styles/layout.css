@@ -95,6 +95,21 @@
 .pin.is-selected { outline: 3px solid var(--accent); outline-offset: 2px; }
 .pin.is-inactive { opacity: 0.45; }
 
+/* Buendelblasen neutralisieren. Die Vorgabe von leaflet.markercluster faerbt
+   sie nach Groesse gruen, gelb oder orange - das Gruen liegt dicht an #059669
+   und waere ab jetzt als "Team FOB" lesbar. Eine Blase fasst aber Standorte
+   aus beliebigen Gruppen zusammen und darf deshalb gar keine Gruppenfarbe
+   tragen. */
+.marker-cluster,
+.marker-cluster div {
+  background: var(--bg-panel) !important;
+  color: var(--text) !important;
+}
+.marker-cluster {
+  box-shadow: 0 0 0 2px var(--border-strong), 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+.marker-cluster div { font-weight: 700; }
+
 /* Nummerierte Nadeln der Routenstopps. */
 .stop-pin {
   width: 24px; height: 24px;

@@ -10,13 +10,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Badge,
   Button,
-  Dot,
   EmptyState,
+  GroupStripe,
   IconButton,
   Spinner,
   useConfirm,
 } from '@/components/ui'
-import { buildMembershipMap, categoryById, useCanEdit, useStore } from '@/lib/store'
+import { buildMembershipMap, categoryById, useCanEdit, useLocationColors, useStore } from '@/lib/store'
 import { filterLocations, isFilterActive, useUi } from '@/lib/uiStore'
 import * as db from '@/lib/db'
 import { formatLatLng } from '@/lib/geo'
@@ -87,6 +87,18 @@ export default function LocationsPanel() {
     [locations, filter, membership],
   )
   const catById = useMemo(() => categoryById(categories), [categories])
+  const colorsOf = useLocationColors()
+
+  // Die Farben allein sagen nicht, WELCHE Gruppe gemeint ist. Der Titel des
+  // Streifens holt das nach - ungekuerzt, auch wenn die Darstellung deckelt.
+  const groupLabel = useCallback(
+    (location: MapLocation) => {
+      const mine = new Set(membership.get(location.id) ?? [])
+      const namen = groups.filter((g) => mine.has(g.id)).map((g) => g.name)
+      return namen.length > 0 ? namen.join(', ') : 'ohne Gruppe'
+    },
+    [groups, membership],
+  )
 
   // Angehakte Standorte, die es noch gibt — Loeschungen anderswo duerfen die
   // Zahl in der Leiste nicht zu einer Behauptung machen.
@@ -304,7 +316,7 @@ export default function LocationsPanel() {
                     </label>
                   )}
 
-                  <Dot color={category?.color ?? 'var(--text-faint)'} />
+                  <GroupStripe colors={colorsOf(l, category)} label={groupLabel(l)} />
 
                   <div className="list-item-main">
                     <div className="list-item-title">{l.name}</div>

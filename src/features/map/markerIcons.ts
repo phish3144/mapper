@@ -15,24 +15,24 @@ import L from 'leaflet'
  * sodass ein nur an einer Stelle ergaenztes Symbol stillschweigend auf die
  * Nadel zurueckfiel.
  */
-export { symbolEmoji as symbolFor } from '@/lib/symbols'
-
-import { symbolEmoji } from '@/lib/symbols'
-
-/** Standorte ohne Kategorie erben den gedaempften Textton des Designsystems. */
-const FALLBACK_COLOR = 'var(--text-muted)'
-
-const HEX_COLOR = /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i
+import { symbolEmojiOrNone } from '@/lib/symbols'
+import { bandsBackground, sanitizeColors } from '@/lib/colors'
 
 /**
- * Die Farbe wird in ein style-Attribut geschrieben. Sie stammt zwar aus einer
- * festen Palette, kommt aber ueber die Datenbank - also nur echte Hex-Werte
- * durchlassen, damit niemand aus dem Attribut ausbrechen kann.
+ * Winkel des Verlaufs IM ELEMENT. Die Nadel ist um -45deg gedreht, ein Verlauf
+ * erscheint also um 45deg gegen den Uhrzeigersinn versetzt: fuer senkrechte
+ * Kanten auf dem Bildschirm braucht es 135deg, denn 135 - 45 = 90.
+ *
+ * Senkrecht und nicht waagerecht, weil die gedrehte Nadel spiegelsymmetrisch
+ * zur senkrechten Achse ist. Ein senkrechter Schnitt gibt beiden Gruppen exakt
+ * gleich viel Flaeche und beiden ein Stueck der Spitze; ein waagerechter
+ * liesse der zweiten Gruppe nur den schmalen Zipfel - und behauptete damit
+ * eine Rangfolge, die es nicht gibt.
  */
-function safeColor(color?: string | null): string {
-  const value = (color ?? '').trim()
-  return HEX_COLOR.test(value) ? value : FALLBACK_COLOR
-}
+const PIN_ANGLE = 135
+
+/** Die Fuge nimmt das Weiss des Nadelrands auf. */
+const PIN_SEAM = '#fff'
 
 export interface PinOptions {
   selected?: boolean
@@ -49,13 +49,18 @@ const pinCache = new Map<string, L.DivIcon>()
  * die Position des Markers als `transform` auf das Wurzelelement und wuerde
  * die Drehung sonst ueberschreiben.
  */
-export function createPinIcon(color: string, opts: PinOptions = {}): L.DivIcon {
-  const fill = safeColor(color)
-  const symbol = symbolEmoji(opts.symbol)
+export function createPinIcon(colors: readonly string[], opts: PinOptions = {}): L.DivIcon {
+  // Erst bereinigen, dann schluesseln: der Schluessel muss das ERSCHEINUNGSBILD
+  // beschreiben. Auf der Rohliste geschluesselt fielen zwei Standorte
+  // auseinander, die am Ende gleich aussehen - und der Speicher entdoppelte
+  // nicht mehr.
+  const bands = sanitizeColors(colors)
+  const fill = bandsBackground(bands, { angle: PIN_ANGLE, seam: PIN_SEAM })
+  const symbol = symbolEmojiOrNone(opts.symbol)
   const selected = opts.selected === true
   const inactive = opts.inactive === true
 
-  const key = `${fill}|${symbol}|${selected ? 1 : 0}|${inactive ? 1 : 0}`
+  const key = `${bands.join('/')}|${symbol}|${selected ? 1 : 0}|${inactive ? 1 : 0}`
   const cached = pinCache.get(key)
   if (cached) return cached
 
@@ -64,7 +69,12 @@ export function createPinIcon(color: string, opts: PinOptions = {}): L.DivIcon {
     .join(' ')
 
   const icon = L.divIcon({
-    html: `<div class="${classes}" style="background:${fill}"><span class="pin-inner">${symbol}</span></div>`,
+    // Ohne gewaehltes Symbol bleibt das innere Element ganz weg - eine leere
+    // Huelle wuerde die Fuge zwischen zwei Gruppenfarben unnoetig unterbrechen.
+    html:
+      `<div class="${classes}" style="background:${fill}">` +
+      (symbol === '' ? '' : `<span class="pin-inner">${symbol}</span>`) +
+      `</div>`,
     // Leer statt der Vorgabe 'leaflet-div-icon': sonst liegt ein weisser
     // Kasten hinter der Nadel.
     className: '',

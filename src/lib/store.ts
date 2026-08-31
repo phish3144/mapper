@@ -8,11 +8,13 @@
  * Security ist das der ehrlichere Weg: was die Datenbank ablehnt, darf auch in
  * der Oberflaeche nicht kurz erscheinen.
  */
+import { useCallback, useMemo } from 'react'
 import { create } from 'zustand'
 import type { Session } from '@supabase/supabase-js'
 import * as db from './db'
 import { supabase, describeError, appRedirectUrl } from './supabase'
 import { resetProxyState } from './geocode'
+import { locationColors } from './colors'
 import type {
   Category,
   Group,
@@ -316,6 +318,27 @@ export function useMyRole(): MemberRole | null {
 export function useCanEdit(): boolean {
   const role = useMyRole()
   return roleAtLeast(role, 'editor')
+}
+
+/**
+ * Liefert eine Funktion, die zu einem Standort seine Farben nennt.
+ *
+ * Als Funktion und nicht als fertige Zuordnung, weil vier Ansichten sie
+ * brauchen (Karte, Seitenleiste, Umkreis, Stoppliste) und jede eine andere
+ * Teilmenge zeigt. Die Zuordnung Standort -> Gruppen wird dabei genau einmal
+ * gebaut, nicht je Zeile neu.
+ */
+export function useLocationColors(): (
+  location: Pick<MapLocation, 'id' | 'category_id'>,
+  category?: Pick<Category, 'color'> | null,
+) => string[] {
+  const groups = useStore((s) => s.groups)
+  const locationGroups = useStore((s) => s.locationGroups)
+  const membership = useMemo(() => buildMembershipMap(locationGroups), [locationGroups])
+  return useCallback(
+    (location, category) => locationColors(location, groups, membership, category),
+    [groups, membership],
+  )
 }
 
 export function useIsOwner(): boolean {

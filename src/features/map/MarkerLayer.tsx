@@ -9,7 +9,7 @@
  * Leaflet-Zusatz ohne React-Anbindung und wird deshalb von Hand verwaltet; bis
  * zur Schwelle bleibt es bei gewoehnlichen Marker-Komponenten.
  */
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import L from 'leaflet'
 import 'leaflet.markercluster'
@@ -17,9 +17,9 @@ import { Marker, Popup, useMap } from 'react-leaflet'
 import { Badge, Button, Dot } from '@/components/ui'
 import * as db from '@/lib/db'
 import { formatMinutes, formatTimeWindows } from '@/lib/format'
-import { buildMembershipMap, categoryById, useCanEdit, useStore } from '@/lib/store'
+import { buildMembershipMap, categoryById, useCanEdit, useLocationColors, useStore } from '@/lib/store'
 import { filterLocations, useUi } from '@/lib/uiStore'
-import type { Category, MapLocation } from '@/types/domain'
+import type { Category, Group, MapLocation } from '@/types/domain'
 import { createPinIcon } from './markerIcons'
 
 /** Ab hier wird gebuendelt - darunter sind Einzelnadeln uebersichtlicher. */
@@ -30,17 +30,44 @@ const SELECTED_Z_OFFSET = 500
 
 type CategoryIndex = Map<string, Category>
 
+/**
+ * Nennt zu einem Standort seine Farben. Kommt aus useLocationColors() und ist
+ * referenzstabil, solange sich Gruppen und Zuordnungen nicht aendern - nur
+ * deshalb darf sie in die Abhaengigkeiten der Effekte unten.
+ */
+type ColorsOf = (location: MapLocation, category: Category | undefined) => string[]
+
 function categoryOf(location: MapLocation, categories: CategoryIndex): Category | undefined {
   return location.category_id ? categories.get(location.category_id) : undefined
 }
 
-function iconFor(location: MapLocation, category: Category | undefined, selected: boolean) {
-  return createPinIcon(category?.color ?? '', {
+function iconFor(
+  location: MapLocation,
+  category: Category | undefined,
+  selected: boolean,
+  colorsOf: ColorsOf,
+) {
+  return createPinIcon(colorsOf(location, category), {
     selected,
     inactive: !location.is_active,
     // Ein am Standort gesetztes Symbol schlaegt das der Kategorie.
     symbol: location.icon ?? category?.icon,
   })
+}
+
+/**
+ * Die Gruppen eines Standorts als Text - fuer den Titel der Nadel.
+ *
+ * Ungekuerzt, auch wenn die Nadel bei MAX_COLORS abschneidet: die Darstellung
+ * darf deckeln, der Text nie. Sonst verschwaende eine vierte Gruppe lautlos.
+ */
+function groupNamesOf(location: MapLocation, groups: Group[], membership: Map<string, string[]>) {
+  const mine = new Set(membership.get(location.id) ?? [])
+  return groups.filter((g) => mine.has(g.id)).map((g) => g.name)
+}
+
+function titleFor(location: MapLocation, names: string[]): string {
+  return names.length > 0 ? `${location.name} - ${names.join(', ')}` : location.name
 }
 
 /**
@@ -62,13 +89,30 @@ export function useVisibleLocations(): MapLocation[] {
 
 export default function MarkerLayer() {
   const categories = useStore((s) => s.categories)
+  const groups = useStore((s) => s.groups)
+  const locationGroups = useStore((s) => s.locationGroups)
   const selectedId = useUi((s) => s.selectedLocationId)
 
   const visible = useVisibleLocations()
   const categoryIndex = useMemo(() => categoryById(categories), [categories])
+  const membership = useMemo(() => buildMembershipMap(locationGroups), [locationGroups])
+  const colorsOf = useLocationColors()
+
+  const namesOf = useCallback(
+    (location: MapLocation) => groupNamesOf(location, groups, membership),
+    [groups, membership],
+  )
 
   if (visible.length > CLUSTER_THRESHOLD) {
-    return <ClusteredMarkers locations={visible} categories={categoryIndex} selectedId={selectedId} />
+    return (
+      <ClusteredMarkers
+        locations={visible}
+        categories={categoryIndex}
+        selectedId={selectedId}
+        colorsOf={colorsOf}
+        namesOf={namesOf}
+      />
+    )
   }
 
   return (
@@ -79,6 +123,8 @@ export default function MarkerLayer() {
           location={location}
           category={categoryOf(location, categoryIndex)}
           selected={location.id === selectedId}
+          colorsOf={colorsOf}
+          names={namesOf(location)}
         />
       ))}
     </>
@@ -93,18 +139,40 @@ function PlainMarker({
   location,
   category,
   selected,
+  colorsOf,
+  names,
 }: {
   location: MapLocation
   category: Category | undefined
   selected: boolean
+  colorsOf: ColorsOf
+  names: string[]
 }) {
   const selectLocation = useUi((s) => s.selectLocation)
+  const markerRef = useRef<L.Marker>(null)
+  const icon = iconFor(location, category, selected, colorsOf)
+  const title = titleFor(location, names)
+
+  // react-leaflet aktualisiert von sich aus nur position, icon, zIndexOffset,
+  // opacity und draggable - title NICHT. Solange dort bloss der Name stand,
+  // fiel das kaum auf; jetzt haengt der Titel an der Gruppenzugehoerigkeit und
+  // wuerde nach jedem Zuordnen veralten. Leaflet schreibt options.title beim
+  // Neuaufbau des Symbols zurueck auf das Element, deshalb muss BEIDES
+  // nachgezogen werden - und zwar auch nach einem Farbwechsel, der genau so
+  // einen Neuaufbau ausloest.
+  useEffect(() => {
+    const marker = markerRef.current
+    if (!marker) return
+    marker.options.title = title
+    marker.getElement()?.setAttribute('title', title)
+  }, [title, icon])
 
   return (
     <Marker
+      ref={markerRef}
       position={[location.lat, location.lng]}
-      icon={iconFor(location, category, selected)}
-      title={location.name}
+      icon={icon}
+      title={title}
       zIndexOffset={selected ? SELECTED_Z_OFFSET : 0}
       eventHandlers={{ click: () => selectLocation(location.id) }}
     >
@@ -129,10 +197,14 @@ function ClusteredMarkers({
   locations,
   categories,
   selectedId,
+  colorsOf,
+  namesOf,
 }: {
   locations: MapLocation[]
   categories: CategoryIndex
   selectedId: string | null
+  colorsOf: ColorsOf
+  namesOf: (location: MapLocation) => string[]
 }) {
   const map = useMap()
   const selectLocation = useUi((s) => s.selectLocation)
@@ -159,8 +231,8 @@ function ClusteredMarkers({
       // damit es nur eine Fassung der Sprechblase gibt.
       const element = document.createElement('div')
       const marker = L.marker([location.lat, location.lng], {
-        icon: iconFor(location, categoryOf(location, categories), false),
-        title: location.name,
+        icon: iconFor(location, categoryOf(location, categories), false, colorsOf),
+        title: titleFor(location, namesOf(location)),
       })
       marker.bindPopup(element, { minWidth: 180 })
       marker.on('click', () => selectLocation(location.id))
@@ -184,7 +256,11 @@ function ClusteredMarkers({
       markersRef.current = new Map()
       setOpenPopup(null)
     }
-  }, [map, locations, categories, selectLocation])
+    // colorsOf und namesOf gehoeren in die Liste, sonst behaelt die Buendelung
+    // ihre Farben, wenn jemand eine Gruppe umfaerbt. Beide sind referenzstabil
+    // (useCallback in useLocationColors bzw. hier), der Neuaufbau laeuft also
+    // nur, wenn sich Gruppen oder Zuordnungen wirklich geaendert haben.
+  }, [map, locations, categories, selectLocation, colorsOf, namesOf])
 
   // Nur die betroffene Nadel anfassen: ein Neuaufbau der ganzen Gruppe wuerde
   // beim Anklicken eines Standorts dessen eigene Sprechblase wieder schliessen.
@@ -194,14 +270,19 @@ function ClusteredMarkers({
     const location = locations.find((l) => l.id === selectedId)
     if (!marker || !location) return
 
+    // Farben hier im Rumpf festhalten: das Aufraeumen muss GENAU das Icon
+    // wiederherstellen, das es vorgefunden hat. Griffe es spaeter erneut auf
+    // colorsOf zu, koennte inzwischen eine andere Farbe herauskommen und die
+    // Nadel bliebe nach dem Abwaehlen falsch gefaerbt.
     const category = categoryOf(location, categories)
-    marker.setIcon(iconFor(location, category, true))
+    const ruhend = iconFor(location, category, false, colorsOf)
+    marker.setIcon(iconFor(location, category, true, colorsOf))
     marker.setZIndexOffset(SELECTED_Z_OFFSET)
     return () => {
-      marker.setIcon(iconFor(location, category, false))
+      marker.setIcon(ruhend)
       marker.setZIndexOffset(0)
     }
-  }, [selectedId, locations, categories])
+  }, [selectedId, locations, categories, colorsOf])
 
   // Leaflet vermisst die Sprechblase beim Oeffnen - da ist sie noch leer.
   // Nach dem Zeichnen muss die Groesse deshalb neu bestimmt werden.
