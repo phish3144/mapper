@@ -18,6 +18,7 @@ import {
   TextAreaField,
   TextField,
   useConfirm,
+  RouteImpactWarning,
 } from '@/components/ui'
 import { useStore } from '@/lib/store'
 import { useUi } from '@/lib/uiStore'
@@ -245,13 +246,20 @@ export default function LocationForm({
     }
   }
 
-  function askDelete() {
+  async function askDelete() {
     if (!location) return
+    let betroffen: db.AffectedRoute[] = []
+    try {
+      betroffen = await db.routesUsingLocations([location.id])
+    } catch (e) {
+      reportError(e)
+    }
     confirm(
       'Standort loeschen',
       <>
         Soll <strong>{location.name}</strong> wirklich geloescht werden? Der Standort verschwindet
         damit auch aus allen Routen und Gruppen.
+        <RouteImpactWarning routes={betroffen} />
       </>,
       async () => {
         try {
@@ -275,7 +283,7 @@ export default function LocationForm({
       footer={
         <>
           {location && (
-            <Button variant="danger" onClick={askDelete} disabled={busy} style={{ marginRight: 'auto' }}>
+            <Button variant="danger" onClick={() => void askDelete()} disabled={busy} style={{ marginRight: 'auto' }}>
               Loeschen
             </Button>
           )}

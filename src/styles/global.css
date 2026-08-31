@@ -234,6 +234,18 @@ a:hover { text-decoration: underline; }
 .badge-success { background: var(--success-subtle); color: var(--success); }
 .badge-warning { background: var(--warning-subtle); color: var(--warning); }
 
+/* Warnung vor dem Loeschen: welche Touren dabei Stopps verlieren. Bewusst
+   auffaellig - ein kaskadierendes Loeschen laesst sich nicht rueckgaengig
+   machen, und der Verlust faellt sonst erst Tage spaeter auf. */
+.route-impact {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--warning);
+  background: var(--warning-subtle);
+  color: var(--text);
+}
+
 .dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
 
 /* Gruppenfarben eines Standorts: breiter als der runde Punkt, weil bis zu drei

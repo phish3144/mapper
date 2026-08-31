@@ -12,6 +12,7 @@ import {
   Button,
   EmptyState,
   GroupStripe,
+  RouteImpactWarning,
   IconButton,
   Spinner,
   useConfirm,
@@ -200,14 +201,23 @@ export default function LocationsPanel() {
     }
   }
 
-  function askBulkDelete() {
+  async function askBulkDelete() {
     const ids = selectedForBulk
     if (ids.length === 0) return
+    // Erst nachsehen, was daran haengt. Die Abfrage kostet einen Aufruf, aber
+    // das Loeschen kaskadiert in die Stopplisten und ist nicht umkehrbar.
+    let betroffen: db.AffectedRoute[] = []
+    try {
+      betroffen = await db.routesUsingLocations(ids)
+    } catch (e) {
+      reportError(e)
+    }
     confirm(
       'Standorte loeschen',
       <>
         Sollen <strong>{pluralize(ids.length, 'Standort', 'Standorte')}</strong> wirklich geloescht
         werden? Sie verschwinden damit auch aus allen Routen und Gruppen.
+        <RouteImpactWarning routes={betroffen} />
       </>,
       async () => {
         try {
@@ -365,7 +375,7 @@ export default function LocationsPanel() {
               {pluralize(selectedForBulk.length, 'Standort', 'Standorte')} ausgewaehlt
             </strong>
             <div className="row" style={{ gap: 4 }}>
-              <Button size="sm" variant="danger" disabled={bulkBusy} onClick={askBulkDelete}>
+              <Button size="sm" variant="danger" disabled={bulkBusy} onClick={() => void askBulkDelete()}>
                 Loeschen
               </Button>
               <Button size="sm" variant="ghost" disabled={bulkBusy} onClick={clearChecked}>

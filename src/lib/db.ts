@@ -492,6 +492,71 @@ export async function addRouteStops(routeId: string, locationIds: string[], star
   return (data ?? []) as RouteStop[]
 }
 
+/** Eine Route, die Stopps verliert, wenn bestimmte Standorte geloescht werden. */
+export interface AffectedRoute {
+  routeId: string
+  routeName: string
+  stops: number
+}
+
+/**
+ * Welche Routen haengen an diesen Standorten?
+ *
+ * Gebraucht VOR dem Loeschen. route_stops.location_id loescht kaskadierend:
+ * ein geloeschter Standort verschwindet lautlos aus jeder Route, in der er
+ * vorkam. Ohne diese Abfrage koennte die Oberflaeche nur allgemein warnen -
+ * und genau das hat schon einmal dazu gefuehrt, dass eine fertig geplante
+ * Tour nach einem Aufraeumen leer war und wie ein Speicherfehler aussah.
+ *
+ * Die Zaehlung laeuft ueber die Stoppliste und nicht ueber den Zustand im
+ * Browser: dort stehen nur die Routen, die schon einmal geoeffnet wurden.
+ */
+export async function routesUsingLocations(locationIds: string[]): Promise<AffectedRoute[]> {
+  if (locationIds.length === 0) return []
+  const { data, error } = await supabase
+    .from('route_stops')
+    .select('route_id, routes(name)')
+    .in('location_id', locationIds)
+  if (error) throw error
+
+  return groupAffectedRoutes((data ?? []) as StopRouteRow[])
+}
+
+export interface StopRouteRow {
+  route_id: string
+  routes: { name: string } | null
+}
+
+/**
+ * Zaehlt die Stopps je Route zusammen. Eigene Funktion, damit die Zaehlung
+ * pruefbar ist, ohne die Datenbank zu befragen.
+ *
+ * `routes` kann null sein: die Route gehoert zwar zum Stopp, ist der
+ * Anwenderin aber womoeglich nicht sichtbar. Dann darf die Warnung sie nicht
+ * verschweigen - der Stopp geht trotzdem verloren -, aber auch keinen Namen
+ * erfinden.
+ */
+export function groupAffectedRoutes(rows: readonly StopRouteRow[]): AffectedRoute[] {
+  const zusammen = new Map<string, AffectedRoute>()
+  for (const row of rows) {
+    const vorhanden = zusammen.get(row.route_id)
+    if (vorhanden) {
+      vorhanden.stops += 1
+      continue
+    }
+    zusammen.set(row.route_id, {
+      routeId: row.route_id,
+      routeName: row.routes?.name ?? 'Nicht sichtbare Route',
+      stops: 1,
+    })
+  }
+  // Die schwerste Auswirkung zuerst - bei Gleichstand alphabetisch, damit die
+  // Reihenfolge zwischen zwei Aufrufen nicht springt.
+  return [...zusammen.values()].sort(
+    (a, b) => b.stops - a.stops || a.routeName.localeCompare(b.routeName, 'de'),
+  )
+}
+
 export async function updateRouteStop(
   id: string,
   patch: Partial<Pick<RouteStop, 'service_minutes_override' | 'note'>>,

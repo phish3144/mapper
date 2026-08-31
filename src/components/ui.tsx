@@ -17,6 +17,8 @@ import {
 } from 'react'
 import { useStore } from '@/lib/store'
 import { bandsBackground } from '@/lib/colors'
+import { pluralize } from '@/lib/format'
+import type { AffectedRoute } from '@/lib/db'
 
 /** Der Listenstreifen ist nicht gedreht - der Verlauf steht direkt quer. */
 const STRIPE_ANGLE = 90
@@ -377,6 +379,32 @@ export function GroupStripe({ colors, label }: { colors: readonly string[]; labe
     return <span className="dot is-groups" style={style} aria-hidden="true" />
   }
   return <span className="dot is-groups" style={style} role="img" title={label} aria-label={label} />
+}
+
+/**
+ * Nennt die Touren, die beim Loeschen von Standorten Stopps verlieren.
+ *
+ * Konkret und nicht allgemein: "verschwindet auch aus allen Routen" liest sich
+ * wie eine Formalie. Wer dagegen liest, dass "Sondertour HaMu MV" dabei drei
+ * von vier Stopps verliert, entscheidet anders.
+ */
+export function RouteImpactWarning({ routes }: { routes: readonly AffectedRoute[] }) {
+  if (routes.length === 0) return null
+  return (
+    <div className="route-impact">
+      <strong>Diese Touren verlieren dabei Stopps:</strong>
+      <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+        {routes.map((r) => (
+          <li key={r.routeId}>
+            {r.routeName} — {pluralize(r.stops, 'Stopp', 'Stopps')}
+          </li>
+        ))}
+      </ul>
+      <div className="small muted" style={{ marginTop: 6 }}>
+        Die Touren bleiben bestehen, die betroffenen Stopps sind danach weg.
+      </div>
+    </div>
+  )
 }
 
 export function EmptyState({ children }: { children: ReactNode }) {
