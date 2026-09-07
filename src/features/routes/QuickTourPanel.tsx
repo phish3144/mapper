@@ -55,6 +55,24 @@ interface TourReport {
   note: string | null
 }
 
+interface Vorschau {
+  lines: ResolvedLine[]
+  startGesetzt: boolean
+  startText: string
+  startId: string | null
+}
+
+/**
+ * Laesst sich diese Zeile in die Tour uebernehmen?
+ *
+ * Ohne Koordinate geht es nicht - eine nicht gefundene Adresse kann weder
+ * Standort noch Stopp werden. Sie bleibt in der Liste sichtbar, damit man sie
+ * nachbessern kann, aber ohne Haekchen.
+ */
+function uebernehmbar(line: ResolvedLine): boolean {
+  return line.locationId !== null || line.point !== null
+}
+
 interface GemerkterStart {
   text: string
   /** Kennung des gewaehlten Standorts; null bei frei eingegebener Adresse. */
@@ -106,6 +124,13 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState({ done: 0, total: 0 })
   const [report, setReport] = useState<TourReport | null>(null)
+  /**
+   * Was die Suche gefunden hat, noch bevor irgendetwas gespeichert wurde.
+   * Solange das hier steht, existiert die Tour nur als Vorschlag.
+   */
+  const [vorschau, setVorschau] = useState<Vorschau | null>(null)
+  /** Angehakte Zeilen der Vorschau, als Index in vorschau.lines. */
+  const [auswahl, setAuswahl] = useState<ReadonlySet<number>>(new Set())
 
   const startRef = useRef<HTMLDivElement | null>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -267,7 +292,6 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
         return
       }
 
-      const anzulegen = aufgeloest.filter((l) => l.locationId === null && l.point !== null)
       const gefunden = aufgeloest.filter((l) => l.locationId !== null || l.point !== null)
 
       if (gefunden.length === 0) {
@@ -281,7 +305,56 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
         return
       }
 
+      // HIER endet der suchende Teil. Bis zu dieser Stelle ist NICHTS
+      // gespeichert worden: es wurde nur gefragt, wo die Adressen liegen.
+      // Was daraus ein Standort wird, entscheidet die naechste Ansicht -
+      // frueher entstanden hier ungefragt Standorte, die anschliessend von
+      // Hand wieder aus der Karte geraeumt werden mussten.
+      setVorschau({
+        lines: aufgeloest,
+        startGesetzt,
+        startText: start.text,
+        startId: start.id,
+      })
+      setAuswahl(new Set(aufgeloest.map((_, i) => i).filter((i) => uebernehmbar(aufgeloest[i]))))
+    } catch (e) {
+      setReport({ created: 0, reused: 0, missing: 0, lines: [], note: describeError(e) })
+    } finally {
+      abortRef.current = null
+      setRunning(false)
+    }
+  }
+
+  /**
+   * Uebernimmt die angehakten Adressen: legt die neuen an, baut die Tour.
+   *
+   * Erst ab hier wird geschrieben. Alles davor war eine Frage an den
+   * Geocoder.
+   */
+  async function uebernehmen(): Promise<void> {
+    const schau = vorschau
+    if (!workspaceId || !schau) return
+
+    // Auf Kopien arbeiten: locationId wird beim Anlegen nachgetragen, und der
+    // Zustand darf davon nicht heimlich mitveraendert werden.
+    const aufgeloest: ResolvedLine[] = schau.lines
+      .map((l, i) => ({ ...l, gewaehlt: auswahl.has(i) }))
+      .filter((l) => l.gewaehlt)
+      .map(({ gewaehlt: _gewaehlt, ...rest }) => rest)
+
+    if (aufgeloest.length === 0) return
+
+    const start = { text: schau.startText, id: schau.startId }
+    const startGesetzt = schau.startGesetzt && auswahl.has(0)
+
+    const controller = new AbortController()
+    abortRef.current = controller
+    setRunning(true)
+
+    try {
       // --- Standorte anlegen -------------------------------------------------
+      // Nur die angehakten, und nur die, die es noch nicht gibt.
+      const anzulegen = aufgeloest.filter((l) => l.locationId === null && l.point !== null)
       if (anzulegen.length > 0) {
         const angelegt = await db.createLocations(
           workspaceId,
@@ -410,9 +483,17 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
       const fehlend = aufgeloest.filter((l) => l.kind === 'missing')
       const zuPruefen = aufgeloest.filter((l) => l.hint !== null && l.kind !== 'missing')
 
-      // Nicht Gefundenes bleibt im Feld stehen, dazu der abgeschnittene Rest -
-      // sonst waere es nach dem Lauf unwiederbringlich weg.
-      setText([...fehlend.map((l) => l.raw), ...parsed.rest].join('\n'))
+      // Die Vorschau hat ihren Zweck erfuellt; ab jetzt gilt die Tour.
+      setVorschau(null)
+      setAuswahl(new Set())
+
+      // Nicht Uebernommenes bleibt im Feld stehen, dazu der abgeschnittene
+      // Rest - sonst waere es nach dem Lauf unwiederbringlich weg. Dazu
+      // gehoeren jetzt auch die Zeilen, die bewusst nicht angehakt wurden.
+      const nichtUebernommen = (vorschau?.lines ?? [])
+        .filter((_, i) => !auswahl.has(i))
+        .map((l) => l.raw)
+      setText([...nichtUebernommen, ...fehlend.map((l) => l.raw), ...parsed.rest].join('\n'))
       notify(
         'success',
         `${pluralize(stopps.length, 'Stopp', 'Stopps')} in der Tour${geschaetzt ? ' (Fahrzeiten geschaetzt)' : ''}.`,
@@ -438,6 +519,34 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
       abortRef.current = null
       setRunning(false)
     }
+  }
+
+  const anzahlGewaehlt = auswahl.size
+  const waehlbar = vorschau ? vorschau.lines.filter(uebernehmbar).length : 0
+  const alleGewaehlt = waehlbar > 0 && anzahlGewaehlt === waehlbar
+
+  function zeileUmschalten(index: number): void {
+    setAuswahl((bisher) => {
+      const naechste = new Set(bisher)
+      if (naechste.has(index)) naechste.delete(index)
+      else naechste.add(index)
+      return naechste
+    })
+  }
+
+  function alleUmschalten(): void {
+    if (!vorschau) return
+    setAuswahl(
+      alleGewaehlt
+        ? new Set<number>()
+        : new Set(vorschau.lines.map((_, i) => i).filter((i) => uebernehmbar(vorschau.lines[i]))),
+    )
+  }
+
+  /** Vorschau wegwerfen. Es war nie etwas gespeichert, also faellt auch nichts an. */
+  function verwerfen(): void {
+    setVorschau(null)
+    setAuswahl(new Set())
   }
 
   const prozent = progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0
@@ -552,7 +661,75 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
           }}
         />
 
+        {vorschau !== null && !running && (
+          <div className="tour-vorschau">
+            <div className="row-between" style={{ marginBottom: 6 }}>
+              <strong className="small">
+                Gefunden ({vorschau.lines.filter(uebernehmbar).length})
+              </strong>
+              <button type="button" className="linkish small" onClick={alleUmschalten}>
+                {alleGewaehlt ? 'Keine' : 'Alle'}
+              </button>
+            </div>
+
+            <div className="scroll-y" style={{ maxHeight: 190 }}>
+              {vorschau.lines.map((line, i) => {
+                const moeglich = uebernehmbar(line)
+                const gewaehlt = auswahl.has(i)
+                return (
+                  <label
+                    key={i}
+                    className={`tour-zeile ${moeglich ? '' : 'is-missing'}`}
+                    title={line.raw}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={gewaehlt}
+                      disabled={!moeglich}
+                      onChange={() => zeileUmschalten(i)}
+                    />
+                    <span className="tour-zeile-text">
+                      <span className="truncate">
+                        {vorschau.startGesetzt && i === 0 && <Badge tone="accent">Start</Badge>}{' '}
+                        {line.label ?? line.raw}
+                      </span>
+                      <span className="small faint truncate">
+                        {line.kind === 'reused'
+                          ? 'bereits gespeichert'
+                          : line.kind === 'missing'
+                            ? (line.hint ?? 'nicht gefunden')
+                            : `wird neu angelegt${line.hint ? ` · ${line.hint}` : ''}`}
+                      </span>
+                    </span>
+                  </label>
+                )
+              })}
+            </div>
+
+            <div className="small faint" style={{ marginTop: 6 }}>
+              Nur Angehaktes wird gespeichert und auf der Karte sichtbar.
+            </div>
+          </div>
+        )}
+
         <div className="row" style={{ gap: 6, marginTop: 8 }}>
+          {vorschau !== null && !running ? (
+            <>
+              <Button
+                variant="primary"
+                block
+                disabled={anzahlGewaehlt === 0}
+                onClick={() => void uebernehmen()}
+              >
+                {anzahlGewaehlt === 0
+                  ? 'Nichts ausgewaehlt'
+                  : `${pluralize(anzahlGewaehlt, 'Adresse', 'Adressen')} uebernehmen`}
+              </Button>
+              <Button size="sm" onClick={verwerfen}>
+                Verwerfen
+              </Button>
+            </>
+          ) : (
           <Button
             variant="primary"
             block
@@ -562,6 +739,7 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
           >
             {running ? 'Adressen werden gesucht …' : knopfText}
           </Button>
+          )}
           {running && (
             <Button size="sm" onClick={() => abortRef.current?.abort()}>
               Abbrechen

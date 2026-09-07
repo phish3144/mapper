@@ -237,6 +237,40 @@ a:hover { text-decoration: underline; }
 /* Warnung vor dem Loeschen: welche Touren dabei Stopps verlieren. Bewusst
    auffaellig - ein kaskadierendes Loeschen laesst sich nicht rueckgaengig
    machen, und der Verlust faellt sonst erst Tage spaeter auf. */
+/* Vorschau des Schnellplaners: was gefunden wurde, BEVOR etwas gespeichert
+   wird. Bewusst abgesetzt - hier wird entschieden, nicht nur berichtet. */
+.tour-vorschau {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-subtle);
+}
+.tour-zeile {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 5px 2px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+}
+.tour-zeile:last-child { border-bottom: none; }
+.tour-zeile input { margin-top: 2px; flex: 0 0 auto; }
+/* Ohne min-width:0 sprengt eine lange Adresse das Kaestchen, statt zu kuerzen. */
+.tour-zeile-text { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+.tour-zeile.is-missing { opacity: 0.6; cursor: default; }
+
+/* Schaltflaeche, die wie ein Verweis aussieht - fuer "Alle"/"Keine". */
+.linkish {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+}
+
 .route-impact {
   margin-top: 10px;
   padding: 8px 10px;

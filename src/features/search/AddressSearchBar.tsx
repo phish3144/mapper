@@ -177,12 +177,17 @@ export default function AddressSearchBar() {
   /**
    * Treffer aus dem eigenen Bestand. Kosten null und stehen sofort da - haeufig
    * ist der gesuchte Ort ohnehin schon gespeichert.
+   *
+   * Inaktive bleiben draussen. Ein Vorschlag ist eine Empfehlung: "fahr
+   * hierhin". Genau das ist bei einem stillgelegten Standort falsch, und in
+   * einer kurzen Liste verdraengt er die Standorte, die noch gelten.
    */
   const ownMatches = useMemo(() => {
     const needle = query.trim().toLowerCase()
     if (needle.length < MIN_QUERY_LENGTH) return []
     const byId = new Map(categories.map((c) => [c.id, c]))
     return locations
+      .filter((l) => l.is_active)
       .filter((l) =>
         `${l.name} ${l.address ?? ''} ${l.tags.join(' ')}`.toLowerCase().includes(needle),
       )

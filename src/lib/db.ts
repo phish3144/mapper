@@ -519,12 +519,28 @@ export async function routesUsingLocations(locationIds: string[]): Promise<Affec
     .in('location_id', locationIds)
   if (error) throw error
 
-  return groupAffectedRoutes((data ?? []) as StopRouteRow[])
+  return groupAffectedRoutes((data ?? []) as unknown as StopRouteRow[])
 }
 
+/**
+ * Eine Zeile aus route_stops mit eingebetteter Route.
+ *
+ * `routes` ist als Objekt ODER Liste angegeben, weil beides vorkommt: zur
+ * Laufzeit liefert PostgREST bei einer n:1-Beziehung ein Objekt, die aus dem
+ * Schema erzeugten Typen beschreiben die Einbettung aber als Liste. Statt den
+ * Unterschied wegzucasten und darauf zu hoffen, wird er hier benannt und in
+ * routeName() aufgeloest.
+ */
 export interface StopRouteRow {
   route_id: string
-  routes: { name: string } | null
+  routes: { name: string } | { name: string }[] | null
+}
+
+function routeName(routes: StopRouteRow['routes']): string | null {
+  if (routes === null) return null
+  const eintrag = Array.isArray(routes) ? routes[0] : routes
+  const name = eintrag?.name?.trim()
+  return name ? name : null
 }
 
 /**
@@ -546,7 +562,7 @@ export function groupAffectedRoutes(rows: readonly StopRouteRow[]): AffectedRout
     }
     zusammen.set(row.route_id, {
       routeId: row.route_id,
-      routeName: row.routes?.name ?? 'Nicht sichtbare Route',
+      routeName: routeName(row.routes) ?? 'Nicht sichtbare Route',
       stops: 1,
     })
   }

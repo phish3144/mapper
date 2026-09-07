@@ -54,6 +54,15 @@ export interface MapFocus {
   points?: LatLng[]
 }
 
+/** Eine nur angezeigte Strecke von der gesuchten Adresse zu einem Standort. */
+export interface RoutePreview {
+  from: LatLng
+  fromLabel: string
+  to: LatLng
+  toLabel: string
+  locationId: string
+}
+
 interface UiState {
   tab: PanelTab
   selectedLocationId: string | null
@@ -69,6 +78,14 @@ interface UiState {
   searchPoint: SearchPoint | null
   /** Umgebungsliste auf die aktuell gefilterten Standorte beschraenken. */
   searchWithinFilter: boolean
+  /**
+   * Strecke von der gesuchten Adresse zu einem vorgeschlagenen Standort.
+   *
+   * Reine Ansicht: sie wird nirgends gespeichert und aendert an keiner Tour
+   * etwas. Sie beantwortet die Frage "wie weit ist das von hier?", ohne dass
+   * dafuer erst ein Standort oder eine Route entstehen muesste.
+   */
+  routePreview: RoutePreview | null
   focus: MapFocus | null
   sidebarOpen: boolean
   theme: 'light' | 'dark' | 'system'
@@ -86,6 +103,7 @@ interface UiState {
   resetFilter: () => void
   setSearchPoint: (point: SearchPoint | null) => void
   setSearchWithinFilter: (on: boolean) => void
+  setRoutePreview: (preview: RoutePreview | null) => void
   focusPoint: (point: LatLng, zoom?: number) => void
   focusBounds: (points: LatLng[]) => void
   setSidebarOpen: (open: boolean) => void
@@ -118,6 +136,7 @@ export const useUi = create<UiState>()((set) => ({
   filter: EMPTY_FILTER,
   searchPoint: null,
   searchWithinFilter: false,
+  routePreview: null,
   focus: null,
   sidebarOpen: true,
   theme: readTheme(),
@@ -138,8 +157,11 @@ export const useUi = create<UiState>()((set) => ({
   setPickingPoint: (on) => set({ pickingPoint: on }),
   patchFilter: (patch) => set((s) => ({ filter: { ...s.filter, ...patch } })),
   resetFilter: () => set({ filter: EMPTY_FILTER }),
-  setSearchPoint: (point) => set({ searchPoint: point }),
+  // Faellt der Bezugspunkt weg, ist die Strecke sinnlos - sie haengt an ihm.
+  setSearchPoint: (point) =>
+    set((s) => ({ searchPoint: point, routePreview: point === null ? null : s.routePreview })),
   setSearchWithinFilter: (on) => set({ searchWithinFilter: on }),
+  setRoutePreview: (preview) => set({ routePreview: preview }),
   focusPoint: (point, zoom) => set({ focus: { nonce: ++focusNonce, point, zoom } }),
   focusBounds: (points) => set({ focus: { nonce: ++focusNonce, points } }),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),

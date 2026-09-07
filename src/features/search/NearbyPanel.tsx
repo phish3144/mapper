@@ -128,6 +128,8 @@ export default function NearbyPanel({ point }: { point: SearchPoint }) {
   const setTab = useUi((s) => s.setTab)
   const selectLocation = useUi((s) => s.selectLocation)
   const focusPoint = useUi((s) => s.focusPoint)
+  const focusBounds = useUi((s) => s.focusBounds)
+  const setRoutePreview = useUi((s) => s.setRoutePreview)
 
   const [travel, setTravel] = useState<TravelResult | null>(null)
   const [status, setStatus] = useState<TravelStatus>('idle')
@@ -148,8 +150,11 @@ export default function NearbyPanel({ point }: { point: SearchPoint }) {
   )
   const pool = withinFilter ? filtered : locations
 
+  // onlyActive: die Umgebungsliste ist Teil der Suchleiste und damit ein
+  // Vorschlag. Ein stillgelegter Standort gehoert dort nicht hin - er wuerde
+  // in der kurzen Liste einen gueltigen verdraengen.
   const base = useMemo(
-    () => nearestLocations(origin, pool, { limit: NEARBY_LIMIT }),
+    () => nearestLocations(origin, pool, { limit: NEARBY_LIMIT, onlyActive: true }),
     [origin, pool],
   )
 
@@ -236,8 +241,20 @@ export default function NearbyPanel({ point }: { point: SearchPoint }) {
   const coordinates = originValid ? formatLatLng(origin) : null
 
   function openLocation(entry: NearbyEntry): void {
+    const ziel = { lat: entry.location.lat, lng: entry.location.lng }
     selectLocation(entry.location.id)
-    focusPoint({ lat: entry.location.lat, lng: entry.location.lng })
+    // Die Strecke ist die eigentliche Antwort auf den Klick: gefragt ist nicht
+    // "wo liegt der Standort?", sondern "wie komme ich von hier dorthin?".
+    // Sie wird nur gezeichnet - kein Stopp, keine Tour, nichts gespeichert.
+    setRoutePreview({
+      from: origin,
+      fromLabel: point.label.trim() || coordinates || 'Gesuchte Adresse',
+      to: ziel,
+      toLabel: entry.location.name,
+      locationId: entry.location.id,
+    })
+    // Beide Enden ins Bild, sonst sieht man von der Strecke nur ein Stueck.
+    focusBounds([origin, ziel])
   }
 
   function createLocation(): void {
