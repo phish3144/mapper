@@ -466,27 +466,53 @@ export async function fetchRouteStops(routeId: string): Promise<RouteStop[]> {
   return (data ?? []) as RouteStop[]
 }
 
+/**
+ * Ein Ort, wie ihn ein Stopp speichert.
+ *
+ * Koordinate und Beschriftung wandern MIT in den Stopp, statt nur verlinkt zu
+ * werden. Das ist der ganze Unterschied: eine Tour bleibt danach fahrbar, auch
+ * wenn der Standort spaeter geloescht wird.
+ */
+export interface StopPlace {
+  locationId: string | null
+  lat: number
+  lng: number
+  label: string | null
+}
+
+/** Aus einem Standort den Ort machen, den der Stopp mitnimmt. */
+export function placeOfLocation(location: MapLocation): StopPlace {
+  return { locationId: location.id, lat: location.lat, lng: location.lng, label: location.name }
+}
+
+function stopRow(routeId: string, place: StopPlace, position: number) {
+  return {
+    route_id: routeId,
+    location_id: place.locationId,
+    lat: place.lat,
+    lng: place.lng,
+    label: place.label,
+    position,
+  }
+}
+
 export async function addRouteStop(
   routeId: string,
-  locationId: string,
+  place: StopPlace,
   position: number,
 ): Promise<RouteStop> {
   return unwrap(
-    await supabase
-      .from('route_stops')
-      .insert({ route_id: routeId, location_id: locationId, position })
-      .select('*')
-      .single(),
+    await supabase.from('route_stops').insert(stopRow(routeId, place, position)).select('*').single(),
   ) as RouteStop
 }
 
-export async function addRouteStops(routeId: string, locationIds: string[], startPosition = 0): Promise<RouteStop[]> {
-  if (locationIds.length === 0) return []
-  const rows = locationIds.map((location_id, i) => ({
-    route_id: routeId,
-    location_id,
-    position: startPosition + i,
-  }))
+export async function addRouteStops(
+  routeId: string,
+  places: StopPlace[],
+  startPosition = 0,
+): Promise<RouteStop[]> {
+  if (places.length === 0) return []
+  const rows = places.map((place, i) => stopRow(routeId, place, startPosition + i))
   const { data, error } = await supabase.from('route_stops').insert(rows).select('*')
   if (error) throw error
   return (data ?? []) as RouteStop[]
@@ -502,11 +528,10 @@ export interface AffectedRoute {
 /**
  * Welche Routen haengen an diesen Standorten?
  *
- * Gebraucht VOR dem Loeschen. route_stops.location_id loescht kaskadierend:
- * ein geloeschter Standort verschwindet lautlos aus jeder Route, in der er
- * vorkam. Ohne diese Abfrage koennte die Oberflaeche nur allgemein warnen -
- * und genau das hat schon einmal dazu gefuehrt, dass eine fertig geplante
- * Tour nach einem Aufraeumen leer war und wie ein Speicherfehler aussah.
+ * Gebraucht VOR dem Loeschen. Seit 0011 reisst ein geloeschter Standort seine
+ * Stopps nicht mehr mit - die Verknuepfung wird nur geleert. Die Warnung ist
+ * damit keine Verlustmeldung mehr, sondern eine Auskunft: diese Touren
+ * arbeiten mit den Standorten, die gleich verschwinden.
  *
  * Die Zaehlung laeuft ueber die Stoppliste und nicht ueber den Zustand im
  * Browser: dort stehen nur die Routen, die schon einmal geoeffnet wurden.
@@ -604,9 +629,9 @@ export async function reorderRouteStops(routeId: string, orderedStopIds: string[
 }
 
 /** Ersetzt die Stoppliste vollstaendig — fuer regelbasierte Routen. */
-export async function replaceRouteStops(routeId: string, locationIds: string[]): Promise<RouteStop[]> {
+export async function replaceRouteStops(routeId: string, places: StopPlace[]): Promise<RouteStop[]> {
   await clearRouteStops(routeId)
-  return addRouteStops(routeId, locationIds, 0)
+  return addRouteStops(routeId, places, 0)
 }
 
 // ---------------------------------------------------------------------------

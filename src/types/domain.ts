@@ -162,7 +162,19 @@ export interface Route {
 export interface RouteStop {
   id: string
   route_id: string
-  location_id: string
+  /**
+   * Verknuepfter Standort - oder null, wenn es ihn nicht mehr gibt.
+   *
+   * Bewusst nur eine Verknuepfung: der Stopp traegt Koordinate und
+   * Beschriftung selbst. Frueher hing er am Standort und wurde mit ihm
+   * geloescht, wodurch fertig geplante Touren lautlos leer wurden.
+   */
+  location_id: string | null
+  /** Eigene Koordinate. Ueberlebt das Loeschen des Standorts. */
+  lat: number
+  lng: number
+  /** Beschriftung beim Hinzufuegen; Kopie, damit die Tour lesbar bleibt. */
+  label: string | null
   position: number
   service_minutes_override: number | null
   note: string | null

@@ -47,7 +47,13 @@ export default function RouteLayer() {
           position={[entry.location.lat, entry.location.lng]}
           icon={createStopIcon(i + 1, violationByIndex.get(i) === true)}
           zIndexOffset={1000}
-          eventHandlers={{ click: () => selectLocation(entry.location.id) }}
+          eventHandlers={{
+            // Ein Stopp ohne Standort hat nichts, was ausgewaehlt werden
+            // koennte - der Klick darf die Auswahl dann nicht leeren.
+            click: () => {
+              if (entry.location.id !== '') selectLocation(entry.location.id)
+            },
+          }}
         />
       ))}
     </>

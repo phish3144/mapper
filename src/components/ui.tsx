@@ -382,17 +382,20 @@ export function GroupStripe({ colors, label }: { colors: readonly string[]; labe
 }
 
 /**
- * Nennt die Touren, die beim Loeschen von Standorten Stopps verlieren.
+ * Nennt die Touren, in denen die zu loeschenden Standorte als Stopp vorkommen.
  *
- * Konkret und nicht allgemein: "verschwindet auch aus allen Routen" liest sich
- * wie eine Formalie. Wer dagegen liest, dass "Sondertour HaMu MV" dabei drei
- * von vier Stopps verliert, entscheidet anders.
+ * Seit die Stopps ihre Koordinate selbst tragen, gehen sie beim Loeschen NICHT
+ * mehr verloren - sie verlieren nur ihre Verknuepfung und heissen dann nach
+ * der gespeicherten Beschriftung weiter. Der Hinweis bleibt trotzdem, denn die
+ * Tour ist danach eine andere: ihre Stopps lassen sich nicht mehr ueber den
+ * Standort pflegen. Was hier stand, als das Loeschen die Stopps noch
+ * mitnahm, waere jetzt schlicht falsch.
  */
 export function RouteImpactWarning({ routes }: { routes: readonly AffectedRoute[] }) {
   if (routes.length === 0) return null
   return (
     <div className="route-impact">
-      <strong>Diese Touren verlieren dabei Stopps:</strong>
+      <strong>Diese Touren verwenden die Standorte:</strong>
       <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
         {routes.map((r) => (
           <li key={r.routeId}>
@@ -401,7 +404,8 @@ export function RouteImpactWarning({ routes }: { routes: readonly AffectedRoute[
         ))}
       </ul>
       <div className="small muted" style={{ marginTop: 6 }}>
-        Die Touren bleiben bestehen, die betroffenen Stopps sind danach weg.
+        Die Stopps bleiben erhalten und behalten ihre Adresse — sie sind danach
+        aber nicht mehr mit einem Standort verknuepft.
       </div>
     </div>
   )

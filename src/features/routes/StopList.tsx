@@ -82,13 +82,18 @@ function SortableStop({
         className="grow truncate"
         style={{ background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', padding: 0, font: 'inherit', color: 'inherit' }}
         onClick={() => {
-          selectLocation(entry.location.id)
+          // Leere Kennung heisst: der Standort ist weg. Dann gibt es nichts
+          // auszuwaehlen, wohl aber einen Ort zum Hinfliegen.
+          if (entry.location.id !== '') selectLocation(entry.location.id)
           focusPoint({ lat: entry.location.lat, lng: entry.location.lng })
         }}
       >
         <span className="row" style={{ gap: 6 }}>
           <GroupStripe colors={colors} />
           <span className="truncate">{entry.location.name}</span>
+          {entry.location.id === '' && (
+            <Badge tone="warning">Standort geloescht</Badge>
+          )}
         </span>
         <span className="stop-time">
           {scheduled?.arrival ? (

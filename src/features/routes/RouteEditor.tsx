@@ -70,7 +70,7 @@ export default function RouteEditor({ route, onBack }: { route: Route; onBack: (
     setApplying(true)
     try {
       const matched = applyRule(route.rule, locations, membership)
-      await db.replaceRouteStops(route.id, matched.map((l) => l.id))
+      await db.replaceRouteStops(route.id, matched.map(db.placeOfLocation))
       await loadStops(route.id)
       notify('success', `${pluralize(matched.length, 'Stopp', 'Stopps')} aus der Regel uebernommen.`)
     } catch (e) {

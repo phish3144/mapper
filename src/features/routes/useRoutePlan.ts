@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useStore, locationById } from '@/lib/store'
+import { stopPlace } from '@/lib/stops'
 import * as db from '@/lib/db'
 import { getRouteProvider, haversineMatrix } from '@/lib/routing'
 import type { TravelMatrix } from '@/lib/routing/types'
@@ -62,10 +63,12 @@ export function useRoutePlan(routeId: string | null): RoutePlan {
     const stops = stopsByRoute[routeId] ?? []
     const out: { stop: RouteStop; location: MapLocation }[] = []
     for (const stop of [...stops].sort((a, b) => a.position - b.position)) {
-      const location = locIndex.get(stop.location_id)
-      // Ein Stopp ohne sichtbaren Standort kommt vor: die Sichtbarkeit des
-      // Standorts kann enger sein als die der Route.
-      if (location) out.push({ stop, location })
+      // Frueher wurde ein Stopp ohne sichtbaren Standort hier stillschweigend
+      // FALLENGELASSEN. Genau das liess Touren lueckenhaft erscheinen, ohne
+      // dass irgendwo etwas fehlte. Jetzt traegt der Stopp seine Koordinate
+      // selbst; fehlt der Standort, springt ein Platzhalter ein und der Stopp
+      // bleibt Teil der Tour.
+      out.push({ stop, location: stopPlace(stop, locIndex.get(stop.location_id ?? '')) })
     }
     return out
   }, [routeId, stopsByRoute, locIndex])

@@ -338,7 +338,7 @@ function LocationPopup({ location }: { location: MapLocation }) {
       if (!useStore.getState().stopsByRoute[activeRouteId]) await loadStops(activeRouteId)
       const stops = useStore.getState().stopsByRoute[activeRouteId] ?? []
       const position = stops.reduce((max, stop) => Math.max(max, stop.position), -1) + 1
-      await db.addRouteStop(activeRouteId, location.id, position)
+      await db.addRouteStop(activeRouteId, db.placeOfLocation(location), position)
       await loadStops(activeRouteId)
       notify('success', `"${location.name}" zur Route hinzugefuegt.`)
     } catch (error) {

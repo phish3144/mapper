@@ -33,11 +33,11 @@ import {
   locationName,
   needsReview,
   normalizeAddressKey,
-  orderedUnique,
   parseAddressLines,
   tourName,
 } from './quickTour'
 import type { ResolvedLine } from './quickTour'
+import { stopPlace } from '@/lib/stops'
 import type { LatLng, MapLocation, Route, RouteStop } from '@/types/domain'
 
 const START_ADDRESS_KEY = 'mapper.startAddress'
@@ -416,15 +416,30 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
       }
 
       await useStore.getState().loadStops(routeId)
-      const schonDrin = new Set((useStore.getState().stopsByRoute[routeId] ?? []).map((s) => s.location_id))
-      const neueStopps = orderedUnique(
-        aufgeloest.map((l) => l.locationId).filter((id): id is string => id !== null && !schonDrin.has(id)),
+      const vorhandene = useStore.getState().stopsByRoute[routeId] ?? []
+      // Doppelte erkennen: ueber den Standort, wo es einen gibt, sonst ueber
+      // die Koordinate - ein Stopp ohne Standort hat keine Kennung.
+      const schonDrin = new Set(
+        vorhandene.map((s) => s.location_id ?? `${s.lat.toFixed(5)},${s.lng.toFixed(5)}`),
       )
+      const neueStopps: db.StopPlace[] = []
+      for (const l of aufgeloest) {
+        // Der Punkt kommt aus der Zeile selbst und nicht aus dem Standort:
+        // so bekommt der Stopp seine Koordinate auch dann, wenn das Anlegen
+        // des Standorts danebengegangen ist.
+        if (l.point === null) continue
+        const schluessel = l.locationId ?? `${l.point.lat.toFixed(5)},${l.point.lng.toFixed(5)}`
+        if (schonDrin.has(schluessel)) continue
+        schonDrin.add(schluessel)
+        neueStopps.push({
+          locationId: l.locationId,
+          lat: l.point.lat,
+          lng: l.point.lng,
+          label: l.label ?? l.raw,
+        })
+      }
       if (neueStopps.length > 0) {
-        const hoechste = (useStore.getState().stopsByRoute[routeId] ?? []).reduce(
-          (max, s) => Math.max(max, s.position),
-          -1,
-        )
+        const hoechste = vorhandene.reduce((max, s) => Math.max(max, s.position), -1)
         await db.addRouteStops(routeId, neueStopps, hoechste + 1)
         await useStore.getState().loadStops(routeId)
       }
@@ -435,10 +450,9 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
       for (const stop of [...(useStore.getState().stopsByRoute[routeId] ?? [])].sort(
         (a, b) => a.position - b.position,
       )) {
-        const location = nachId.get(stop.location_id)
-        // Ein Stopp ohne sichtbaren Standort kommt vor - dann fehlt er hier,
-        // statt die Matrixindizes stillschweigend zu verschieben.
-        if (location) stopps.push({ stop, location })
+        // Auch ohne Standort bleibt der Stopp in der Rechnung - sonst
+        // verschoeben sich die Matrixindizes gegen die Stoppliste.
+        stopps.push({ stop, location: stopPlace(stop, nachId.get(stop.location_id ?? '')) })
       }
 
       let geschaetzt = false
