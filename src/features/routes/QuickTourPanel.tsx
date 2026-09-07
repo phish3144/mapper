@@ -350,6 +350,7 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
     const controller = new AbortController()
     abortRef.current = controller
     setRunning(true)
+    setProgress({ done: 0, total: 0 })
 
     try {
       // --- Standorte anlegen -------------------------------------------------
@@ -661,13 +662,18 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
           }}
         />
 
-        {vorschau !== null && !running && (
+        {vorschau !== null && (
           <div className="tour-vorschau">
             <div className="row-between" style={{ marginBottom: 6 }}>
               <strong className="small">
                 Gefunden ({vorschau.lines.filter(uebernehmbar).length})
               </strong>
-              <button type="button" className="linkish small" onClick={alleUmschalten}>
+              <button
+                type="button"
+                className="linkish small"
+                disabled={running}
+                onClick={alleUmschalten}
+              >
                 {alleGewaehlt ? 'Keine' : 'Alle'}
               </button>
             </div>
@@ -685,7 +691,7 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
                     <input
                       type="checkbox"
                       checked={gewaehlt}
-                      disabled={!moeglich}
+                      disabled={!moeglich || running}
                       onChange={() => zeileUmschalten(i)}
                     />
                     <span className="tour-zeile-text">
@@ -713,19 +719,22 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
         )}
 
         <div className="row" style={{ gap: 6, marginTop: 8 }}>
-          {vorschau !== null && !running ? (
+          {vorschau !== null ? (
             <>
               <Button
                 variant="primary"
                 block
-                disabled={anzahlGewaehlt === 0}
+                busy={running}
+                disabled={running || anzahlGewaehlt === 0}
                 onClick={() => void uebernehmen()}
               >
-                {anzahlGewaehlt === 0
-                  ? 'Nichts ausgewaehlt'
-                  : `${pluralize(anzahlGewaehlt, 'Adresse', 'Adressen')} uebernehmen`}
+                {running
+                  ? 'Tour wird gebaut …'
+                  : anzahlGewaehlt === 0
+                    ? 'Nichts ausgewaehlt'
+                    : `${pluralize(anzahlGewaehlt, 'Adresse', 'Adressen')} uebernehmen`}
               </Button>
-              <Button size="sm" onClick={verwerfen}>
+              <Button size="sm" disabled={running} onClick={verwerfen}>
                 Verwerfen
               </Button>
             </>
@@ -754,7 +763,9 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
           </div>
         )}
 
-        {running && (
+        {/* Nur die Adresssuche zaehlt Zeilen; beim Uebernehmen stuende hier
+            sonst der eingefrorene Endstand des vorigen Schrittes. */}
+        {running && progress.total > 0 && (
           <div style={{ marginTop: 8 }}>
             <div className="row-between small muted" style={{ marginBottom: 4 }}>
               <span>
