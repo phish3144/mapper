@@ -115,12 +115,25 @@ export function readStoredBaseLayer(): BaseLayerId {
   return stored !== null && stored in BASE_LAYERS ? (stored as BaseLayerId) : 'map'
 }
 
+const PLZ_KEY = 'mapper.plzLayer'
+
+export function readStoredPlz(): boolean {
+  return localStorage.getItem(PLZ_KEY) === '1'
+}
+
 export interface MapControlsProps {
   baseLayer: BaseLayerId
   onBaseLayerChange: (id: BaseLayerId) => void
+  plzOn: boolean
+  onPlzChange: (on: boolean) => void
 }
 
-export default function MapControls({ baseLayer, onBaseLayerChange }: MapControlsProps) {
+export default function MapControls({
+  baseLayer,
+  onBaseLayerChange,
+  plzOn,
+  onPlzChange,
+}: MapControlsProps) {
   const focusBounds = useUi((s) => s.focusBounds)
 
   const visible = useVisibleLocations()
@@ -128,6 +141,11 @@ export default function MapControls({ baseLayer, onBaseLayerChange }: MapControl
   function chooseLayer(id: BaseLayerId) {
     localStorage.setItem(BASE_LAYER_KEY, id)
     onBaseLayerChange(id)
+  }
+
+  function schaltePlz(on: boolean) {
+    localStorage.setItem(PLZ_KEY, on ? '1' : '0')
+    onPlzChange(on)
   }
 
   return (
@@ -149,6 +167,18 @@ export default function MapControls({ baseLayer, onBaseLayerChange }: MapControl
             </Button>
           )
         })}
+      </div>
+
+      <div className="panel" style={{ padding: 3 }}>
+        <Button
+          size="sm"
+          variant={plzOn ? 'primary' : 'ghost'}
+          aria-pressed={plzOn}
+          title="Umrisse der zweistelligen PLZ-Leitregionen (01 bis 99) einblenden"
+          onClick={() => schaltePlz(!plzOn)}
+        >
+          PLZ-Regionen
+        </Button>
       </div>
 
       <div className="panel" style={{ padding: 3 }}>

@@ -17,10 +17,12 @@ import RoutePreviewLayer from '@/features/search/RoutePreviewLayer'
 import MapControls, {
   BASE_LAYERS,
   readStoredBaseLayer,
+  readStoredPlz,
   type BaseLayer,
   type BaseLayerId,
 } from './MapControls'
 import MarkerLayer, { useVisibleLocations } from './MarkerLayer'
+import PlzLayer from './PlzLayer'
 
 /** Startausschnitt: ganz Deutschland. */
 const GERMANY_CENTER: LatLngTuple = [51.16, 10.45]
@@ -32,6 +34,8 @@ const BOUNDS_PADDING: [number, number] = [48, 48]
 
 export default function MapView() {
   const [baseLayer, setBaseLayer] = useState<BaseLayerId>(readStoredBaseLayer)
+  const [plzOn, setPlzOn] = useState<boolean>(readStoredPlz)
+  const notify = useStore((s) => s.notify)
   const pickingPoint = useUi((s) => s.pickingPoint)
   const setPickingPoint = useUi((s) => s.setPickingPoint)
   const loading = useStore((s) => s.loadingWorkspace)
@@ -67,6 +71,8 @@ export default function MapView() {
         {/* Unten links, damit oben Platz fuer Hinweis und Bedienleiste bleibt. */}
         <ZoomControl position="bottomleft" />
 
+        {/* Ganz unten: die Regionen sind Hintergrund, nicht Vordergrund. */}
+        {plzOn && <PlzLayer onError={(text) => notify('error', text)} />}
         <MarkerLayer />
         <RouteLayer />
         <RoutePreviewLayer />
@@ -98,7 +104,12 @@ export default function MapView() {
         </div>
       )}
 
-      <MapControls baseLayer={baseLayer} onBaseLayerChange={setBaseLayer} />
+      <MapControls
+        baseLayer={baseLayer}
+        onBaseLayerChange={setBaseLayer}
+        plzOn={plzOn}
+        onPlzChange={setPlzOn}
+      />
     </>
   )
 }

@@ -110,6 +110,21 @@
 }
 .marker-cluster div { font-weight: 700; }
 
+/* Nummer einer PLZ-Leitregion. Kein Kasten, nur Text mit heller Aura: bei 95
+   Beschriftungen auf einmal wuerden 95 Kaestchen die Karte zumauern. Die Aura
+   traegt den Text auf hellen wie dunklen Kacheln. */
+.plz-label {
+  display: block;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #5b3fa8;
+  text-shadow:
+    0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff, 0 0 6px #fff;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
 /* Nummerierte Nadeln der Routenstopps. */
 .stop-pin {
   width: 24px; height: 24px;
