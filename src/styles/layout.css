@@ -271,7 +271,16 @@
   background: var(--bg);
 }
 .auth-card { width: 100%; max-width: 380px; padding: 26px; }
-.auth-title { text-align: center; margin-bottom: 4px; }
+/* Flex statt text-align: neben dem Titel steht das Zeichen als Bild, und
+   das soll auf der Grundlinie der Schrift sitzen, nicht darunter. Reine
+   Textueberschriften ("Noch kein Arbeitsbereich") zentriert es genauso. */
+.auth-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
 .auth-sub { text-align: center; color: var(--text-muted); font-size: 13px; margin-bottom: 20px; }
 
 /* --- Schmale Bildschirme ------------------------------------------------- */

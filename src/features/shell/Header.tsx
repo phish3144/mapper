@@ -1,6 +1,7 @@
 import { useUi } from '@/lib/uiStore'
 import { useStore } from '@/lib/store'
 import { Tabs, IconButton } from '@/components/ui'
+import BrandMark from '@/components/BrandMark'
 import WorkspaceMenu from '@/features/workspace/WorkspaceMenu'
 import UserMenu from '@/features/workspace/UserMenu'
 import AddressSearchBar from '@/features/search/AddressSearchBar'
@@ -21,7 +22,8 @@ export default function Header() {
   return (
     <header className="app-header">
       <span className="app-brand">
-        <span aria-hidden="true">📍</span> mapper
+        <BrandMark size={18} />
+        mapper
       </span>
 
       <WorkspaceMenu />

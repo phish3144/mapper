@@ -1,0 +1,16 @@
+{
+  "name": "mapper — Standorte & Routen",
+  "short_name": "mapper",
+  "description": "Standorte nach Kategorie und Gruppe auf der Karte verwalten und Routen planen.",
+  "lang": "de",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    { "src": "./favicon.svg", "type": "image/svg+xml", "sizes": "any" },
+    { "src": "./icon-192.png", "type": "image/png", "sizes": "192x192" },
+    { "src": "./icon-512.png", "type": "image/png", "sizes": "512x512" }
+  ]
+}

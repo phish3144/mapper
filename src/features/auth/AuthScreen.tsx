@@ -9,6 +9,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useStore } from '@/lib/store'
 import { describeError, supabase } from '@/lib/supabase'
 import { Button, Tabs, TextField } from '@/components/ui'
+import BrandMark from '@/components/BrandMark'
 
 type Mode = 'signin' | 'signup'
 
@@ -205,7 +206,8 @@ export default function AuthScreen() {
     <div className="auth-screen">
       <div className="auth-card panel">
         <h1 className="auth-title">
-          <span aria-hidden="true">📍</span> mapper
+          <BrandMark size={26} />
+          mapper
         </h1>
         <p className="auth-sub">Standorte pflegen, gruppieren und Routen planen.</p>
 
