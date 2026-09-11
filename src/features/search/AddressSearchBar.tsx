@@ -12,7 +12,7 @@
  * gegen ihn misst.
  */
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react'
-import { Badge, EmptyState, IconButton, Spinner } from '@/components/ui'
+import { Badge, Button, EmptyState, IconButton, Spinner } from '@/components/ui'
 import {
   createAddressSearch,
   type AddressMatch,
@@ -25,6 +25,7 @@ import { symbolEmoji } from '@/lib/symbols'
 import { useUi } from '@/lib/uiStore'
 import type { MapLocation } from '@/types/domain'
 import NearbyPanel from '@/features/search/NearbyPanel'
+import RouteTargetPicker, { type Ziel } from '@/features/search/RouteTargetPicker'
 
 /** Kuerzere Eingaben treffen fast alles und kosten den Geocoder nur Anfragen. */
 const MIN_QUERY_LENGTH = 3
@@ -92,6 +93,8 @@ export default function AddressSearchBar() {
   // bei jedem Aufruf neu und triebe React in eine Endlosschleife.
   const searchPoint = useUi((s) => s.searchPoint)
   const setSearchPoint = useUi((s) => s.setSearchPoint)
+  const setRoutePreview = useUi((s) => s.setRoutePreview)
+  const focusBounds = useUi((s) => s.focusBounds)
   const focusPoint = useUi((s) => s.focusPoint)
   const selectLocation = useUi((s) => s.selectLocation)
   // Einzeln auswaehlen: ein Selektor, der ein neues Objekt baut, loest in
@@ -112,6 +115,8 @@ export default function AddressSearchBar() {
   const [activeIndex, setActiveIndex] = useState(-1)
   /** Ist der Text im Feld eine frische Anfrage oder die uebernommene Adresse? */
   const [retyped, setRetyped] = useState(false)
+  /** Ist der Zielwaehler offen? Nur sinnvoll, solange ein Startpunkt steht. */
+  const [zielWaehlen, setZielWaehlen] = useState(false)
 
   const rootRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -209,6 +214,7 @@ export default function AddressSearchBar() {
   function runSearch(value: string): void {
     setQuery(value)
     setRetyped(true)
+    setZielWaehlen(false)
     setActiveIndex(-1)
     setOpen(true)
 
@@ -256,9 +262,25 @@ export default function AddressSearchBar() {
     )
   }
 
+  function waehleZiel(ziel: Ziel): void {
+    if (!searchPoint) return
+    setRoutePreview({
+      from: { lat: searchPoint.lat, lng: searchPoint.lng },
+      fromLabel: searchPoint.label.trim() || 'Gesuchte Adresse',
+      to: ziel.point,
+      toLabel: ziel.label,
+      locationId: ziel.locationId,
+    })
+    focusBounds([{ lat: searchPoint.lat, lng: searchPoint.lng }, ziel.point])
+    setZielWaehlen(false)
+    setOpen(false)
+  }
+
   function applyHit(hit: AddressMatch): void {
     search.cancel()
     deepSearch.cancel()
+    // Ein neuer Startpunkt macht eine offene Zielwahl gegenstandslos.
+    setZielWaehlen(false)
     setSearchPoint({ lat: hit.lat, lng: hit.lng, label: hit.label })
     focusPoint({ lat: hit.lat, lng: hit.lng }, FOCUS_ZOOM)
     setQuery(shortName(hit.label))
@@ -285,6 +307,7 @@ export default function AddressSearchBar() {
 
   function clearAll(): void {
     clearInput()
+    setZielWaehlen(false)
     setSearchPoint(null)
     setOpen(false)
     inputRef.current?.focus()
@@ -484,10 +507,7 @@ export default function AddressSearchBar() {
                             onClick={() => applyHit(hit)}
                           >
                             <span aria-hidden="true">📍</span>
-                            <span
-                              className="addr-hit-main"
-                              style={{ display: 'flex', flexDirection: 'column' }}
-                            >
+                            <span className="addr-hit-main">
                               <span className="addr-hit-title truncate">{shortName(hit.label)}</span>
                               {detail !== '' && (
                                 <span className="addr-hit-sub truncate">{detail}</span>
@@ -509,7 +529,27 @@ export default function AddressSearchBar() {
               </>
             )}
 
-            {mode === 'nearby' && searchPoint !== null && <NearbyPanel point={searchPoint} />}
+            {mode === 'nearby' && searchPoint !== null && !zielWaehlen && (
+              <>
+                {/* Ganz oben: die Frage "wie komme ich von hier wohin?" ist
+                    der haeufigere Grund, eine Adresse zu suchen, als die
+                    Frage "was liegt hier herum?". */}
+                <div style={{ padding: '7px 9px 3px' }}>
+                  <Button size="sm" variant="primary" block onClick={() => setZielWaehlen(true)}>
+                    Route zu …
+                  </Button>
+                </div>
+                <NearbyPanel point={searchPoint} />
+              </>
+            )}
+
+            {mode === 'nearby' && searchPoint !== null && zielWaehlen && (
+              <RouteTargetPicker
+                origin={{ lat: searchPoint.lat, lng: searchPoint.lng }}
+                onPick={waehleZiel}
+                onCancel={() => setZielWaehlen(false)}
+              />
+            )}
           </div>
         </div>
       )}

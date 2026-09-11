@@ -271,6 +271,41 @@ a:hover { text-decoration: underline; }
   text-decoration: underline;
 }
 
+/* Ergebnisleiste zur gezeigten Strecke. Oben mittig ueber der Karte, damit
+   sie weder die Ebenenschalter (oben rechts) noch den Zoom (unten links)
+   verdeckt. */
+.route-bar {
+  position: absolute;
+  z-index: 400;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 9px;
+  max-width: min(560px, calc(100% - 24px));
+}
+/* min-width 0, sonst sprengt ein langer Standortname die Leiste, statt zu kuerzen. */
+.route-bar-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+
+/* Auf schmalen Geraeten ist die Mitte zu eng - dann ueber die volle Breite. */
+@media (max-width: 640px) {
+  .route-bar {
+    left: 12px;
+    right: 12px;
+    transform: none;
+    max-width: none;
+  }
+}
+
+.addr-route-hint {
+  display: block;
+  margin-top: 2px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
 .route-impact {
   margin-top: 10px;
   padding: 8px 10px;

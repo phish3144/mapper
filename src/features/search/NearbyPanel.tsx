@@ -80,6 +80,9 @@ function NearbyRow({
     sub,
     `Luftlinie ${air} Richtung ${heading}`,
     entry.travelSec === null ? '' : `Fahrzeit ${formatDuration(entry.travelSec)}`,
+    // Was der Klick TUT, gehoert in den Namen der Schaltflaeche. Ohne das
+    // hiesse sie nur "Bisol GmbH" und niemand wuesste, was passiert.
+    'Route dorthin anzeigen',
   ]
     .filter((part) => part !== '')
     .join(', ')
@@ -96,7 +99,7 @@ function NearbyRow({
         <GroupStripe colors={colors} />
       </span>
 
-      <span className="addr-hit-main" style={{ display: 'flex', flexDirection: 'column' }}>
+      <span className="addr-hit-main">
         <span className="addr-hit-title truncate">{location.name}</span>
         <span className="addr-hit-sub truncate">{sub}</span>
       </span>
@@ -107,6 +110,10 @@ function NearbyRow({
         {entry.travelSec !== null && (
           <span style={{ display: 'block' }}>Fahrt {formatDuration(entry.travelSec)}</span>
         )}
+        {/* Kein eigener Knopf: die Zeile IST schon einer, und ein Knopf im
+            Knopf waere ungueltig. Der Hinweis sagt trotzdem, was ein Klick
+            bewirkt. */}
+        <span className="addr-route-hint">Route →</span>
       </span>
     </button>
   )

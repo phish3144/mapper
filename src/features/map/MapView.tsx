@@ -14,6 +14,7 @@ import { useUi } from '@/lib/uiStore'
 import RouteLayer from '@/features/routes/RouteLayer'
 import SearchMarker from '@/features/search/SearchMarker'
 import RoutePreviewLayer from '@/features/search/RoutePreviewLayer'
+import RouteBar from '@/features/search/RouteBar'
 import MapControls, {
   BASE_LAYERS,
   readStoredBaseLayer,
@@ -103,6 +104,8 @@ export default function MapView() {
           )}
         </div>
       )}
+
+      <RouteBar />
 
       <MapControls
         baseLayer={baseLayer}

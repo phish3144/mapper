@@ -60,7 +60,11 @@ export interface RoutePreview {
   fromLabel: string
   to: LatLng
   toLabel: string
-  locationId: string
+  /**
+   * Der Standort hinter dem Ziel - null, wenn das Ziel eine gesuchte Adresse
+   * ist oder Start und Ziel getauscht wurden.
+   */
+  locationId: string | null
 }
 
 interface UiState {
