@@ -20,6 +20,14 @@ import {
   type GeocodeProblem,
 } from '@/lib/geocode'
 import { pluralize } from '@/lib/format'
+import {
+  clearHistory,
+  entryKey,
+  forgetSearch,
+  readHistory,
+  rememberSearch,
+  type SearchEntry,
+} from '@/lib/searchHistory'
 import { useStore } from '@/lib/store'
 import { symbolEmoji } from '@/lib/symbols'
 import { useUi } from '@/lib/uiStore'
@@ -57,17 +65,50 @@ function detailName(label: string): string {
   return comma === -1 ? '' : label.slice(comma + 1).trim()
 }
 
-type PopMode = 'hits' | 'hint' | 'nearby' | 'none'
+type PopMode = 'hits' | 'hint' | 'nearby' | 'history' | 'none'
 
 /**
  * Was die Aufklappflaeche zeigt. Frisch getippter Text gewinnt immer gegen
  * einen bereits gewaehlten Punkt: sonst suchte man ins Leere, waehrend
  * darunter die Umgebung der alten Adresse steht.
+ *
+ * Ein leergeraeumtes Feld zeigt den Verlauf - auch dann, wenn noch ein Punkt
+ * gewaehlt ist. Wer den Text loescht, will etwas anderes suchen, und die
+ * naechstliegende Antwort darauf ist das, was er zuletzt gesucht hat.
  */
-function popMode(trimmed: string, retyped: boolean, hasPoint: boolean): PopMode {
+function popMode(
+  trimmed: string,
+  retyped: boolean,
+  hasPoint: boolean,
+  hasHistory: boolean,
+): PopMode {
   if (retyped && trimmed.length >= MIN_QUERY_LENGTH) return 'hits'
   if (retyped && trimmed.length > 0) return 'hint'
-  return hasPoint ? 'nearby' : 'none'
+  if (retyped && hasHistory) return 'history'
+  if (hasPoint) return 'nearby'
+  return hasHistory ? 'history' : 'none'
+}
+
+/**
+ * Ein Verlaufseintrag ist ein Adresstreffer - nur einer, den es schon gab.
+ * Als solcher gedeutet laeuft er durch dieselbe Uebernahme, dieselbe
+ * Tastaturbedienung und dieselbe Darstellung wie ein frischer Treffer.
+ */
+function entryAsMatch(entry: SearchEntry): AddressMatch {
+  return {
+    label: entry.label,
+    lat: entry.lat,
+    lng: entry.lng,
+    type: null,
+    boundingBox: null,
+    houseNumber: null,
+    road: null,
+    // Die Genauigkeit von damals ist nicht gespeichert. Sie wird fuer
+    // Verlaufszeilen auch nicht gelesen - sie steuert nur `note`, und der
+    // Hinweis gehoert an den frischen Treffer, nicht an die Erinnerung.
+    precision: 'exact',
+    note: null,
+  }
 }
 
 /**
@@ -116,6 +157,12 @@ export default function AddressSearchBar() {
   const [retyped, setRetyped] = useState(false)
   /** Ist der Zielwaehler offen? Nur sinnvoll, solange ein Startpunkt steht. */
   const [zielWaehlen, setZielWaehlen] = useState(false)
+  /**
+   * Der Suchverlauf. Einmal beim Aufbau gelesen und danach im Zustand
+   * gehalten: geschrieben wird er nur hier, ein zweiter Leser waere also
+   * nur ein zweiter Weg, ihn falsch zu haben.
+   */
+  const [history, setHistory] = useState<SearchEntry[]>(readHistory)
 
   const rootRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -147,9 +194,20 @@ export default function AddressSearchBar() {
   )
 
   const trimmed = query.trim()
-  const mode = popMode(trimmed, retyped, searchPoint !== null)
+  const mode = popMode(trimmed, retyped, searchPoint !== null, history.length > 0)
   const showPop = open && mode !== 'none'
-  const showList = mode === 'hits' && hits.length > 0
+
+  /**
+   * Die Zeilen, durch die die Pfeiltasten laufen: gefundene Adressen oder
+   * der Verlauf, je nachdem was gerade dasteht. Eine Liste, eine
+   * Tastaturbedienung - sonst haette der Verlauf eine eigene, die man
+   * getrennt pflegen und getrennt vergessen kann.
+   */
+  const options = useMemo<AddressMatch[]>(
+    () => (mode === 'hits' ? hits : mode === 'history' ? history.map(entryAsMatch) : []),
+    [mode, hits, history],
+  )
+  const showList = options.length > 0
   const showClear = query !== '' || searchPoint !== null
   /**
    * Die stehende Liste gehoert noch zur vorigen Anfrage. Sie bleibt sichtbar,
@@ -282,6 +340,9 @@ export default function AddressSearchBar() {
     // Ein neuer Startpunkt macht eine offene Zielwahl gegenstandslos.
     setZielWaehlen(false)
     setSearchPoint({ lat: hit.lat, lng: hit.lng, label: hit.label })
+    // Erst hier merken, nicht beim Tippen: der Verlauf soll die Orte fuehren,
+    // zu denen jemand wirklich wollte, nicht jede angetippte Zeichenfolge.
+    setHistory(rememberSearch({ lat: hit.lat, lng: hit.lng, label: hit.label }))
     focusPoint({ lat: hit.lat, lng: hit.lng }, FOCUS_ZOOM)
     setQuery(shortName(hit.label))
     setHits([])
@@ -291,6 +352,19 @@ export default function AddressSearchBar() {
     setRetyped(false)
     // Offen lassen: an der Stelle der Trefferliste steht jetzt die Umgebung.
     setOpen(true)
+    inputRef.current?.focus()
+  }
+
+  /** Eine einzelne Zeile vergessen. Der Fokus bleibt im Feld. */
+  function vergiss(entry: SearchEntry): void {
+    setHistory(forgetSearch(entryKey(entry)))
+    setActiveIndex(-1)
+    inputRef.current?.focus()
+  }
+
+  function verlaufLeeren(): void {
+    setHistory(clearHistory())
+    setActiveIndex(-1)
     inputRef.current?.focus()
   }
 
@@ -314,11 +388,11 @@ export default function AddressSearchBar() {
   }
 
   function moveActive(step: number): void {
-    if (hits.length === 0) return
+    if (options.length === 0) return
     setActiveIndex((current) => {
       const next = current + step
-      if (next < 0) return hits.length - 1
-      if (next >= hits.length) return 0
+      if (next < 0) return options.length - 1
+      if (next >= options.length) return 0
       return next
     })
   }
@@ -340,7 +414,16 @@ export default function AddressSearchBar() {
       // Ohne Hervorhebung gilt der erste Treffer — aber nur, solange er zur
       // getippten Anfrage gehoert. Eine hervorgehobene Zeile hat der Nutzer
       // dagegen gerade gesehen und gewaehlt.
-      const hit = activeIndex >= 0 ? hits[activeIndex] : stale ? undefined : hits[0]
+      //
+      // Im Verlauf gilt das NICHT: dort steht kein getippter Text, auf den
+      // sich ein "erster Treffer" beziehen koennte. Enter im leeren Feld
+      // duerfte sonst an einen Ort springen, den niemand gerade gewaehlt hat.
+      const hit =
+        activeIndex >= 0
+          ? options[activeIndex]
+          : mode === 'history' || stale
+            ? undefined
+            : options[0]
       if (!hit) return
       event.preventDefault()
       applyHit(hit)
@@ -367,7 +450,9 @@ export default function AddressSearchBar() {
 
   // Vorgelesene Rueckmeldung: die Trefferliste erscheint sonst lautlos.
   const statusText =
-    showPop && mode === 'hits'
+    showPop && mode === 'history'
+      ? `${pluralize(history.length, 'zuletzt gesuchte Adresse', 'zuletzt gesuchte Adressen')}.`
+      : showPop && mode === 'hits'
       ? searching
         ? 'Adressen werden gesucht …'
         : hits.length === 0
@@ -427,6 +512,65 @@ export default function AddressSearchBar() {
               <div className="empty small">
                 Mindestens {MIN_QUERY_LENGTH} Zeichen eingeben.
               </div>
+            )}
+
+            {mode === 'history' && (
+              <>
+                <div className="addr-section row-between">
+                  <span className="addr-section-title">Zuletzt gesucht</span>
+                  <button
+                    type="button"
+                    className="linkish small"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={verlaufLeeren}
+                  >
+                    Verlauf leeren
+                  </button>
+                </div>
+                <div id={listId} role="listbox" aria-label="Zuletzt gesucht" ref={listRef}>
+                  {history.map((entry, index) => {
+                    const detail = detailName(entry.label)
+                    return (
+                      // Die Zeile traegt zwei Schaltflaechen - uebernehmen und
+                      // vergessen - und kann deshalb nicht selbst eine sein.
+                      // Die Hervorhebung sitzt auf der Zeile, nicht auf der
+                      // linken Haelfte: sonst bliebe die Spalte mit dem
+                      // Kreuzchen weiss und die Zeile saehe abgeschnitten aus.
+                      <div
+                        className={`addr-hist ${index === activeIndex ? 'is-active' : ''}`}
+                        key={entryKey(entry)}
+                      >
+                        <button
+                          id={optionId(index)}
+                          type="button"
+                          role="option"
+                          aria-selected={index === activeIndex}
+                          tabIndex={-1}
+                          className="addr-hit"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => applyHit(entryAsMatch(entry))}
+                        >
+                          <span aria-hidden="true">🕘</span>
+                          <span className="addr-hit-main">
+                            <span className="addr-hit-title truncate">{shortName(entry.label)}</span>
+                            {detail !== '' && <span className="addr-hit-sub truncate">{detail}</span>}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          className="addr-hist-weg"
+                          aria-label={`"${shortName(entry.label)}" aus dem Verlauf entfernen`}
+                          title="Aus dem Verlauf entfernen"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => vergiss(entry)}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
             )}
 
             {mode === 'hits' && ownMatches.length > 0 && (

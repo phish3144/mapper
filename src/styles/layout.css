@@ -403,6 +403,38 @@
 .addr-hit-title { font-weight: 500; }
 .addr-hit-sub { font-size: 12px; color: var(--text-muted); }
 
+/* Eine Verlaufszeile. Sie traegt zwei Schaltflaechen - uebernehmen und
+   vergessen - und kann deshalb nicht selbst eine sein wie .addr-hit. Trennlinie
+   und Hervorhebung wandern dafuer auf die Zeile, damit beide Haelften
+   gemeinsam aufleuchten. */
+.addr-hist {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--border);
+}
+.addr-hist:last-child { border-bottom: none; }
+.addr-hist:hover,
+.addr-hist.is-active { background: var(--bg-hover); }
+.addr-hist .addr-hit {
+  flex: 1;
+  min-width: 0;
+  border-bottom: none;
+}
+/* Die Zeile faerbt sich, nicht die Schaltflaeche darin - sonst leuchtete
+   beim Ueberfahren nur die linke Haelfte auf. */
+.addr-hist .addr-hit:hover { background: none; }
+.addr-hist-weg {
+  flex: 0 0 auto;
+  padding: 0 10px;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--text-faint);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.addr-hist-weg:hover { color: var(--text); }
+
 .addr-section {
   padding: 8px 11px;
   border-bottom: 1px solid var(--border);
