@@ -5,9 +5,11 @@
  * darin: die Leaflet-Ebenen reichen bis z-index 700 und wuerden das Overlay
  * (400) sonst verdecken.
  */
-import { Button } from '@/components/ui'
+import { Button, Spinner } from '@/components/ui'
 import { useUi } from '@/lib/uiStore'
+import { standZeit } from '@/lib/traffic'
 import { useVisibleLocations } from './MarkerLayer'
+import { BAUSTELLEN_AB_ZOOM, type Verkehrsergebnis } from './TrafficLayer'
 
 export type BaseLayerId = 'map' | 'terrain' | 'satellite'
 
@@ -121,11 +123,20 @@ export function readStoredPlz(): boolean {
   return localStorage.getItem(PLZ_KEY) === '1'
 }
 
+const TRAFFIC_KEY = 'mapper.trafficLayer'
+
+export function readStoredTraffic(): boolean {
+  return localStorage.getItem(TRAFFIC_KEY) === '1'
+}
+
 export interface MapControlsProps {
   baseLayer: BaseLayerId
   onBaseLayerChange: (id: BaseLayerId) => void
   plzOn: boolean
   onPlzChange: (on: boolean) => void
+  trafficOn: boolean
+  onTrafficChange: (on: boolean) => void
+  traffic: Verkehrsergebnis
 }
 
 export default function MapControls({
@@ -133,6 +144,9 @@ export default function MapControls({
   onBaseLayerChange,
   plzOn,
   onPlzChange,
+  trafficOn,
+  onTrafficChange,
+  traffic,
 }: MapControlsProps) {
   const focusBounds = useUi((s) => s.focusBounds)
 
@@ -146,6 +160,11 @@ export default function MapControls({
   function schaltePlz(on: boolean) {
     localStorage.setItem(PLZ_KEY, on ? '1' : '0')
     onPlzChange(on)
+  }
+
+  function schalteVerkehr(on: boolean) {
+    localStorage.setItem(TRAFFIC_KEY, on ? '1' : '0')
+    onTrafficChange(on)
   }
 
   return (
@@ -181,6 +200,19 @@ export default function MapControls({
         </Button>
       </div>
 
+      <div className="panel col" style={{ padding: 3, gap: 3 }}>
+        <Button
+          size="sm"
+          variant={trafficOn ? 'primary' : 'ghost'}
+          aria-pressed={trafficOn}
+          title="Sperrungen und Baustellen der Autobahnen einblenden (Quelle: Autobahn GmbH des Bundes)"
+          onClick={() => schalteVerkehr(!trafficOn)}
+        >
+          Verkehr
+        </Button>
+        {trafficOn && <VerkehrsStatus traffic={traffic} />}
+      </div>
+
       <div className="panel" style={{ padding: 3 }}>
         {/* Kein aria-label: der sichtbare Text ist der zugaengliche Name, sonst
             koennen Sprachsteuerungen die Schaltflaeche nicht ansprechen. Die
@@ -195,6 +227,46 @@ export default function MapControls({
         </Button>
       </div>
 
+    </div>
+  )
+}
+
+/**
+ * Wie alt der Verkehrsstand ist und wie vollstaendig.
+ *
+ * Beides gehoert sichtbar neben den Schalter: eine Sperrungsebene, die
+ * stillschweigend eine halbe Stunde alte Daten zeigt, ist schlimmer als
+ * keine. Fehlende Abschnitte werden genannt, nicht verschwiegen.
+ */
+function VerkehrsStatus({ traffic }: { traffic: Verkehrsergebnis }) {
+  const { stand, laedt } = traffic
+
+  if (!stand) {
+    return (
+      <div className="row small muted" style={{ gap: 6, padding: '0 4px' }}>
+        {laedt && <Spinner />}
+        <span>{laedt ? 'Meldungen werden geladen' : 'Keine Meldungen'}</span>
+      </div>
+    )
+  }
+
+  let sperrungen = 0
+  for (const m of stand.items) if (m.k === 'c') sperrungen++
+  const baustellen = stand.items.length - sperrungen
+
+  return (
+    <div className="col small muted" style={{ gap: 1, padding: '0 4px 2px' }}>
+      <span>
+        Stand {standZeit(stand.fetchedAt)}
+        {stand.stale && ' (veraltet)'}
+      </span>
+      <span>
+        {sperrungen} Sperrungen, {baustellen} Baustellen
+      </span>
+      {/* Sonst widerspricht die Zahl dem Bild: unterhalb dieser Stufe sind
+          Baustellen gezaehlt, aber nicht gezeichnet. */}
+      <span>Baustellen ab Zoomstufe {BAUSTELLEN_AB_ZOOM}</span>
+      {stand.failed > 0 && <span>{stand.failed} Abrufe ohne Antwort</span>}
     </div>
   )
 }

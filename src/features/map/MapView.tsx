@@ -19,11 +19,13 @@ import MapControls, {
   BASE_LAYERS,
   readStoredBaseLayer,
   readStoredPlz,
+  readStoredTraffic,
   type BaseLayer,
   type BaseLayerId,
 } from './MapControls'
 import MarkerLayer, { useVisibleLocations } from './MarkerLayer'
 import PlzLayer from './PlzLayer'
+import TrafficLayer, { useVerkehr } from './TrafficLayer'
 
 /** Startausschnitt: ganz Deutschland. */
 const GERMANY_CENTER: LatLngTuple = [51.16, 10.45]
@@ -36,6 +38,10 @@ const BOUNDS_PADDING: [number, number] = [48, 48]
 export default function MapView() {
   const [baseLayer, setBaseLayer] = useState<BaseLayerId>(readStoredBaseLayer)
   const [plzOn, setPlzOn] = useState<boolean>(readStoredPlz)
+  const [trafficOn, setTrafficOn] = useState<boolean>(readStoredTraffic)
+  // Hier und nicht in der Ebene: die Bedienleiste zeigt das Alter des Standes
+  // an und liegt ausserhalb des Kartencontainers.
+  const traffic = useVerkehr(trafficOn)
   const notify = useStore((s) => s.notify)
   const pickingPoint = useUi((s) => s.pickingPoint)
   const setPickingPoint = useUi((s) => s.setPickingPoint)
@@ -74,6 +80,9 @@ export default function MapView() {
 
         {/* Ganz unten: die Regionen sind Hintergrund, nicht Vordergrund. */}
         {plzOn && <PlzLayer onError={(text) => notify('error', text)} />}
+        {/* Ueber den Regionen, unter den Nadeln: eine Sperrung ist Lage,
+            kein Ziel. */}
+        {trafficOn && <TrafficLayer stand={traffic.stand} />}
         <MarkerLayer />
         <RouteLayer />
         <RoutePreviewLayer />
@@ -112,6 +121,9 @@ export default function MapView() {
         onBaseLayerChange={setBaseLayer}
         plzOn={plzOn}
         onPlzChange={setPlzOn}
+        trafficOn={trafficOn}
+        onTrafficChange={setTrafficOn}
+        traffic={traffic}
       />
     </>
   )

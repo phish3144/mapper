@@ -125,6 +125,23 @@
   white-space: nowrap;
 }
 
+/* Marke in der Sprechblase einer Verkehrsmeldung. Die Farben sind dieselben
+   wie die der Linien und Punkte auf der Karte - die Sprechblase soll sagen,
+   was man angeklickt hat, ohne dass man es raten muss. Fest und nicht ueber
+   Tokens: sie stehen auf Kacheln, nicht auf dem Panel, und muessen in hellem
+   wie dunklem Thema gleich lesbar sein. */
+.verkehr-marke {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+}
+.verkehr-marke.ist-sperrung { background: #d92d20; }
+.verkehr-marke.ist-baustelle { background: #e8820c; }
+
 /* Nummerierte Nadeln der Routenstopps. */
 .stop-pin {
   width: 24px; height: 24px;
