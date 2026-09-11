@@ -78,7 +78,9 @@
   color: var(--text);
   box-shadow: var(--shadow);
 }
-.leaflet-popup-content { margin: 10px 12px; font: inherit; min-width: 180px; }
+/* Rechts Platz fuer das Schliesskreuz: es liegt absolut in der Ecke, und
+   eine lange erste Zeile - eine Adresse etwa - lief sonst darunter durch. */
+.leaflet-popup-content { margin: 10px 12px; padding-right: 12px; font: inherit; min-width: 180px; }
 .leaflet-popup-close-button { color: var(--text-muted) !important; }
 
 /* Kartennadel. Die Farbe kommt aus der Kategorie und wird als Inline-Stil

@@ -36,8 +36,10 @@ export default function RouteFromDialog() {
             to: ziel.point,
             toLabel: ziel.label,
             locationId: ziel.locationId,
-            // Diese Strecke beginnt an einem Kartenpunkt, nicht an der Suche:
-            // sie darf nicht verschwinden, wenn jemand das Suchfeld leert.
+            // Beginnt die Strecke an einem Standort, gehoert sie NICHT zur
+            // Suche und darf nicht verschwinden, wenn jemand das Suchfeld
+            // leert. Beginnt sie an der gesuchten Adresse, schon.
+            belongsToSearch: origin.belongsToSearch,
           })
         }
       />

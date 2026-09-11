@@ -11,7 +11,7 @@
  */
 import { useEffect, useState } from 'react'
 import L from 'leaflet'
-import { Circle, Marker, Popup } from 'react-leaflet'
+import { Circle, Marker, Popup, useMap } from 'react-leaflet'
 import { Button } from '@/components/ui'
 import { formatLatLng } from '@/lib/geo'
 import { useCanEdit } from '@/lib/store'
@@ -84,8 +84,10 @@ export default function SearchMarker() {
   const setSearchPoint = useUi((s) => s.setSearchPoint)
   const setDraftPoint = useUi((s) => s.setDraftPoint)
   const setTab = useUi((s) => s.setTab)
+  const setRouteOrigin = useUi((s) => s.setRouteOrigin)
   const canEdit = useCanEdit()
   const haloColor = useDangerColor()
+  const map = useMap()
 
   if (!searchPoint) return null
 
@@ -99,6 +101,22 @@ export default function SearchMarker() {
     if (!searchPoint) return
     setDraftPoint({ lat: searchPoint.lat, lng: searchPoint.lng })
     setTab('locations')
+  }
+
+  /**
+   * Dasselbe wie "Route zu …" in der Suchleiste, nur von der Karte aus.
+   * Doppelt, aber nicht ueberfluessig: wer die Nadel anklickt, sucht die
+   * Auswahl dort und nicht in einer Aufklappflaeche in der Kopfzeile.
+   */
+  function starteStrecke() {
+    if (!searchPoint) return
+    map.closePopup()
+    setRouteOrigin({
+      point: { lat: searchPoint.lat, lng: searchPoint.lng },
+      label,
+      locationId: null,
+      belongsToSearch: true,
+    })
   }
 
   return (
@@ -131,6 +149,9 @@ export default function SearchMarker() {
             <strong>{label}</strong>
             <span className="small muted">{coords}</span>
             <div className="row" style={{ gap: 6, marginTop: 3, flexWrap: 'wrap' }}>
+              <Button size="sm" title={`Strecke von "${label}" zu einem Ziel`} onClick={starteStrecke}>
+                Route
+              </Button>
               {canEdit && (
                 <Button size="sm" onClick={createLocation}>
                   Als Standort anlegen

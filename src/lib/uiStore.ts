@@ -90,6 +90,8 @@ export interface RouteOrigin {
   label: string
   /** Der Standort, falls die Strecke an einem beginnt - er faellt als Ziel weg. */
   locationId: string | null
+  /** Der Start ist die gesuchte Adresse; die Strecke gehoert dann zur Suche. */
+  belongsToSearch?: boolean
 }
 
 interface UiState {
