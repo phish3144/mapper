@@ -205,18 +205,27 @@ export function ColorPicker({ value, onChange }: { value: string; onChange: (c: 
 
 // --- Dialog ----------------------------------------------------------------
 
+const FOKUSSIERBAR = 'input, select, textarea, button, [tabindex]:not([tabindex="-1"])'
+
 export function Modal({
   title,
   onClose,
   children,
   footer,
   width = 480,
+  flush = false,
 }: {
   title: string
   onClose: () => void
   children: ReactNode
   footer?: ReactNode
   width?: number
+  /**
+   * Inhalt ohne Innenabstand. Fuer Listen, deren Zeilen und Abschnitte bis an
+   * den Rand reichen sollen - mit Abstand haengen ihre Trennlinien und
+   * Abschnittsbalken frei in der Luft.
+   */
+  flush?: boolean
 }) {
   const ref = useRef<HTMLDivElement>(null)
 
@@ -227,10 +236,24 @@ export function Modal({
     document.addEventListener('keydown', onKey)
     // Fokus in den Dialog holen, sonst bleibt er beim ausloesenden Element und
     // die Tastaturbedienung verlaesst den Dialog sofort wieder.
-    const first = ref.current?.querySelector<HTMLElement>(
-      'input, select, textarea, button, [tabindex]:not([tabindex="-1"])',
-    )
-    first?.focus()
+    //
+    // Der Reihe nach Rumpf, Fussleiste, ganzer Dialog. Nicht einfach das erste
+    // Bedienelement ueberhaupt: das waere das Schliesskreuz in der Kopfzeile,
+    // und dann muesste man in jedem Dialog mit Eingabefeld erst hineinklicken.
+    // In der Fussleiste steht die harmlose Wahl zuerst ("Abbrechen"), dort ist
+    // der Fokus also ebenfalls gut aufgehoben.
+    const dialog = ref.current
+    for (const bereich of [
+      dialog?.querySelector('.modal-body'),
+      dialog?.querySelector('.modal-footer'),
+      dialog,
+    ]) {
+      const kandidat = bereich?.querySelector<HTMLElement>(FOKUSSIERBAR)
+      if (kandidat) {
+        kandidat.focus()
+        break
+      }
+    }
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
 
@@ -255,7 +278,7 @@ export function Modal({
             ✕
           </IconButton>
         </div>
-        <div className="modal-body">{children}</div>
+        <div className={flush ? 'modal-body is-flush' : 'modal-body'}>{children}</div>
         {footer && <div className="modal-footer">{footer}</div>}
       </div>
     </div>

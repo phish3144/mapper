@@ -309,6 +309,8 @@ function LocationPopup({ location }: { location: MapLocation }) {
 
   const activeRouteId = useUi((s) => s.activeRouteId)
   const setEditingLocation = useUi((s) => s.setEditingLocation)
+  const setRouteOrigin = useUi((s) => s.setRouteOrigin)
+  const map = useMap()
 
   const [busy, setBusy] = useState(false)
 
@@ -348,6 +350,17 @@ function LocationPopup({ location }: { location: MapLocation }) {
     }
   }
 
+  function starteStrecke(): void {
+    // Die Sprechblase schliessen: der Dialog legt sich sonst darueber, und
+    // nach dem Waehlen soll der Blick auf der Strecke liegen, nicht auf ihr.
+    map.closePopup()
+    setRouteOrigin({
+      point: { lat: location.lat, lng: location.lng },
+      label: location.name,
+      locationId: location.id,
+    })
+  }
+
   return (
     <div className="col" style={{ gap: 5 }}>
       <div className="row-between" style={{ gap: 8 }}>
@@ -380,20 +393,22 @@ function LocationPopup({ location }: { location: MapLocation }) {
         </div>
       )}
 
-      {(canEdit || canAddToRoute) && (
-        <div className="row" style={{ gap: 6, marginTop: 3, flexWrap: 'wrap' }}>
-          {canEdit && (
-            <Button size="sm" onClick={() => setEditingLocation(location.id)}>
-              Bearbeiten
-            </Button>
-          )}
-          {canAddToRoute && (
-            <Button size="sm" variant="primary" busy={busy} onClick={() => void addToRoute()}>
-              Zur Route hinzufuegen
-            </Button>
-          )}
-        </div>
-      )}
+      <div className="row" style={{ gap: 6, marginTop: 3, flexWrap: 'wrap' }}>
+        {/* Auch fuer Leser: eine Strecke anzusehen aendert nichts. */}
+        <Button size="sm" title={`Strecke von "${location.name}" zu einem Ziel`} onClick={starteStrecke}>
+          Route
+        </Button>
+        {canEdit && (
+          <Button size="sm" onClick={() => setEditingLocation(location.id)}>
+            Bearbeiten
+          </Button>
+        )}
+        {canAddToRoute && (
+          <Button size="sm" variant="primary" busy={busy} onClick={() => void addToRoute()}>
+            Zur Route hinzufuegen
+          </Button>
+        )}
+      </div>
     </div>
   )
 }

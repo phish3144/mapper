@@ -375,6 +375,9 @@ a:hover { text-decoration: underline; }
   border-bottom: 1px solid var(--border);
 }
 .modal-body { padding: 16px; overflow-y: auto; flex: 1; }
+/* Listen reichen bis an den Rand: ihre Trennlinien und Abschnittsbalken
+   spannen sonst nicht ueber die volle Breite und wirken wie eingeklebt. */
+.modal-body.is-flush { padding: 0; }
 .modal-footer {
   display: flex; justify-content: flex-end; gap: 8px;
   padding: 12px 16px;

@@ -8,6 +8,7 @@ import LocationsPanel from '@/features/locations/LocationsPanel'
 import CatalogPanel from '@/features/catalog/CatalogPanel'
 import RoutesPanel from '@/features/routes/RoutesPanel'
 import MapView from '@/features/map/MapView'
+import RouteFromDialog from '@/features/search/RouteFromDialog'
 import WorkspaceGate from '@/features/workspace/WorkspaceGate'
 
 export default function App() {
@@ -56,6 +57,9 @@ export default function App() {
       ) : (
         <WorkspaceGate />
       )}
+      {/* Ausserhalb der Karte: die Karte bildet einen eigenen Stapelkontext,
+          ein Dialog darin laege unter ihren Ebenen. */}
+      <RouteFromDialog />
       <Notices />
     </div>
   )

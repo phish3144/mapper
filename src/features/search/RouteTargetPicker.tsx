@@ -36,10 +36,20 @@ export default function RouteTargetPicker({
   origin,
   onPick,
   onCancel,
+  embedded = false,
+  excludeId = null,
 }: {
   origin: LatLng
   onPick: (ziel: Ziel) => void
   onCancel: () => void
+  /** Der Standort, an dem die Strecke beginnt - er taugt nicht als Ziel. */
+  excludeId?: string | null
+  /**
+   * In einem Dialog gezeichnet. Dann traegt dessen Kopfzeile bereits Titel
+   * und Schliessen - eine eigene Ueberschrift und ein zweiter Abbrechen-Knopf
+   * waeren die dritte und vierte Moeglichkeit, dasselbe zu tun.
+   */
+  embedded?: boolean
 }) {
   const locations = useStore((s) => s.locations)
   const colorsOf = useLocationColors()
@@ -66,7 +76,7 @@ export default function RouteTargetPicker({
    */
   const eigene = useMemo(() => {
     const passend = locations
-      .filter((l) => l.is_active)
+      .filter((l) => l.is_active && l.id !== excludeId)
       .filter((l) =>
         gesucht === ''
           ? true
@@ -75,7 +85,7 @@ export default function RouteTargetPicker({
       .map((l) => ({ location: l, km: haversineKm(origin, { lat: l.lat, lng: l.lng }) }))
     passend.sort((a, b) => a.km - b.km)
     return passend.slice(0, TREFFER_GRENZE)
-  }, [locations, gesucht, origin])
+  }, [locations, gesucht, origin, excludeId])
 
   function tippen(wert: string): void {
     setText(wert)
@@ -103,12 +113,14 @@ export default function RouteTargetPicker({
 
   return (
     <div className="col" style={{ gap: 0 }}>
-      <div className="addr-section row-between">
-        <span className="addr-section-title">Route zu …</span>
-        <button type="button" className="linkish small" onClick={onCancel}>
-          Zurueck
-        </button>
-      </div>
+      {!embedded && (
+        <div className="addr-section row-between">
+          <span className="addr-section-title">Route zu …</span>
+          <button type="button" className="linkish small" onClick={onCancel}>
+            Zurueck
+          </button>
+        </div>
+      )}
 
       <div style={{ padding: '6px 9px' }}>
         <input
@@ -205,11 +217,13 @@ export default function RouteTargetPicker({
         </EmptyState>
       )}
 
-      <div style={{ padding: '4px 9px 8px' }}>
-        <Button size="sm" variant="ghost" block onClick={onCancel}>
-          Abbrechen
-        </Button>
-      </div>
+      {!embedded && (
+        <div style={{ padding: '4px 9px 8px' }}>
+          <Button size="sm" variant="ghost" block onClick={onCancel}>
+            Abbrechen
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

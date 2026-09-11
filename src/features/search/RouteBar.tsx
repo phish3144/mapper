@@ -17,7 +17,7 @@ import { useRouteLeg } from './useRouteLeg'
 export default function RouteBar() {
   const preview = useUi((s) => s.routePreview)
   const setRoutePreview = useUi((s) => s.setRoutePreview)
-  const focusBounds = useUi((s) => s.focusBounds)
+  const starteRoute = useUi((s) => s.starteRoute)
   const leg = useRouteLeg(preview?.from ?? null, preview?.to ?? null)
 
   if (!preview) return null
@@ -27,14 +27,14 @@ export default function RouteBar() {
     // Hin und zurueck sind nicht dasselbe: Einbahnstrassen, Auffahrten,
     // gesperrte Abbiegungen. Deshalb wirklich neu rechnen lassen und nicht
     // die vorhandene Linie umdrehen.
-    setRoutePreview({
+    starteRoute({
       from: preview.to,
       fromLabel: preview.toLabel,
       to: preview.from,
       toLabel: preview.fromLabel,
       locationId: null,
+      belongsToSearch: preview.belongsToSearch,
     })
-    focusBounds([preview.from, preview.to])
   }
 
   return (

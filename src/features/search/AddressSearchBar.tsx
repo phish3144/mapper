@@ -93,8 +93,7 @@ export default function AddressSearchBar() {
   // bei jedem Aufruf neu und triebe React in eine Endlosschleife.
   const searchPoint = useUi((s) => s.searchPoint)
   const setSearchPoint = useUi((s) => s.setSearchPoint)
-  const setRoutePreview = useUi((s) => s.setRoutePreview)
-  const focusBounds = useUi((s) => s.focusBounds)
+  const starteRoute = useUi((s) => s.starteRoute)
   const focusPoint = useUi((s) => s.focusPoint)
   const selectLocation = useUi((s) => s.selectLocation)
   // Einzeln auswaehlen: ein Selektor, der ein neues Objekt baut, loest in
@@ -264,14 +263,15 @@ export default function AddressSearchBar() {
 
   function waehleZiel(ziel: Ziel): void {
     if (!searchPoint) return
-    setRoutePreview({
+    starteRoute({
       from: { lat: searchPoint.lat, lng: searchPoint.lng },
       fromLabel: searchPoint.label.trim() || 'Gesuchte Adresse',
       to: ziel.point,
       toLabel: ziel.label,
       locationId: ziel.locationId,
+      // Diese Strecke haengt an der Suche und verschwindet mit ihr.
+      belongsToSearch: true,
     })
-    focusBounds([{ lat: searchPoint.lat, lng: searchPoint.lng }, ziel.point])
     setZielWaehlen(false)
     setOpen(false)
   }

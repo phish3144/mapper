@@ -54,7 +54,7 @@ export interface MapFocus {
   points?: LatLng[]
 }
 
-/** Eine nur angezeigte Strecke von der gesuchten Adresse zu einem Standort. */
+/** Eine nur angezeigte Strecke von einem Startpunkt zu einem Ziel. */
 export interface RoutePreview {
   from: LatLng
   fromLabel: string
@@ -64,6 +64,31 @@ export interface RoutePreview {
    * Der Standort hinter dem Ziel - null, wenn das Ziel eine gesuchte Adresse
    * ist oder Start und Ziel getauscht wurden.
    */
+  locationId: string | null
+  /**
+   * Ob die Strecke zur Adresssuche gehoert, also an einem ihrer Enden die
+   * gesuchte Adresse steht.
+   *
+   * Entscheidet, ob sie mit der Suche verschwindet. Eine Strecke zwischen
+   * zwei Standorten hat mit der Suche nichts zu tun und darf nicht mit
+   * verschwinden, wenn jemand das Suchfeld leert. Bleibt beim Vertauschen
+   * von Start und Ziel erhalten - die Adresse ist dann zwar das Ziel, gehoert
+   * aber immer noch zur Suche.
+   */
+  belongsToSearch?: boolean
+}
+
+/**
+ * Der Startpunkt einer Strecke, die gerade zusammengestellt wird.
+ *
+ * Gesetzt heisst: die Zielwahl ist offen. Der Zustand liegt hier und nicht in
+ * der Sprechblase, weil die Zielwahl ein Dialog ist - in der Sprechblase
+ * gezeichnet steckte er in deren Stapelkontext fest und waere abgeschnitten.
+ */
+export interface RouteOrigin {
+  point: LatLng
+  label: string
+  /** Der Standort, falls die Strecke an einem beginnt - er faellt als Ziel weg. */
   locationId: string | null
 }
 
@@ -90,6 +115,8 @@ interface UiState {
    * dafuer erst ein Standort oder eine Route entstehen muesste.
    */
   routePreview: RoutePreview | null
+  /** Startpunkt einer Strecke, deren Ziel noch gewaehlt wird. */
+  routeOrigin: RouteOrigin | null
   focus: MapFocus | null
   sidebarOpen: boolean
   theme: 'light' | 'dark' | 'system'
@@ -108,6 +135,9 @@ interface UiState {
   setSearchPoint: (point: SearchPoint | null) => void
   setSearchWithinFilter: (on: boolean) => void
   setRoutePreview: (preview: RoutePreview | null) => void
+  setRouteOrigin: (origin: RouteOrigin | null) => void
+  /** Strecke zeigen UND beide Enden in den Ausschnitt holen. */
+  starteRoute: (preview: RoutePreview) => void
   focusPoint: (point: LatLng, zoom?: number) => void
   focusBounds: (points: LatLng[]) => void
   setSidebarOpen: (open: boolean) => void
@@ -129,6 +159,9 @@ export function applyTheme(theme: 'light' | 'dark' | 'system'): void {
 
 let focusNonce = 0
 
+/** Der Typ des Speichers - die Tests laden ihn erst nach einem Ersatz fuer localStorage. */
+export type UiStore = typeof useUi
+
 export const useUi = create<UiState>()((set) => ({
   tab: 'locations',
   selectedLocationId: null,
@@ -141,6 +174,7 @@ export const useUi = create<UiState>()((set) => ({
   searchPoint: null,
   searchWithinFilter: false,
   routePreview: null,
+  routeOrigin: null,
   focus: null,
   sidebarOpen: true,
   theme: readTheme(),
@@ -161,11 +195,25 @@ export const useUi = create<UiState>()((set) => ({
   setPickingPoint: (on) => set({ pickingPoint: on }),
   patchFilter: (patch) => set((s) => ({ filter: { ...s.filter, ...patch } })),
   resetFilter: () => set({ filter: EMPTY_FILTER }),
-  // Faellt der Bezugspunkt weg, ist die Strecke sinnlos - sie haengt an ihm.
+  // Faellt der Bezugspunkt weg, ist eine Strecke DER SUCHE sinnlos - sie
+  // haengt an ihm. Eine Strecke zwischen zwei Standorten bleibt.
   setSearchPoint: (point) =>
-    set((s) => ({ searchPoint: point, routePreview: point === null ? null : s.routePreview })),
+    set((s) => ({
+      searchPoint: point,
+      routePreview: point === null && s.routePreview?.belongsToSearch ? null : s.routePreview,
+    })),
   setSearchWithinFilter: (on) => set({ searchWithinFilter: on }),
   setRoutePreview: (preview) => set({ routePreview: preview }),
+  setRouteOrigin: (origin) => set({ routeOrigin: origin }),
+  // In einem Zug: Strecke setzen, Zielwahl schliessen, Ausschnitt anpassen.
+  // Getrennt aufgerufen wurde das Anpassen des Ausschnitts schon einmal
+  // vergessen, und die Strecke lag dann ausserhalb des Bildes.
+  starteRoute: (preview) =>
+    set({
+      routePreview: preview,
+      routeOrigin: null,
+      focus: { nonce: ++focusNonce, points: [preview.from, preview.to] },
+    }),
   focusPoint: (point, zoom) => set({ focus: { nonce: ++focusNonce, point, zoom } }),
   focusBounds: (points) => set({ focus: { nonce: ++focusNonce, points } }),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
