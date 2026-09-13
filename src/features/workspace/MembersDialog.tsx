@@ -45,7 +45,11 @@ function memberName(m: MemberWithProfile): string {
 
 function friendly(error: unknown): string {
   const text = describeError(error)
-  if (/letzte[nr]? Eigentuemer/i.test(text)) {
+  // Beide Schreibweisen: der Text kommt aus einer Datenbankfunktion, und die
+  // wurde mit Migration 0013 von "Eigentuemer" auf "Eigentümer" umgestellt.
+  // Ein Client, der gegen einen aelteren Stand laeuft, soll die freundliche
+  // Meldung trotzdem bekommen - sonst steht dort der rohe Datenbanktext.
+  if (/letzte[nr]? Eigent(ü|ue)mer/i.test(text)) {
     return (
       'Ein Arbeitsbereich braucht mindestens einen Eigentümer. ' +
       'Ernenne zuerst eine andere Person zum Eigentümer.'
