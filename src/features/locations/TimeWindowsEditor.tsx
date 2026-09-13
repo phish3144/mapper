@@ -190,12 +190,12 @@ export default function TimeWindowsEditor({
               {(row.days.length === 0 || row.from === '' || row.to === '' || crossesMidnight(row)) && (
                 <div className="row" style={{ gap: 6, flexWrap: 'wrap', marginTop: 2 }}>
                   {row.days.length === 0 && (
-                    <Badge tone="warning">Kein Wochentag gewaehlt — wirkt nicht</Badge>
+                    <Badge tone="warning">Kein Wochentag gewählt — wirkt nicht</Badge>
                   )}
                   {(row.from === '' || row.to === '') && (
                     <Badge tone="warning">Uhrzeit fehlt — wirkt nicht</Badge>
                   )}
-                  {crossesMidnight(row) && <Badge tone="accent">laeuft ueber Mitternacht</Badge>}
+                  {crossesMidnight(row) && <Badge tone="accent">läuft über Mitternacht</Badge>}
                 </div>
               )}
             </div>
@@ -205,14 +205,14 @@ export default function TimeWindowsEditor({
 
       <div className="row" style={{ marginTop: 4 }}>
         <Button size="sm" onClick={addRow}>
-          Zeitfenster hinzufuegen
+          Zeitfenster hinzufügen
         </Button>
         {value.length > 0 && <span className="small mono truncate grow">{summary}</span>}
       </div>
 
       <span className="field-hint">
         Ohne Zeitfenster ist der Standort jederzeit erreichbar. Liegt das Ende vor dem Beginn, gilt
-        das Fenster als ueber Mitternacht laufend (z. B. 22:00–06:00).
+        das Fenster als über Mitternacht laufend (z. B. 22:00–06:00).
       </span>
     </div>
   )

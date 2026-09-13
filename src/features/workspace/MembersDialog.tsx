@@ -25,7 +25,7 @@ import {
 const ROLE_LABEL: Record<MemberRole, string> = {
   viewer: 'Leser',
   editor: 'Bearbeiter',
-  owner: 'Eigentuemer',
+  owner: 'Eigentümer',
 }
 
 const ROLE_ORDER: MemberRole[] = ['viewer', 'editor', 'owner']
@@ -47,8 +47,8 @@ function friendly(error: unknown): string {
   const text = describeError(error)
   if (/letzte[nr]? Eigentuemer/i.test(text)) {
     return (
-      'Ein Arbeitsbereich braucht mindestens einen Eigentuemer. ' +
-      'Ernenne zuerst eine andere Person zum Eigentuemer.'
+      'Ein Arbeitsbereich braucht mindestens einen Eigentümer. ' +
+      'Ernenne zuerst eine andere Person zum Eigentümer.'
     )
   }
   return text
@@ -235,7 +235,7 @@ export default function MembersDialog({ onClose }: { onClose: () => void }) {
     if (!workspaceId) return
     const address = email.trim().toLowerCase()
     if (!EMAIL_PATTERN.test(address)) {
-      setEmailError('Bitte gib eine gueltige E-Mail-Adresse an.')
+      setEmailError('Bitte gib eine gültige E-Mail-Adresse an.')
       return
     }
     if (members?.some((m) => m.profile?.email?.toLowerCase() === address)) {
@@ -248,7 +248,7 @@ export default function MembersDialog({ onClose }: { onClose: () => void }) {
     try {
       await db.inviteToWorkspace(workspaceId, address, inviteRole)
       setEmail('')
-      notify('success', `Einladung fuer ${address} angelegt.`)
+      notify('success', `Einladung für ${address} angelegt.`)
       await load()
     } catch (err) {
       setError(friendly(err))
@@ -275,7 +275,7 @@ export default function MembersDialog({ onClose }: { onClose: () => void }) {
       title="Mitglieder & Freigaben"
       onClose={closeMain}
       width={620}
-      footer={<Button onClick={onClose}>Schliessen</Button>}
+      footer={<Button onClick={onClose}>Schließen</Button>}
     >
       {error && (
         <div className="notice notice-error" style={{ marginBottom: 12 }}>
@@ -347,7 +347,7 @@ export default function MembersDialog({ onClose }: { onClose: () => void }) {
 
       {!isOwner && (
         <p className="small faint" style={{ marginTop: 10, marginBottom: 0 }}>
-          Rollen aendern und Personen einladen duerfen nur Eigentuemer dieses Arbeitsbereichs.
+          Rollen ändern und Personen einladen dürfen nur Eigentümer dieses Arbeitsbereichs.
         </p>
       )}
 
@@ -376,7 +376,7 @@ export default function MembersDialog({ onClose }: { onClose: () => void }) {
                   onChange={(e) => setAccountQuery(e.target.value)}
                 />
                 <SelectField
-                  label="Rolle beim Hinzufuegen"
+                  label="Rolle beim Hinzufügen"
                   value={addRole}
                   onChange={(e) => setAddRole(e.target.value as MemberRole)}
                 >
@@ -414,7 +414,7 @@ export default function MembersDialog({ onClose }: { onClose: () => void }) {
                         disabled={addingId !== null}
                         onClick={() => void addAccount(a)}
                       >
-                        Hinzufuegen
+                        Hinzufügen
                       </Button>
                     </div>
                   ))}
@@ -448,11 +448,11 @@ export default function MembersDialog({ onClose }: { onClose: () => void }) {
                   <Badge>{ROLE_LABEL[i.role]}</Badge>
                   <Button
                     size="sm"
-                    aria-label={`Einladung fuer ${i.email} zuruecknehmen`}
+                    aria-label={`Einladung für ${i.email} zuruecknehmen`}
                     disabled={busyId === i.id}
                     onClick={() => void revoke(i)}
                   >
-                    Zuruecknehmen
+                    Zurücknehmen
                   </Button>
                 </div>
               ))}
@@ -513,7 +513,7 @@ export default function MembersDialog({ onClose }: { onClose: () => void }) {
           message={
             pendingRemove.user_id === myUserId ? (
               <>
-                Du verlierst den Zugriff auf diesen Arbeitsbereich. Nur ein Eigentuemer kann dich
+                Du verlierst den Zugriff auf diesen Arbeitsbereich. Nur ein Eigentümer kann dich
                 wieder aufnehmen. Angelegte Standorte und Routen bleiben erhalten.
               </>
             ) : (

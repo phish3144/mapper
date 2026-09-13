@@ -63,13 +63,13 @@ function calledPayload(index = 0): Record<string, unknown> {
 }
 
 describe('OrsProvider - Konfiguration', () => {
-  it('nutzt die offizielle Basis-URL und entfernt abschliessende Schraegstriche', () => {
+  it('nutzt die offizielle Basis-URL und entfernt abschließende Schrägstriche', () => {
     expect(new OrsProvider(KEY).baseUrl).toBe(ORS_BASE_URL)
     expect(new OrsProvider(KEY, 'https://ors.example.org//').baseUrl).toBe('https://ors.example.org')
     expect(new OrsProvider(KEY, '   ').baseUrl).toBe(ORS_BASE_URL)
   })
 
-  it('traegt die Basis-URL in die Kennung, den Schluessel aber nicht', () => {
+  it('trägt die Basis-URL in die Kennung, den Schlüssel aber nicht', () => {
     const provider = new OrsProvider(KEY, 'https://ors.example.org')
     expect(provider.id).toBe('ors|https://ors.example.org')
     expect(provider.id).not.toContain(KEY)
@@ -81,7 +81,7 @@ describe('OrsProvider - Konfiguration', () => {
     expect(provider.supportsProfiles).toEqual(['driving', 'cycling', 'walking'])
   })
 
-  it('verweigert ohne Schluessel die Anfrage, statt sie abzuschicken', async () => {
+  it('verweigert ohne Schlüssel die Anfrage, statt sie abzuschicken', async () => {
     const error = await new OrsProvider('').route(BERLIN, 'driving').catch((e: unknown) => e)
     expect(error).toBeInstanceOf(RoutingError)
     expect((error as RoutingError).kind).toBe('bad-request')
@@ -104,7 +104,7 @@ describe('OrsProvider.route - Anfrage', () => {
     expect(calledPayload()).toEqual({ coordinates: [[13.405, 52.52], [13.4, 52.5]] })
   })
 
-  it('setzt Schluessel und Kopfzeilen', async () => {
+  it('setzt Schlüssel und Kopfzeilen', async () => {
     await new OrsProvider(KEY).route(BERLIN, 'driving')
     expect(calledInit().headers).toEqual({
       Authorization: KEY,
@@ -141,7 +141,7 @@ describe('OrsProvider.route - Anfrage', () => {
 })
 
 describe('OrsProvider.route - Auswertung', () => {
-  it('dreht [lng, lat] zu {lat, lng} und uebernimmt die Zusammenfassung', async () => {
+  it('dreht [lng, lat] zu {lat, lng} und übernimmt die Zusammenfassung', async () => {
     fetchMock.mockResolvedValue(
       jsonResponse(directionsBody([[13.405, 52.52], [13.402, 52.515], [13.4, 52.5]])),
     )
@@ -155,7 +155,7 @@ describe('OrsProvider.route - Auswertung', () => {
     ])
   })
 
-  it('ueberspringt unbrauchbare Koordinatenpaare, statt NaN zu erzeugen', async () => {
+  it('überspringt unbrauchbare Koordinatenpaare, statt NaN zu erzeugen', async () => {
     fetchMock.mockResolvedValue(
       jsonResponse(directionsBody([[13.405, 52.52], ['x', 1], null, [13.4, 52.5]])),
     )
@@ -189,10 +189,10 @@ describe('OrsProvider.route - Auswertung', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('lehnt ungueltige Koordinaten ohne Anfrage ab', async () => {
+  it('lehnt ungültige Koordinaten ohne Anfrage ab', async () => {
     await expect(
       new OrsProvider(KEY).route([BERLIN[0], { lat: 52.5, lng: 200 }], 'driving'),
-    ).rejects.toThrow(/Punkt 2 hat keine gueltigen Koordinaten/)
+    ).rejects.toThrow(/Punkt 2 hat keine gültigen Koordinaten/)
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
@@ -203,7 +203,7 @@ describe('OrsProvider.route - Auswertung', () => {
     }))
     const error = await new OrsProvider(KEY).route(many, 'driving').catch((e: unknown) => e)
     expect((error as RoutingError).kind).toBe('bad-request')
-    expect((error as RoutingError).message).toMatch(/hoechstens 50 Punkte/)
+    expect((error as RoutingError).message).toMatch(/höchstens 50 Punkte/)
     expect(fetchMock).not.toHaveBeenCalled()
   })
 })
@@ -252,7 +252,7 @@ describe('OrsProvider.matrix', () => {
     expect(matrix.distances[0][1]).toBe(Number.POSITIVE_INFINITY)
   })
 
-  it('fuellt zu kurze Zeilen auf die erwartete Groesse auf', async () => {
+  it('füllt zu kurze Zeilen auf die erwartete Größe auf', async () => {
     fetchMock.mockResolvedValue(
       jsonResponse({ durations: [[0], [12, 0]], distances: [[0], [34, 0]] }),
     )
@@ -261,13 +261,13 @@ describe('OrsProvider.matrix', () => {
     expect(matrix.durations[0][1]).toBe(Number.POSITIVE_INFINITY)
   })
 
-  it('beantwortet einen einzelnen Punkt ohne Anfrage und ohne Schluessel', async () => {
+  it('beantwortet einen einzelnen Punkt ohne Anfrage und ohne Schlüssel', async () => {
     const matrix = await new OrsProvider('').matrix([BERLIN[0]], 'driving')
     expect(matrix).toEqual({ durations: [[0]], distances: [[0]] })
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('meldet eine unvollstaendige Matrix als unknown', async () => {
+  it('meldet eine unvollständige Matrix als unknown', async () => {
     fetchMock.mockResolvedValue(jsonResponse({ durations: [[0, 1], [1, 0]] }))
     const error = await new OrsProvider(KEY).matrix(BERLIN, 'driving').catch((e: unknown) => e)
     expect((error as RoutingError).kind).toBe('unknown')
@@ -293,15 +293,15 @@ describe('OrsProvider - Fehlerabbildung', () => {
     expect(error.kind).toBe('limit')
   })
 
-  it('bildet einen abgelehnten Schluessel auf bad-request ab', async () => {
+  it('bildet einen abgelehnten Schlüssel auf bad-request ab', async () => {
     for (const status of [401, 403]) {
       const error = await failureOf(jsonResponse({ error: 'Access to this API has been disallowed' }, status))
       expect(error.kind).toBe('bad-request')
-      expect(error.message).toMatch(/API-Schluessel/)
+      expect(error.message).toMatch(/API-Schlüssel/)
     }
   })
 
-  it('bildet die Fehlercodes fuer "kein Weg" auf no-route ab', async () => {
+  it('bildet die Fehlercodes für "kein Weg" auf no-route ab', async () => {
     for (const code of [2009, 2010, 6010, 6011]) {
       const error = await failureOf(jsonResponse({ error: { code, message: 'Could not find routable point' } }, 404))
       expect(error.kind).toBe('no-route')
@@ -321,14 +321,14 @@ describe('OrsProvider - Fehlerabbildung', () => {
     expect(error.status).toBe(502)
   })
 
-  it('bildet uebrige 4xx auf bad-request ab und nennt die Serverantwort', async () => {
+  it('bildet übrige 4xx auf bad-request ab und nennt die Serverantwort', async () => {
     const error = await failureOf(jsonResponse({ error: { code: 2004, message: 'Too many locations' } }, 400))
     expect(error.kind).toBe('bad-request')
     expect(error.message).toMatch(/Too many locations/)
   })
 
   it('meldet einen Fehler auch bei HTTP 200, statt ihn zu verschlucken', async () => {
-    const error = await failureOf(jsonResponse({ error: { code: 9999, message: 'Merkwuerdig' } }, 200))
+    const error = await failureOf(jsonResponse({ error: { code: 9999, message: 'Merkwürdig' } }, 200))
     expect(error.kind).toBe('unknown')
   })
 
@@ -339,7 +339,7 @@ describe('OrsProvider - Fehlerabbildung', () => {
     expect((error as RoutingError).kind).toBe('network')
   })
 
-  it('reicht einen Abbruch unveraendert weiter', async () => {
+  it('reicht einen Abbruch unverändert weiter', async () => {
     const abort = Object.assign(new Error('Abgebrochen'), { name: 'AbortError' })
     fetchMock.mockRejectedValue(abort)
     const error = await new OrsProvider(KEY).route(BERLIN, 'driving').catch((e: unknown) => e)

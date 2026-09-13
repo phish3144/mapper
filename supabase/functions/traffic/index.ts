@@ -207,7 +207,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
   const url = Deno.env.get('SUPABASE_URL')
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-  if (!url || !serviceKey) return json({ error: 'Der Dienst ist nicht vollstaendig eingerichtet.' }, 500)
+  if (!url || !serviceKey) return json({ error: 'Der Dienst ist nicht vollständig eingerichtet.' }, 500)
   const service: SupabaseClient = createClient(url, serviceKey, { auth: { persistSession: false } })
 
   const { data } = await service

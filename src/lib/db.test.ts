@@ -6,7 +6,7 @@ function zeile(route_id: string, name: string | null): StopRouteRow {
 }
 
 describe('groupAffectedRoutes', () => {
-  it('zaehlt die Stopps je Route zusammen', () => {
+  it('zählt die Stopps je Route zusammen', () => {
     const betroffen = groupAffectedRoutes([
       zeile('r1', 'Sondertour HaMu MV'),
       zeile('r1', 'Sondertour HaMu MV'),

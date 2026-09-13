@@ -103,7 +103,7 @@ async function frageAb(): Promise<Verkehrsstand> {
 
   const payload = data as { data?: unknown; error?: string }
   if (payload?.error) throw new Error(payload.error)
-  if (!istStand(payload?.data)) throw new Error('Die Verkehrsmeldungen kamen unerwartet zurueck.')
+  if (!istStand(payload?.data)) throw new Error('Die Verkehrsmeldungen kamen unerwartet zurück.')
   return payload.data
 }
 

@@ -234,7 +234,7 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
       }
     }
 
-    const zweifel = hint ?? (needsReview(line) ? 'Ohne Ort und Postleitzahl - bitte pruefen' : null)
+    const zweifel = hint ?? (needsReview(line) ? 'Ohne Ort und Postleitzahl - bitte prüfen' : null)
     return {
       raw: line,
       kind: zweifel ? 'unsure' : 'created',
@@ -595,7 +595,7 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
               aria-expanded={startOffen && startVorschlaege.length > 0}
               aria-haspopup="listbox"
               aria-autocomplete="list"
-              placeholder="Start (optional) — Standort waehlen oder Adresse tippen"
+              placeholder="Start (optional) — Standort wählen oder Adresse tippen"
               onFocus={() => setStartOffen(true)}
               onChange={(e) => {
                 setStartText(e.target.value)
@@ -632,7 +632,7 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
                 <div className="addr-section">
                   <span className="addr-section-title">
                     {parsed.lines.length > 0
-                      ? 'Standort waehlen — die Tour wird sofort gebaut'
+                      ? 'Standort wählen — die Tour wird sofort gebaut'
                       : 'Gespeicherte Standorte'}
                   </span>
                 </div>
@@ -669,7 +669,7 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
           value={text}
           disabled={running}
           aria-label="Adressen, eine je Zeile"
-          placeholder={'Adressen einfuegen — eine je Zeile\nBahnhofstr. 5, 29336 Nienhagen\nDorfstr. 1, 12345 Musterdorf'}
+          placeholder={'Adressen einfügen — eine je Zeile\nBahnhofstr. 5, 29336 Nienhagen\nDorfstr. 1, 12345 Musterdorf'}
           onChange={(e) => {
             setText(e.target.value)
             setReport(null)
@@ -745,7 +745,7 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
                 {running
                   ? 'Tour wird gebaut …'
                   : anzahlGewaehlt === 0
-                    ? 'Nichts ausgewaehlt'
+                    ? 'Nichts ausgewählt'
                     : `${pluralize(anzahlGewaehlt, 'Adresse', 'Adressen')} uebernehmen`}
               </Button>
               <Button size="sm" disabled={running} onClick={verwerfen}>

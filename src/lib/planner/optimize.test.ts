@@ -61,7 +61,7 @@ describe('optimizeOrder - reine Fahrzeit', () => {
     expect([[0, 2, 1, 3].join(), [3, 1, 2, 0].join()]).toContain(result.order.join())
   })
 
-  it('haelt einen fixierten Startpunkt ein', () => {
+  it('hält einen fixierten Startpunkt ein', () => {
     const { stops, matrix } = lineCase([0, 3, 1, 7], 60)
 
     const result = optimizeOrder(stops, matrix, makeOptions({ fixedStartIndex: 0 }))
@@ -70,7 +70,7 @@ describe('optimizeOrder - reine Fahrzeit', () => {
     expect(result.schedule.totalTravelSec).toBe(7 * 60)
   })
 
-  it('haelt fixierten Start und fixiertes Ende ein', () => {
+  it('hält fixierten Start und fixiertes Ende ein', () => {
     // Positionen: 0 -> x=0 (Start), 1 -> x=3, 2 -> x=1, 3 -> x=2, 4 -> x=10 (Ende).
     const { stops, matrix } = lineCase([0, 3, 1, 2, 10], 60)
 
@@ -86,7 +86,7 @@ describe('optimizeOrder - reine Fahrzeit', () => {
     expect(result.schedule.totalTravelSec).toBe(10 * 60)
   })
 
-  it('nutzt die Richtungsabhaengigkeit der Matrix', () => {
+  it('nutzt die Richtungsabhängigkeit der Matrix', () => {
     const stops = [makeStop(0), makeStop(1)]
     const matrix = { durations: [[0, 900], [300, 0]], distances: [[0, 9000], [3000, 0]] }
 
@@ -99,7 +99,7 @@ describe('optimizeOrder - reine Fahrzeit', () => {
     expect(fixed.schedule.totalTravelSec).toBe(900)
   })
 
-  it('bewaeltigt auch mehr als zwoelf Stopps', () => {
+  it('bewältigt auch mehr als zwölf Stopps', () => {
     const positions = [7, 0, 13, 3, 9, 1, 11, 5, 2, 12, 4, 10, 6, 8]
     const { stops, matrix } = lineCase(positions, 60)
 
@@ -111,7 +111,7 @@ describe('optimizeOrder - reine Fahrzeit', () => {
 })
 
 describe('optimizeOrder - Zeitfenster', () => {
-  it('bevorzugt die verletzungsaermere Reihenfolge, auch wenn sie langsamer ist', () => {
+  it('bevorzugt die verletzungsärmere Reihenfolge, auch wenn sie langsamer ist', () => {
     // Positionen: 0 -> x=0 (Depot), 1 -> x=1, 2 -> x=2, 3 -> x=10 (enges Fenster).
     // Die beiden nahen Stopps kosten je 30 Minuten Aufenthalt; wer sie zuerst
     // abarbeitet, erreicht den weiten Stopp erst nach Fensterschluss.
@@ -166,7 +166,7 @@ describe('optimizeOrder - Zeitfenster', () => {
   })
 })
 
-describe('optimizeOrder - Determinismus und Randfaelle', () => {
+describe('optimizeOrder - Determinismus und Randfälle', () => {
   it('liefert bei gleicher Eingabe zweimal dasselbe Ergebnis', () => {
     const points: Array<[number, number]> = [
       [0, 0], [4, 1], [1, 5], [6, 6], [2, 2], [5, 3], [3, 7], [7, 2], [2, 4],
@@ -226,7 +226,7 @@ describe('optimizeOrder - Determinismus und Randfaelle', () => {
     expect(result.schedule.totalTravelSec).toBe(2 * 5 * 60)
   })
 
-  it('haelt ein fixiertes Ende auch ohne fixierten Start ein', () => {
+  it('hält ein fixiertes Ende auch ohne fixierten Start ein', () => {
     const { stops, matrix } = lineCase([0, 3, 1, 7], 60)
 
     const result = optimizeOrder(stops, matrix, makeOptions({ fixedEndIndex: 1 }))
@@ -270,7 +270,7 @@ describe('optimizeOrder - Determinismus und Randfaelle', () => {
     expect(result.schedule.totalTravelSec).toBe(7 * 60)
   })
 
-  it('laesst den Start gewinnen, wenn Start und Ende auf denselben Stopp zeigen', () => {
+  it('lässt den Start gewinnen, wenn Start und Ende auf denselben Stopp zeigen', () => {
     const { stops, matrix } = lineCase([0, 3, 1, 7], 60)
 
     const result = optimizeOrder(

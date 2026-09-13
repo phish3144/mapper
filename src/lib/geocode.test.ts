@@ -124,7 +124,7 @@ describe('searchAddress - Anfrage', () => {
     expect(url.searchParams.get('countrycodes')).toBeNull()
   })
 
-  it('uebernimmt Limit und Laenderfilter', async () => {
+  it('übernimmt Limit und Länderfilter', async () => {
     fetchMock.mockResolvedValue(jsonResponse([]))
     await settle(searchAddress('Hauptstrasse', { limit: 3, countryCodes: 'DE, AT' }))
 
@@ -168,7 +168,7 @@ describe('searchAddress - Anfrage', () => {
 })
 
 describe('searchAddress - Auswertung', () => {
-  it('uebersetzt einen Treffer vollstaendig', async () => {
+  it('übersetzt einen Treffer vollständig', async () => {
     fetchMock.mockResolvedValue(jsonResponse([nominatimHit()]))
     const hits = await settle(searchAddress('Brandenburger Tor'))
 
@@ -184,7 +184,7 @@ describe('searchAddress - Auswertung', () => {
     })
   })
 
-  it('faellt fuer den Typ auf addresstype zurueck und setzt sonst null', async () => {
+  it('fällt für den Typ auf addresstype zurück und setzt sonst null', async () => {
     fetchMock.mockResolvedValue(
       jsonResponse([
         nominatimHit({ type: '', addresstype: 'road', category: '' }),
@@ -196,7 +196,7 @@ describe('searchAddress - Auswertung', () => {
     expect(hits[1].type).toBeNull()
   })
 
-  it('laesst boundingBox weg, wenn die Box fehlt oder unbrauchbar ist', async () => {
+  it('lässt boundingBox weg, wenn die Box fehlt oder unbrauchbar ist', async () => {
     fetchMock.mockResolvedValue(
       jsonResponse([
         nominatimHit({ boundingbox: undefined }),
@@ -208,7 +208,7 @@ describe('searchAddress - Auswertung', () => {
     expect(hits.map((hit) => hit.boundingBox)).toEqual([null, null, null])
   })
 
-  it('ueberspringt Eintraege ohne brauchbare Koordinaten', async () => {
+  it('überspringt Einträge ohne brauchbare Koordinaten', async () => {
     fetchMock.mockResolvedValue(
       jsonResponse([
         nominatimHit({ lat: 'keine Zahl' }),
@@ -225,7 +225,7 @@ describe('searchAddress - Auswertung', () => {
   })
 })
 
-describe('searchAddress - Fehlerfaelle', () => {
+describe('searchAddress - Fehlerfälle', () => {
   it('liefert bei HTTP 429 eine leere Liste, ohne zu werfen', async () => {
     fetchMock.mockResolvedValue(jsonResponse({ error: 'Bandwidth limit exceeded' }, 429))
     await expect(settle(searchAddress('Berlin'))).resolves.toEqual([])
@@ -279,7 +279,7 @@ describe('searchAddress - Cache', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
-  it('trennt Eintraege nach Limit und Laenderfilter', async () => {
+  it('trennt Einträge nach Limit und Länderfilter', async () => {
     fetchMock.mockResolvedValue(jsonResponse([nominatimHit()]))
     await settle(searchAddress('Berlin'))
     await settle(searchAddress('Berlin', { limit: 3 }))
@@ -287,7 +287,7 @@ describe('searchAddress - Cache', () => {
     expect(fetchMock).toHaveBeenCalledTimes(3)
   })
 
-  it('gibt eine Kopie heraus, sodass Aufrufer den Cache nicht veraendern', async () => {
+  it('gibt eine Kopie heraus, sodass Aufrufer den Cache nicht verändern', async () => {
     fetchMock.mockResolvedValue(jsonResponse([nominatimHit()]))
     const first = await settle(searchAddress('Berlin'))
     first.length = 0
@@ -296,7 +296,7 @@ describe('searchAddress - Cache', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
-  it(`behaelt hoechstens ${GEOCODE_CACHE_LIMIT} Eintraege und verwirft die aeltesten`, async () => {
+  it(`behält höchstens ${GEOCODE_CACHE_LIMIT} Einträge und verwirft die ältesten`, async () => {
     fetchMock.mockResolvedValue(jsonResponse([nominatimHit()]))
     const overflow = 3
     const total = GEOCODE_CACHE_LIMIT + overflow
@@ -316,7 +316,7 @@ describe('searchAddress - Cache', () => {
 })
 
 describe('Ratenbegrenzung', () => {
-  it('serialisiert Anfragen und haelt mindestens 1100 ms Abstand', async () => {
+  it('serialisiert Anfragen und hält mindestens 1100 ms Abstand', async () => {
     fetchMock.mockResolvedValue(jsonResponse([nominatimHit()]))
     const pending = [searchAddress('eins'), searchAddress('zwei'), searchAddress('drei')]
 
@@ -338,7 +338,7 @@ describe('Ratenbegrenzung', () => {
     await Promise.all(pending)
   })
 
-  it('gilt auch zwischen Vorwaerts- und Rueckwaertssuche', async () => {
+  it('gilt auch zwischen Vorwaerts- und Rückwärtssuche', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse([nominatimHit()]))
     fetchMock.mockResolvedValue(jsonResponse(nominatimHit()))
     const pending = [searchAddress('eins'), reverseGeocode({ lat: 52.52, lng: 13.405 })]
@@ -351,7 +351,7 @@ describe('Ratenbegrenzung', () => {
     await Promise.all(pending)
   })
 
-  it('laesst nach genuegend Ruhe sofort wieder anfragen', async () => {
+  it('lässt nach genügend Ruhe sofort wieder anfragen', async () => {
     fetchMock.mockResolvedValue(jsonResponse([nominatimHit()]))
     await settle(searchAddress('eins'))
     await vi.advanceTimersByTimeAsync(5000)
@@ -398,7 +398,7 @@ describe('reverseGeocode', () => {
     await expect(settle(reverseGeocode({ lat: 52.53, lng: 13.4 }))).resolves.toBeNull()
   })
 
-  it('fragt ungueltige Koordinaten gar nicht erst an', async () => {
+  it('fragt ungültige Koordinaten gar nicht erst an', async () => {
     await expect(reverseGeocode({ lat: 91, lng: 13.4 })).resolves.toBeNull()
     await expect(reverseGeocode({ lat: Number.NaN, lng: 13.4 })).resolves.toBeNull()
     expect(fetchMock).not.toHaveBeenCalled()
@@ -488,7 +488,7 @@ describe('createAddressSearch', () => {
     expect(onResult).toHaveBeenCalledTimes(1)
   })
 
-  it('reicht Limit und Laenderfilter durch', async () => {
+  it('reicht Limit und Länderfilter durch', async () => {
     fetchMock.mockResolvedValue(jsonResponse([]))
     const search = createAddressSearch(0)
     search('Hauptstrasse', vi.fn(), { limit: 5, countryCodes: 'de' })
@@ -498,7 +498,7 @@ describe('createAddressSearch', () => {
     expect(calledUrl().searchParams.get('countrycodes')).toBe('de')
   })
 
-  it('unterdrueckt nach cancel() jede Rueckmeldung', async () => {
+  it('unterdrückt nach cancel() jede Rückmeldung', async () => {
     fetchMock.mockResolvedValue(jsonResponse([nominatimHit()]))
     const search = createAddressSearch(500)
     const onResult = vi.fn()
@@ -526,7 +526,7 @@ describe('createAddressSearch', () => {
     expect(onResult).toHaveBeenCalledTimes(2)
   })
 
-  it('laesst sich von einem werfenden Callback nicht aus dem Tritt bringen', async () => {
+  it('lässt sich von einem werfenden Callback nicht aus dem Tritt bringen', async () => {
     fetchMock.mockResolvedValue(jsonResponse([nominatimHit()]))
     const search = createAddressSearch(0)
     const onResult = vi.fn()
@@ -549,8 +549,8 @@ describe('createAddressSearch', () => {
   })
 })
 
-describe('Randfaelle', () => {
-  it('gibt eigenstaendige Treffer heraus - Aenderungen vergiften den Cache nicht', async () => {
+describe('Randfälle', () => {
+  it('gibt eigenständige Treffer heraus - Aenderungen vergiften den Cache nicht', async () => {
     fetchMock.mockResolvedValue(jsonResponse([nominatimHit()]))
     const first = await settle(searchAddress('Berlin'))
     first[0].label = 'KAPUTT'
@@ -576,7 +576,7 @@ describe('Randfaelle', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
-  it('gibt den Platz in der Warteschlange frei, wenn waehrend der Wartezeit abgebrochen wird', async () => {
+  it('gibt den Platz in der Warteschlange frei, wenn während der Wartezeit abgebrochen wird', async () => {
     fetchMock.mockResolvedValue(jsonResponse([nominatimHit()]))
     const controller = new AbortController()
     const first = searchAddress('eins')
@@ -598,7 +598,7 @@ describe('Randfaelle', () => {
     ])
   })
 
-  it('behaelt eine Box ueber den 180. Laengengrad hinweg', async () => {
+  it('behält eine Box über den 180. Längengrad hinweg', async () => {
     fetchMock.mockResolvedValue(
       jsonResponse([nominatimHit({ boundingbox: ['-18.3', '-12.4', '176.9', '-178.2'] })]),
     )
@@ -638,7 +638,7 @@ describe('Randfaelle', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
-  it('wirft leere Glieder aus dem Laenderfilter', async () => {
+  it('wirft leere Glieder aus dem Länderfilter', async () => {
     fetchMock.mockResolvedValue(jsonResponse([]))
     await settle(searchAddress('Hauptstrasse', { countryCodes: ' de , , at ,' }))
     expect(calledUrl().searchParams.get('countrycodes')).toBe('de,at')
@@ -680,7 +680,7 @@ describe('findAddress — Kaskade und Fehlerarten', () => {
     expect((await settleCascade(findAddress('Nienhagen'))).problem).toBe('network')
   })
 
-  it('haelt beim ersten Treffer an und meldet kein Problem', async () => {
+  it('hält beim ersten Treffer an und meldet kein Problem', async () => {
     fetchMock.mockResolvedValue(
       jsonResponse([
         nominatimHit({
@@ -699,7 +699,7 @@ describe('findAddress — Kaskade und Fehlerarten', () => {
     expect(result.matches[0].note).toBeNull()
   })
 
-  it('weist eine Strassenmitte aus, wenn nach einer Hausnummer gefragt war', async () => {
+  it('weist eine Straßenmitte aus, wenn nach einer Hausnummer gefragt war', async () => {
     // Nominatim liefert auf eine unbekannte Hausnummer bereitwillig die
     // Strasse zurueck, ohne das kenntlich zu machen.
     fetchMock.mockResolvedValue(
@@ -717,7 +717,7 @@ describe('findAddress — Kaskade und Fehlerarten', () => {
     expect(result.matches[0].note).toContain('Hausnummer')
   })
 
-  it('nennt einen blossen Ortstreffer nicht ungenau, wenn nur ein Ort gesucht war', async () => {
+  it('nennt einen bloßen Ortstreffer nicht ungenau, wenn nur ein Ort gesucht war', async () => {
     fetchMock.mockResolvedValue(
       jsonResponse([
         nominatimHit({ display_name: 'Nienhagen, Landkreis Celle', type: 'village', address: {} }),
@@ -753,7 +753,7 @@ describe('Anfrage an den Boten', () => {
   // unterwegs ein Feld weg, merkt das niemand: es kaeme eine plausible
   // Antwort zurueck, nur eben die falsche - und sie landete im
   // Zwischenspeicher unter einem Schluessel, der die Einschraenkung behauptet.
-  it('nimmt die Laendereinschraenkung der freien Suche mit', () => {
+  it('nimmt die Ländereinschränkung der freien Suche mit', () => {
     const request = buildProxyRequest('nominatim', 5, {
       q: '  Hauptstrasse 1  ',
       countryCodes: 'de,at,ch',
@@ -766,7 +766,7 @@ describe('Anfrage an den Boten', () => {
     })
   })
 
-  it('laesst leere Angaben weg, statt sie als leeren Text zu schicken', () => {
+  it('lässt leere Angaben weg, statt sie als leeren Text zu schicken', () => {
     expect(buildProxyRequest('nominatim', 8, { q: '   ', countryCodes: '' })).toEqual({
       provider: 'nominatim',
       limit: 8,
@@ -777,7 +777,7 @@ describe('Anfrage an den Boten', () => {
     })
   })
 
-  it('reicht strukturierte Felder unveraendert durch', () => {
+  it('reicht strukturierte Felder unverändert durch', () => {
     const request = buildProxyRequest('nominatim', 8, {
       structured: { street: 'Horstwiesen 14', postalcode: '29336', city: 'Nienhagen' },
     })

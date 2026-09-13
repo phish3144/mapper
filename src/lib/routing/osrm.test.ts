@@ -40,12 +40,12 @@ describe('OsrmProvider - Konfiguration', () => {
   // Vite ersetzt import.meta.env je Modul statisch durch ein Objektliteral.
   // Ein Stub aus der Testdatei erreicht das Anbieter-Modul deshalb nicht -
   // fuer abweichende Basis-URLs nimmt der Test das Konstruktor-Argument.
-  it('nutzt ohne Argument die Umgebung und faellt auf den Demoserver zurueck', () => {
+  it('nutzt ohne Argument die Umgebung und fällt auf den Demoserver zurück', () => {
     expect(new OsrmProvider().baseUrl).toBe(OSRM_PUBLIC_DEMO_URL)
     expect(new OsrmProvider('   ').baseUrl).toBe(OSRM_PUBLIC_DEMO_URL)
   })
 
-  it('uebernimmt eine eigene Basis-URL und entfernt den abschliessenden Schraegstrich', () => {
+  it('übernimmt eine eigene Basis-URL und entfernt den abschließenden Schrägstrich', () => {
     expect(new OsrmProvider('https://osrm.example.org/').baseUrl).toBe('https://osrm.example.org')
     expect(new OsrmProvider('https://osrm.example.org:5000//').baseUrl).toBe(
       'https://osrm.example.org:5000',
@@ -142,10 +142,10 @@ describe('OsrmProvider.route - Auswertung', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('lehnt ungueltige Koordinaten ohne Anfrage ab', async () => {
+  it('lehnt ungültige Koordinaten ohne Anfrage ab', async () => {
     const broken = [BERLIN[0], { lat: 95, lng: 13.4 }]
     await expect(new OsrmProvider().route(broken, 'driving')).rejects.toThrow(
-      /Punkt 2 hat keine gueltigen Koordinaten/,
+      /Punkt 2 hat keine gültigen Koordinaten/,
     )
     expect(fetchMock).not.toHaveBeenCalled()
   })
@@ -188,7 +188,7 @@ describe('OsrmProvider - Fehlerabbildung', () => {
     expect((error as RoutingError).kind).toBe('network')
   })
 
-  it('reicht einen Abbruch unveraendert weiter', async () => {
+  it('reicht einen Abbruch unverändert weiter', async () => {
     const abort = Object.assign(new Error('Abgebrochen'), { name: 'AbortError' })
     fetchMock.mockRejectedValue(abort)
     const error = await new OsrmProvider().route(BERLIN, 'driving').catch((e: unknown) => e)
@@ -251,7 +251,7 @@ describe('OsrmProvider.matrix', () => {
     const error = await new OsrmProvider().matrix(many, 'driving').catch((e: unknown) => e)
     expect(error).toBeInstanceOf(RoutingError)
     expect((error as RoutingError).kind).toBe('bad-request')
-    expect((error as RoutingError).message).toMatch(/hoechstens 100 Punkte/)
+    expect((error as RoutingError).message).toMatch(/höchstens 100 Punkte/)
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
@@ -261,15 +261,15 @@ describe('OsrmProvider.matrix', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('meldet eine unvollstaendige Matrix als unknown', async () => {
+  it('meldet eine unvollständige Matrix als unknown', async () => {
     fetchMock.mockResolvedValue(jsonResponse({ code: 'Ok', durations: [[0, 1]] }))
     const error = await new OsrmProvider().matrix(BERLIN, 'driving').catch((e: unknown) => e)
     expect((error as RoutingError).kind).toBe('unknown')
   })
 })
 
-describe('OsrmProvider - Kennung und Randfaelle der Matrix', () => {
-  it('traegt die Basis-URL in die Kennung, damit zwei Instanzen unterscheidbar bleiben', () => {
+describe('OsrmProvider - Kennung und Randfälle der Matrix', () => {
+  it('trägt die Basis-URL in die Kennung, damit zwei Instanzen unterscheidbar bleiben', () => {
     expect(new OsrmProvider('https://a.example.org').id).toBe('osrm|https://a.example.org')
     expect(new OsrmProvider('https://b.example.org').id).not.toBe(
       new OsrmProvider('https://a.example.org').id,
@@ -280,7 +280,7 @@ describe('OsrmProvider - Kennung und Randfaelle der Matrix', () => {
     )
   })
 
-  it('fuellt fehlende Zeilen und Spalten mit Infinity auf', async () => {
+  it('füllt fehlende Zeilen und Spalten mit Infinity auf', async () => {
     fetchMock.mockResolvedValue(
       jsonResponse({ code: 'Ok', durations: [[0]], distances: [[0]] }),
     )

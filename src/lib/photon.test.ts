@@ -68,7 +68,7 @@ describe('photonToHit', () => {
     expect(hit?.type).toBe('house')
   })
 
-  it('laesst Hausnummer und Strasse null, wenn der Treffer keine hat', () => {
+  it('lässt Hausnummer und Strasse null, wenn der Treffer keine hat', () => {
     const hit = photonToHit(feature({ name: 'Nienhagen', osm_value: 'village' }))
     expect(hit?.houseNumber).toBeNull()
     expect(hit?.road).toBeNull()
@@ -82,13 +82,13 @@ describe('photonToHit', () => {
     expect(photonToHit(feature({}, [999, 999]))).toBeNull()
   })
 
-  it('nimmt die Nullinsel als gueltigen Punkt an', () => {
+  it('nimmt die Nullinsel als gültigen Punkt an', () => {
     expect(photonToHit(feature({ name: 'Nullinsel' }, [0, 0]))?.lat).toBe(0)
   })
 })
 
 describe('photonFeatures', () => {
-  it('holt die Liste heraus und vertraegt Muell', () => {
+  it('holt die Liste heraus und verträgt Müll', () => {
     expect(photonFeatures({ features: [1, 2] })).toEqual([1, 2])
     expect(photonFeatures({ features: 'nein' })).toEqual([])
     expect(photonFeatures(null)).toEqual([])

@@ -15,7 +15,7 @@ import type { Route, RouteProfile, RouteRule, VisibilityLevel } from '@/types/do
 const PROFILE_LABELS: Record<RouteProfile, string> = {
   driving: 'Auto',
   cycling: 'Fahrrad',
-  walking: 'zu Fuss',
+  walking: 'zu Fuß',
 }
 
 /** Wandelt einen ISO-Zeitstempel in den Wert eines datetime-local-Feldes (Lokalzeit). */
@@ -72,7 +72,7 @@ export default function RouteEditor({ route, onBack }: { route: Route; onBack: (
       const matched = applyRule(route.rule, locations, membership)
       await db.replaceRouteStops(route.id, matched.map(db.placeOfLocation))
       await loadStops(route.id)
-      notify('success', `${pluralize(matched.length, 'Stopp', 'Stopps')} aus der Regel uebernommen.`)
+      notify('success', `${pluralize(matched.length, 'Stopp', 'Stopps')} aus der Regel übernommen.`)
     } catch (e) {
       reportError(e)
     } finally {
@@ -87,7 +87,7 @@ export default function RouteEditor({ route, onBack }: { route: Route; onBack: (
     <>
       <div className="sidebar-head">
         <div className="row" style={{ marginBottom: 8 }}>
-          <IconButton label="Zurueck zur Routenliste" onClick={onBack}>
+          <IconButton label="Zurück zur Routenliste" onClick={onBack}>
             ←
           </IconButton>
           <input
@@ -133,7 +133,7 @@ export default function RouteEditor({ route, onBack }: { route: Route; onBack: (
             >
               <option value="driving">Auto</option>
               <option value="cycling">Fahrrad</option>
-              <option value="walking">zu Fuss</option>
+              <option value="walking">zu Fuß</option>
             </SelectField>
             {notice && route.profile !== 'driving' && (
               <div className="field-hint" style={{ marginTop: -8, marginBottom: 10 }}>
@@ -175,7 +175,7 @@ export default function RouteEditor({ route, onBack }: { route: Route; onBack: (
                 disabled={!canEdit}
                 onChange={(e) => void patch({ start_location_id: e.target.value || null })}
               >
-                <option value="">frei waehlbar</option>
+                <option value="">frei wählbar</option>
                 {stopOptions.map((o) => (
                   <option key={o.id} value={o.id}>
                     {o.name}
@@ -188,7 +188,7 @@ export default function RouteEditor({ route, onBack }: { route: Route; onBack: (
                 disabled={!canEdit || route.roundtrip}
                 onChange={(e) => void patch({ end_location_id: e.target.value || null })}
               >
-                <option value="">frei waehlbar</option>
+                <option value="">frei wählbar</option>
                 {stopOptions.map((o) => (
                   <option key={o.id} value={o.id}>
                     {o.name}
@@ -199,7 +199,7 @@ export default function RouteEditor({ route, onBack }: { route: Route; onBack: (
 
             <div className="field">
               <Checkbox
-                label="Rundtour — zurueck zum Startpunkt"
+                label="Rundtour — zurück zum Startpunkt"
                 checked={route.roundtrip}
                 disabled={!canEdit}
                 onChange={(on) => void patch({ roundtrip: on, end_location_id: on ? null : route.end_location_id })}
@@ -208,7 +208,7 @@ export default function RouteEditor({ route, onBack }: { route: Route; onBack: (
 
             <Field
               label="Aufenthaltsdauer als Vorgabe (Minuten)"
-              hint="Gilt fuer Standorte ohne eigene Angabe."
+              hint="Gilt für Standorte ohne eigene Angabe."
             >
               {(id) => (
                 <input
@@ -240,9 +240,9 @@ export default function RouteEditor({ route, onBack }: { route: Route; onBack: (
                   size="sm"
                   onClick={() =>
                     confirm(
-                      'Route loeschen?',
+                      'Route löschen?',
                       <>
-                        Die Route <strong>{route.name}</strong> und ihre Stoppliste werden geloescht. Die
+                        Die Route <strong>{route.name}</strong> und ihre Stoppliste werden gelöscht. Die
                         Standorte selbst bleiben erhalten.
                       </>,
                       async () => {
@@ -257,7 +257,7 @@ export default function RouteEditor({ route, onBack }: { route: Route; onBack: (
                     )
                   }
                 >
-                  Route loeschen
+                  Route löschen
                 </Button>
               </>
             )}
@@ -283,7 +283,7 @@ export default function RouteEditor({ route, onBack }: { route: Route; onBack: (
               </Button>
             )}
             <div className="field-hint" style={{ marginTop: 6 }}>
-              Die Stoppliste wird dabei vollstaendig ersetzt. Danach kannst du sie weiter von Hand
+              Die Stoppliste wird dabei vollständig ersetzt. Danach kannst du sie weiter von Hand
               anpassen.
             </div>
           </div>
@@ -364,7 +364,7 @@ export default function RouteEditor({ route, onBack }: { route: Route; onBack: (
           <div className="stats">
             <div className="stat">
               <div className="stat-value">{formatDuration(schedule.totalTravelSec)}</div>
-              <div className="stat-label">Fahrzeit{plan.estimated ? ' (geschaetzt)' : ''}</div>
+              <div className="stat-label">Fahrzeit{plan.estimated ? ' (geschätzt)' : ''}</div>
             </div>
             <div className="stat">
               <div className="stat-value">{formatDistance(schedule.totalDistanceM)}</div>

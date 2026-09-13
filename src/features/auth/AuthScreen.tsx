@@ -40,7 +40,7 @@ function describeAuthError(error: unknown): string {
   const msg = (error as { message?: string } | null)?.message ?? ''
 
   if (/Email not confirmed/i.test(msg)) {
-    return 'Diese Adresse ist noch nicht bestaetigt. Oeffne bitte zuerst den Link aus der Bestaetigungsmail.'
+    return 'Diese Adresse ist noch nicht bestätigt. Oeffne bitte zuerst den Link aus der Bestätigungsmail.'
   }
   const throttled = /after (\d+) seconds/i.exec(msg)
   if (throttled) {
@@ -56,10 +56,10 @@ function describeAuthError(error: unknown): string {
     return 'Bitte gib ein Passwort ein.'
   }
   if (/weak.?password|password is too weak/i.test(msg)) {
-    return 'Dieses Passwort ist zu schwach. Waehle bitte ein laengeres oder ungewoehnlicheres.'
+    return 'Dieses Passwort ist zu schwach. Wähle bitte ein längeres oder ungewöhnlicheres.'
   }
   if (/Signups not allowed|Signup is disabled|signup_disabled/i.test(msg)) {
-    return 'Die Registrierung ist fuer diese Installation abgeschaltet. Bitte lass dich einladen.'
+    return 'Die Registrierung ist für diese Installation abgeschaltet. Bitte lass dich einladen.'
   }
   return describeError(error)
 }
@@ -112,7 +112,7 @@ export default function AuthScreen({ onZurueck }: { onZurueck?: () => void }) {
     const mail = email.trim()
 
     if (!mail) found.email = 'Bitte gib deine E-Mail-Adresse ein.'
-    else if (!EMAIL_PATTERN.test(mail)) found.email = 'Diese E-Mail-Adresse sieht nicht gueltig aus.'
+    else if (!EMAIL_PATTERN.test(mail)) found.email = 'Diese E-Mail-Adresse sieht nicht gültig aus.'
 
     if (!password) found.password = 'Bitte gib dein Passwort ein.'
 
@@ -122,7 +122,7 @@ export default function AuthScreen({ onZurueck }: { onZurueck?: () => void }) {
         found.password = `Das Passwort braucht mindestens ${MIN_PASSWORD_LENGTH} Zeichen.`
       }
       if (!found.password && confirm !== password) {
-        found.confirm = 'Die beiden Passwoerter stimmen nicht ueberein.'
+        found.confirm = 'Die beiden Passwörter stimmen nicht überein.'
       }
     }
 
@@ -173,7 +173,7 @@ export default function AuthScreen({ onZurueck }: { onZurueck?: () => void }) {
 
           <div className="notice notice-success" role="status">
             <span className="notice-text">
-              Wir haben eine Bestaetigungsmail an <strong>{awaitingConfirmation}</strong> geschickt.
+              Wir haben eine Bestätigungsmail an <strong>{awaitingConfirmation}</strong> geschickt.
               Oeffne den Link darin, danach kannst du dich hier anmelden.
             </span>
           </div>
@@ -216,7 +216,7 @@ export default function AuthScreen({ onZurueck }: { onZurueck?: () => void }) {
             "zurueck" zeigen koennte. */}
         {onZurueck && (
           <button type="button" className="linkish small" onClick={onZurueck}>
-            &larr; Zurueck zur Startseite
+            &larr; Zurück zur Startseite
           </button>
         )}
 
@@ -307,7 +307,7 @@ export default function AuthScreen({ onZurueck }: { onZurueck?: () => void }) {
             <hr className="divider" />
             <p className="small muted" style={{ margin: 0 }}>
               Das erste Konto dieser Installation wird automatisch App-Administrator und kann
-              anschliessend weitere Konten anlegen.
+              anschließend weitere Konten anlegen.
             </p>
           </>
         )}

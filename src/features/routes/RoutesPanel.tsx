@@ -32,9 +32,9 @@ export default function RoutesPanel() {
    */
   function askDelete(id: string, name: string) {
     confirm(
-      'Route loeschen?',
+      'Route löschen?',
       <>
-        Die Route <strong>{name}</strong> und ihre Stoppliste werden geloescht. Die Standorte selbst
+        Die Route <strong>{name}</strong> und ihre Stoppliste werden gelöscht. Die Standorte selbst
         bleiben erhalten.
       </>,
       async () => {
@@ -96,7 +96,7 @@ export default function RoutesPanel() {
             {canEdit ? (
               <>
                 <br />
-                Adressen oben einfuegen — die Reihenfolge wird berechnet.
+                Adressen oben einfügen — die Reihenfolge wird berechnet.
                 <br />
                 <span className="faint">
                   Von Hand geht es auch: „Leere Route", dann Stopps aus dem Bestand oder aus einer Regel.

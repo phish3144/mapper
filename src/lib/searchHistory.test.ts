@@ -22,7 +22,7 @@ describe('mergeEntry', () => {
     expect(nachher.map((e) => e.label)).toEqual(['Hannover', 'Berlin'])
   })
 
-  it('verdraengt dieselbe Lage, statt sie doppelt zu fuehren', () => {
+  it('verdrängt dieselbe Lage, statt sie doppelt zu führen', () => {
     const vorher = [eintrag('Georgstr. 10', 52.379, 9.741), eintrag('Berlin', 52.52, 13.4)]
     const nachher = mergeEntry(vorher, eintrag('Georgstraße 10, Hannover', 52.37902, 9.74098, 2))
     expect(nachher).toHaveLength(2)
@@ -30,7 +30,7 @@ describe('mergeEntry', () => {
     expect(nachher[0].label).toBe('Georgstraße 10, Hannover')
   })
 
-  it('bleibt bei hoechstens MAX_ENTRIES', () => {
+  it('bleibt bei höchstens MAX_ENTRIES', () => {
     let liste: SearchEntry[] = []
     for (let i = 0; i < MAX_ENTRIES + 4; i++) liste = mergeEntry(liste, eintrag(`Ort ${i}`, 50 + i, 8, i))
     expect(liste).toHaveLength(MAX_ENTRIES)
@@ -39,7 +39,7 @@ describe('mergeEntry', () => {
     expect(liste.some((e) => e.label === 'Ort 0')).toBe(false)
   })
 
-  it('aendert die uebergebene Liste nicht', () => {
+  it('ändert die übergebene Liste nicht', () => {
     const vorher = [eintrag('Berlin', 52.52, 13.4)]
     mergeEntry(vorher, eintrag('Hannover', 52.37, 9.73, 2))
     expect(vorher).toHaveLength(1)
@@ -47,7 +47,7 @@ describe('mergeEntry', () => {
 })
 
 describe('parseHistory', () => {
-  it('liest zurueck, was geschrieben wurde', () => {
+  it('liest zurück, was geschrieben wurde', () => {
     const liste = [eintrag('Hannover', 52.37, 9.73, 5)]
     expect(parseHistory(JSON.stringify(liste))).toEqual(liste)
   })
@@ -58,7 +58,7 @@ describe('parseHistory', () => {
     expect(parseHistory('{"nicht":"eine Liste"}')).toEqual([])
   })
 
-  it('wirft unbrauchbare Eintraege raus und behaelt die guten', () => {
+  it('wirft unbrauchbare Einträge raus und behält die guten', () => {
     const roh = JSON.stringify([
       { label: 'Gut', lat: 52.37, lng: 9.73, at: 1 },
       { label: '', lat: 52.4, lng: 9.8, at: 2 },
@@ -79,7 +79,7 @@ describe('parseHistory', () => {
     expect(parseHistory(roh).map((e) => e.label)).toEqual(['Erst'])
   })
 
-  it('kuerzt eine zu lang gewordene Liste', () => {
+  it('kürzt eine zu lang gewordene Liste', () => {
     const roh = JSON.stringify(
       Array.from({ length: MAX_ENTRIES + 5 }, (_, i) => ({ label: `Ort ${i}`, lat: 50 + i, lng: 8, at: i })),
     )

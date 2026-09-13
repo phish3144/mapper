@@ -51,7 +51,7 @@ function lookup(matches: AddressMatch[], problem: AddressLookup['problem'] = nul
 }
 
 describe('parseAddressLines', () => {
-  it('wirft leere Zeilen und Dubletten ohne Ruecksicht auf Schreibweise weg', () => {
+  it('wirft leere Zeilen und Dubletten ohne Rücksicht auf Schreibweise weg', () => {
     const { lines, rest } = parseAddressLines(
       'Bahnhofstr. 5, 29336 Nienhagen\n\n   \nBAHNHOFSTR. 5, 29336 NIENHAGEN\nDorfstr. 1, 12345 Musterdorf',
     )
@@ -59,24 +59,24 @@ describe('parseAddressLines', () => {
     expect(rest).toEqual([])
   })
 
-  it('kappt bei der Obergrenze und gibt den Rest zurueck, statt ihn zu verlieren', () => {
+  it('kappt bei der Obergrenze und gibt den Rest zurück, statt ihn zu verlieren', () => {
     const eingabe = Array.from({ length: 7 }, (_, i) => `Weg ${i + 1}, 12345 Ort`).join('\n')
     const { lines, rest } = parseAddressLines(eingabe, 5)
     expect(lines).toHaveLength(5)
     expect(rest).toEqual(['Weg 6, 12345 Ort', 'Weg 7, 12345 Ort'])
   })
 
-  it('liest auch Zeilen mit Wagenruecklauf', () => {
+  it('liest auch Zeilen mit Wagenrücklauf', () => {
     expect(parseAddressLines('Eins, 12345 Ort\r\nZwei, 12345 Ort').lines).toHaveLength(2)
   })
 })
 
 describe('normalizeAddressKey', () => {
-  it('glaettet Satzzeichen, Abstaende und Grossschreibung', () => {
+  it('glättet Satzzeichen, Abstände und Großschreibung', () => {
     expect(normalizeAddressKey('Bahnhofstr. 5,  29336   Nienhagen')).toBe('bahnhofstr 5 29336 nienhagen')
   })
 
-  it('haelt verschiedene Schreibweisen des Strassennamens auseinander', () => {
+  it('hält verschiedene Schreibweisen des Straßennamens auseinander', () => {
     expect(normalizeAddressKey('Bahnhofstr. 5')).not.toBe(normalizeAddressKey('Bahnhofstrasse 5'))
   })
 })
@@ -88,11 +88,11 @@ describe('findByText', () => {
   ]
   const index = buildAddressIndex(bestand)
 
-  it('findet ueber die Adresse', () => {
+  it('findet über die Adresse', () => {
     expect(findByText('bahnhofstr 5, 29336 nienhagen', index)?.id).toBe('a')
   })
 
-  it('findet ueber den Namen, wenn keine Adresse gepflegt ist', () => {
+  it('findet über den Namen, wenn keine Adresse gepflegt ist', () => {
     expect(findByText('Dorfstr. 1, 12345 Musterdorf', index)?.id).toBe('b')
   })
 
@@ -109,13 +109,13 @@ describe('findByPoint', () => {
     expect(findByPoint({ lat: 52.5002, lng: 13.4 }, bestand)?.id).toBe('a')
   })
 
-  it('haelt den Nachbarn auseinander', () => {
+  it('hält den Nachbarn auseinander', () => {
     // rund 220 m noerdlich
     expect(findByPoint({ lat: 52.502, lng: 13.4 }, bestand)).toBeNull()
   })
 
-  it('nimmt den naechsten, wenn mehrere in Reichweite liegen', () => {
-    const zwei = [...bestand, ort({ id: 'b', name: 'Naeher', lat: 52.5001, lng: 13.4 })]
+  it('nimmt den nächsten, wenn mehrere in Reichweite liegen', () => {
+    const zwei = [...bestand, ort({ id: 'b', name: 'Näher', lat: 52.5001, lng: 13.4 })]
     expect(findByPoint({ lat: 52.50012, lng: 13.4 }, zwei)?.id).toBe('b')
   })
 })
@@ -124,15 +124,15 @@ describe('checkMatch', () => {
   it('nennt den Grund, wenn nichts gefunden wurde', () => {
     expect(checkMatch(lookup([], 'rate-limit'))).toEqual({
       match: null,
-      hint: 'Der Adressdienst hat gedrosselt - spaeter noch einmal versuchen.',
+      hint: 'Der Adressdienst hat gedrosselt - später noch einmal versuchen.',
     })
   })
 
   it('reicht den Genauigkeitshinweis des Geocoders durch', () => {
     const ergebnis = checkMatch(
-      lookup([treffer({ lat: 52.5, lng: 13.4, note: 'Hausnummer nicht gefunden — Strassenmitte' })]),
+      lookup([treffer({ lat: 52.5, lng: 13.4, note: 'Hausnummer nicht gefunden — Straßenmitte' })]),
     )
-    expect(ergebnis.hint).toBe('Hausnummer nicht gefunden — Strassenmitte')
+    expect(ergebnis.hint).toBe('Hausnummer nicht gefunden — Straßenmitte')
   })
 
   it('schweigt bei einem sauberen Treffer', () => {
@@ -153,32 +153,32 @@ describe('checkMatch', () => {
     expect(ergebnis.hint).toBeNull()
   })
 
-  it('warnt bei einem Treffer ausserhalb des deutschsprachigen Raums', () => {
+  it('warnt bei einem Treffer außerhalb des deutschsprachigen Raums', () => {
     const ergebnis = checkMatch(lookup([treffer({ lat: 52.2, lng: 21.0 })]))
-    expect(ergebnis.hint).toContain('ausserhalb')
+    expect(ergebnis.hint).toContain('außerhalb')
     // Verworfen wird er trotzdem nicht - der Nutzer entscheidet.
     expect(ergebnis.match).not.toBeNull()
   })
 })
 
 describe('needsReview', () => {
-  it('haelt eine Zeile ohne Ort und ohne Postleitzahl fuer pruefenswert', () => {
+  it('hält eine Zeile ohne Ort und ohne Postleitzahl für prüfenswert', () => {
     expect(needsReview('Am Markt 2')).toBe(true)
   })
 
-  it('laesst eine vollstaendige Adresse durch', () => {
+  it('lässt eine vollständige Adresse durch', () => {
     expect(needsReview('Am Markt 2, 29336 Nienhagen')).toBe(false)
   })
 })
 
 describe('locationName', () => {
-  it('kuerzt auf die im Schema erlaubten 160 Zeichen', () => {
+  it('kürzt auf die im Schema erlaubten 160 Zeichen', () => {
     const name = locationName('x'.repeat(200))
     expect(name).toHaveLength(160)
     expect(name.endsWith('…')).toBe(true)
   })
 
-  it('laesst kurze Namen unangetastet', () => {
+  it('lässt kurze Namen unangetastet', () => {
     expect(locationName('  Bahnhofstr. 5, 29336 Nienhagen  ')).toBe('Bahnhofstr. 5, 29336 Nienhagen')
   })
 })
@@ -190,7 +190,7 @@ describe('tourName', () => {
 })
 
 describe('orderedUnique', () => {
-  it('haelt die Reihenfolge und wirft Wiederholungen weg', () => {
+  it('hält die Reihenfolge und wirft Wiederholungen weg', () => {
     expect(orderedUnique(['a', 'b', 'a', '', 'c', 'b'])).toEqual(['a', 'b', 'c'])
   })
 })

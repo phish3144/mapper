@@ -31,7 +31,7 @@ const MIN_PASSWORD = 8
 const ROLE_LABEL: Record<MemberRole, string> = {
   viewer: 'Leser',
   editor: 'Bearbeiter',
-  owner: 'Eigentuemer',
+  owner: 'Eigentümer',
 }
 const ROLE_ORDER: MemberRole[] = ['viewer', 'editor', 'owner']
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
@@ -119,7 +119,7 @@ export default function AdminDialog({ onClose }: { onClose: () => void }) {
     e.preventDefault()
     const address = email.trim().toLowerCase()
     if (!EMAIL_PATTERN.test(address)) {
-      setFormError('Bitte gib eine gueltige E-Mail-Adresse an.')
+      setFormError('Bitte gib eine gültige E-Mail-Adresse an.')
       return
     }
     if (password.length < MIN_PASSWORD) {
@@ -194,7 +194,7 @@ export default function AdminDialog({ onClose }: { onClose: () => void }) {
     setResetBusy(true)
     try {
       await admin.resetPassword(resetting.id, newPassword)
-      notify('success', `Passwort fuer ${resetting.email} wurde gesetzt.`)
+      notify('success', `Passwort für ${resetting.email} wurde gesetzt.`)
       setResetting(null)
       setNewPassword('')
     } catch (err) {
@@ -209,7 +209,7 @@ export default function AdminDialog({ onClose }: { onClose: () => void }) {
     setDeleting(true)
     try {
       await admin.deleteAccount(pendingDelete.id)
-      notify('success', `Konto ${pendingDelete.email} wurde geloescht.`)
+      notify('success', `Konto ${pendingDelete.email} wurde gelöscht.`)
       setPendingDelete(null)
       await load()
     } catch (e) {
@@ -223,9 +223,9 @@ export default function AdminDialog({ onClose }: { onClose: () => void }) {
   const deployHint = (
     <div className="notice notice-info" style={{ marginBottom: 12, flexDirection: 'column', alignItems: 'stretch' }}>
       <span className="notice-text">
-        Die Kontenverwaltung laeuft ueber die Edge Function <span className="mono">admin-users</span>.
+        Die Kontenverwaltung läuft über die Edge Function <span className="mono">admin-users</span>.
         Sie antwortet nicht — sehr wahrscheinlich ist sie in diesem Projekt noch nicht ausgerollt.
-        Einmalig im Projektordner ausfuehren:
+        Einmalig im Projektordner ausführen:
       </span>
       <div className="panel" style={{ marginTop: 10, padding: '8px 10px' }}>
         <code className="mono" style={{ overflowWrap: 'anywhere' }}>
@@ -245,7 +245,7 @@ export default function AdminDialog({ onClose }: { onClose: () => void }) {
       title="Kontenverwaltung"
       onClose={closeMain}
       width={680}
-      footer={<Button onClick={onClose}>Schliessen</Button>}
+      footer={<Button onClick={onClose}>Schließen</Button>}
     >
       {undeployed && deployHint}
 
@@ -321,7 +321,7 @@ export default function AdminDialog({ onClose }: { onClose: () => void }) {
                         disabled={busyId === a.id}
                         onClick={() => setPendingDelete(a)}
                       >
-                        Loeschen
+                        Löschen
                       </Button>
                     )}
                   </div>
@@ -398,7 +398,7 @@ export default function AdminDialog({ onClose }: { onClose: () => void }) {
 
             <div className="row-between">
               <p className="small faint" style={{ margin: 0, maxWidth: 400 }}>
-                Das Konto ist sofort nutzbar. Eine Bestaetigungsmail wird nicht verschickt — gib das
+                Das Konto ist sofort nutzbar. Eine Bestätigungsmail wird nicht verschickt — gib das
                 Passwort selbst weiter.
               </p>
               <Button type="submit" variant="primary" busy={creating}>
@@ -411,7 +411,7 @@ export default function AdminDialog({ onClose }: { onClose: () => void }) {
 
       {resetting && (
         <Modal
-          title="Passwort zuruecksetzen"
+          title="Passwort zurücksetzen"
           width={400}
           onClose={closeReset}
           footer={
@@ -427,7 +427,7 @@ export default function AdminDialog({ onClose }: { onClose: () => void }) {
         >
           <form id={resetFormId} onSubmit={submitReset}>
             <p className="small muted">
-              Neues Passwort fuer <strong>{resetting.email}</strong>. Die Person wird nicht
+              Neues Passwort für <strong>{resetting.email}</strong>. Die Person wird nicht
               benachrichtigt.
             </p>
             <TextField
@@ -449,15 +449,15 @@ export default function AdminDialog({ onClose }: { onClose: () => void }) {
 
       {pendingDelete && (
         <ConfirmDialog
-          title="Konto loeschen"
-          confirmLabel="Endgueltig loeschen"
+          title="Konto löschen"
+          confirmLabel="Endgültig löschen"
           busy={deleting}
           onCancel={cancelDelete}
           onConfirm={() => void confirmDelete()}
           message={
             <>
               <p>
-                Das Konto <strong>{pendingDelete.email}</strong> wird endgueltig geloescht und
+                Das Konto <strong>{pendingDelete.email}</strong> wird endgültig gelöscht und
                 verliert den Zugang zu allen Arbeitsbereichen.
               </p>
               <p style={{ marginBottom: 0 }}>

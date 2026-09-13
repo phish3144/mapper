@@ -33,7 +33,7 @@ describe('bereich', () => {
     expect(bereich(m)).toEqual([50.1, 7.0, 50.9, 7.9])
   })
 
-  it('schliesst den Meldepunkt mit ein, auch wenn er ausserhalb der Linie liegt', () => {
+  it('schließt den Meldepunkt mit ein, auch wenn er außerhalb der Linie liegt', () => {
     // Die Quelle setzt den Punkt gelegentlich neben den Abschnitt. Faellt er
     // aus dem Rahmen, verschwaende die Meldung beim Zuschnitt auf den
     // Kartenausschnitt.

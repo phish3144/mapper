@@ -21,7 +21,7 @@ export interface MapSymbol {
 
 export type SymbolGroup =
   | 'Allgemein'
-  | 'Gebaeude'
+  | 'Gebäude'
   | 'Handel & Gastronomie'
   | 'Industrie & Technik'
   | 'Verkehr'
@@ -30,7 +30,7 @@ export type SymbolGroup =
 
 export const SYMBOL_GROUPS: readonly SymbolGroup[] = [
   'Allgemein',
-  'Gebaeude',
+  'Gebäude',
   'Handel & Gastronomie',
   'Industrie & Technik',
   'Verkehr',
@@ -58,32 +58,32 @@ export const MAP_SYMBOLS: readonly MapSymbol[] = [
   { id: 'ziel', emoji: '🎯', label: 'Ziel', group: 'Allgemein', keywords: 'zielscheibe' },
 
   // --- Gebaeude ---
-  { id: 'haus', emoji: '🏠', label: 'Haus', group: 'Gebaeude', keywords: 'wohnhaus privat' },
-  { id: 'wohnblock', emoji: '🏢', label: 'Buerogebaeude', group: 'Gebaeude', keywords: 'buero firma' },
-  { id: 'wohnung', emoji: '🏘️', label: 'Siedlung', group: 'Gebaeude', keywords: 'wohnungen quartier' },
-  { id: 'werk', emoji: '🏭', label: 'Werk', group: 'Gebaeude', keywords: 'fabrik produktion industrie' },
-  { id: 'lager', emoji: '📦', label: 'Lager', group: 'Gebaeude', keywords: 'depot paket warenlager' },
-  { id: 'baustelle', emoji: '🏗️', label: 'Baustelle', group: 'Gebaeude', keywords: 'kran bau' },
-  { id: 'schule', emoji: '🏫', label: 'Schule', group: 'Gebaeude', keywords: 'bildung kita' },
-  { id: 'krankenhaus', emoji: '🏥', label: 'Krankenhaus', group: 'Gebaeude', keywords: 'klinik medizin' },
-  { id: 'hotel', emoji: '🏨', label: 'Hotel', group: 'Gebaeude', keywords: 'uebernachtung pension' },
-  { id: 'amt', emoji: '🏛️', label: 'Amt', group: 'Gebaeude', keywords: 'behoerde verwaltung rathaus' },
-  { id: 'kirche', emoji: '⛪', label: 'Kirche', group: 'Gebaeude', keywords: 'gemeinde religion' },
-  { id: 'bank', emoji: '🏦', label: 'Bank', group: 'Gebaeude', keywords: 'geld sparkasse' },
-  { id: 'schloss_geb', emoji: '🏰', label: 'Burg', group: 'Gebaeude', keywords: 'schloss denkmal' },
-  { id: 'zelt', emoji: '⛺', label: 'Zelt', group: 'Gebaeude', keywords: 'provisorium camp' },
+  { id: 'haus', emoji: '🏠', label: 'Haus', group: 'Gebäude', keywords: 'wohnhaus privat' },
+  { id: 'wohnblock', emoji: '🏢', label: 'Bürogebäude', group: 'Gebäude', keywords: 'büro firma' },
+  { id: 'wohnung', emoji: '🏘️', label: 'Siedlung', group: 'Gebäude', keywords: 'wohnungen quartier' },
+  { id: 'werk', emoji: '🏭', label: 'Werk', group: 'Gebäude', keywords: 'fabrik produktion industrie' },
+  { id: 'lager', emoji: '📦', label: 'Lager', group: 'Gebäude', keywords: 'depot paket warenlager' },
+  { id: 'baustelle', emoji: '🏗️', label: 'Baustelle', group: 'Gebäude', keywords: 'kran bau' },
+  { id: 'schule', emoji: '🏫', label: 'Schule', group: 'Gebäude', keywords: 'bildung kita' },
+  { id: 'krankenhaus', emoji: '🏥', label: 'Krankenhaus', group: 'Gebäude', keywords: 'klinik medizin' },
+  { id: 'hotel', emoji: '🏨', label: 'Hotel', group: 'Gebäude', keywords: 'übernachtung pension' },
+  { id: 'amt', emoji: '🏛️', label: 'Amt', group: 'Gebäude', keywords: 'behörde verwaltung rathaus' },
+  { id: 'kirche', emoji: '⛪', label: 'Kirche', group: 'Gebäude', keywords: 'gemeinde religion' },
+  { id: 'bank', emoji: '🏦', label: 'Bank', group: 'Gebäude', keywords: 'geld sparkasse' },
+  { id: 'schloss_geb', emoji: '🏰', label: 'Burg', group: 'Gebäude', keywords: 'schloss denkmal' },
+  { id: 'zelt', emoji: '⛺', label: 'Zelt', group: 'Gebäude', keywords: 'provisorium camp' },
 
   // --- Handel & Gastronomie ---
   { id: 'kunde', emoji: '🤝', label: 'Kunde', group: 'Handel & Gastronomie', keywords: 'termin partner' },
-  { id: 'laden', emoji: '🏪', label: 'Laden', group: 'Handel & Gastronomie', keywords: 'kiosk geschaeft filiale' },
+  { id: 'laden', emoji: '🏪', label: 'Laden', group: 'Handel & Gastronomie', keywords: 'kiosk geschäft filiale' },
   { id: 'einkauf', emoji: '🛒', label: 'Supermarkt', group: 'Handel & Gastronomie', keywords: 'einkaufen markt' },
   { id: 'restaurant', emoji: '🍽️', label: 'Restaurant', group: 'Handel & Gastronomie', keywords: 'essen gastronomie' },
-  { id: 'cafe', emoji: '☕', label: 'Cafe', group: 'Handel & Gastronomie', keywords: 'kaffee baecker' },
-  { id: 'baeckerei', emoji: '🥐', label: 'Baeckerei', group: 'Handel & Gastronomie', keywords: 'brot backwaren' },
-  { id: 'bar', emoji: '🍺', label: 'Bar', group: 'Handel & Gastronomie', keywords: 'kneipe getraenke' },
+  { id: 'cafe', emoji: '☕', label: 'Cafe', group: 'Handel & Gastronomie', keywords: 'kaffee bäcker' },
+  { id: 'baeckerei', emoji: '🥐', label: 'Bäckerei', group: 'Handel & Gastronomie', keywords: 'brot backwaren' },
+  { id: 'bar', emoji: '🍺', label: 'Bar', group: 'Handel & Gastronomie', keywords: 'kneipe getränke' },
   { id: 'apotheke', emoji: '💊', label: 'Apotheke', group: 'Handel & Gastronomie', keywords: 'medikamente' },
   { id: 'friseur', emoji: '💈', label: 'Friseur', group: 'Handel & Gastronomie', keywords: 'salon' },
-  { id: 'buero_arbeit', emoji: '💼', label: 'Geschaeftlich', group: 'Handel & Gastronomie', keywords: 'termin akquise' },
+  { id: 'buero_arbeit', emoji: '💼', label: 'Geschäftlich', group: 'Handel & Gastronomie', keywords: 'termin akquise' },
 
   // --- Industrie & Technik ---
   { id: 'werkzeug', emoji: '🔧', label: 'Werkzeug', group: 'Industrie & Technik', keywords: 'wartung reparatur montage' },
@@ -91,35 +91,35 @@ export const MAP_SYMBOLS: readonly MapSymbol[] = [
   { id: 'zahnrad', emoji: '⚙️', label: 'Anlage', group: 'Industrie & Technik', keywords: 'maschine technik' },
   { id: 'strom', emoji: '⚡', label: 'Strom', group: 'Industrie & Technik', keywords: 'elektro energie leitung' },
   { id: 'steckdose', emoji: '🔌', label: 'Anschluss', group: 'Industrie & Technik', keywords: 'strom stecker' },
-  { id: 'wasserhahn', emoji: '🚰', label: 'Wasser', group: 'Industrie & Technik', keywords: 'sanitaer leitung' },
-  { id: 'feuer_gas', emoji: '🔥', label: 'Heizung / Gas', group: 'Industrie & Technik', keywords: 'waerme brenner' },
+  { id: 'wasserhahn', emoji: '🚰', label: 'Wasser', group: 'Industrie & Technik', keywords: 'sanitär leitung' },
+  { id: 'feuer_gas', emoji: '🔥', label: 'Heizung / Gas', group: 'Industrie & Technik', keywords: 'wärme brenner' },
   { id: 'solar', emoji: '🔆', label: 'Solar', group: 'Industrie & Technik', keywords: 'photovoltaik pv sonne' },
   { id: 'funkmast', emoji: '📡', label: 'Funkmast', group: 'Industrie & Technik', keywords: 'antenne netz mobilfunk' },
-  { id: 'messung', emoji: '📊', label: 'Messstelle', group: 'Industrie & Technik', keywords: 'zaehler messung daten' },
+  { id: 'messung', emoji: '📊', label: 'Messstelle', group: 'Industrie & Technik', keywords: 'zähler messung daten' },
   { id: 'werkstatt', emoji: '🛠️', label: 'Werkstatt', group: 'Industrie & Technik', keywords: 'service reparatur' },
-  { id: 'schluessel', emoji: '🔑', label: 'Schluessel', group: 'Industrie & Technik', keywords: 'zugang uebergabe' },
+  { id: 'schluessel', emoji: '🔑', label: 'Schlüssel', group: 'Industrie & Technik', keywords: 'zugang übergabe' },
 
   // --- Verkehr ---
   { id: 'auto', emoji: '🚗', label: 'Auto', group: 'Verkehr', keywords: 'pkw fahrzeug' },
   { id: 'lkw', emoji: '🚚', label: 'Lkw', group: 'Verkehr', keywords: 'lieferung transport spedition' },
   { id: 'transporter', emoji: '🚐', label: 'Transporter', group: 'Verkehr', keywords: 'bulli bus lieferwagen' },
   { id: 'fahrrad', emoji: '🚲', label: 'Fahrrad', group: 'Verkehr', keywords: 'rad velo' },
-  { id: 'fuss', emoji: '🚶', label: 'Zu Fuss', group: 'Verkehr', keywords: 'fussweg gehen' },
-  { id: 'bus', emoji: '🚌', label: 'Bus', group: 'Verkehr', keywords: 'haltestelle oepnv' },
+  { id: 'fuss', emoji: '🚶', label: 'Zu Fuß', group: 'Verkehr', keywords: 'fußweg gehen' },
+  { id: 'bus', emoji: '🚌', label: 'Bus', group: 'Verkehr', keywords: 'haltestelle öpnv' },
   { id: 'bahn', emoji: '🚆', label: 'Bahn', group: 'Verkehr', keywords: 'zug bahnhof gleis' },
   { id: 'flugzeug', emoji: '✈️', label: 'Flughafen', group: 'Verkehr', keywords: 'flug airport' },
   { id: 'schiff', emoji: '⛴️', label: 'Hafen', group: 'Verkehr', keywords: 'schiff faehre' },
   { id: 'parkplatz', emoji: '🅿️', label: 'Parkplatz', group: 'Verkehr', keywords: 'parken stellplatz' },
-  { id: 'ladesaeule', emoji: '🔋', label: 'Ladesaeule', group: 'Verkehr', keywords: 'elektro laden akku' },
+  { id: 'ladesaeule', emoji: '🔋', label: 'Ladesäule', group: 'Verkehr', keywords: 'elektro laden akku' },
   { id: 'tankstelle', emoji: '⛽', label: 'Tankstelle', group: 'Verkehr', keywords: 'sprit diesel benzin' },
 
   // --- Natur & Freizeit ---
-  { id: 'baum', emoji: '🌳', label: 'Baum', group: 'Natur & Freizeit', keywords: 'gruen bepflanzung' },
+  { id: 'baum', emoji: '🌳', label: 'Baum', group: 'Natur & Freizeit', keywords: 'grün bepflanzung' },
   { id: 'wald', emoji: '🌲', label: 'Wald', group: 'Natur & Freizeit', keywords: 'forst' },
-  { id: 'berg', emoji: '⛰️', label: 'Berg', group: 'Natur & Freizeit', keywords: 'gipfel huegel' },
-  { id: 'see', emoji: '🏞️', label: 'Gewaesser', group: 'Natur & Freizeit', keywords: 'see fluss ufer' },
-  { id: 'strand', emoji: '🏖️', label: 'Strand', group: 'Natur & Freizeit', keywords: 'kueste badestelle' },
-  { id: 'park', emoji: '🌷', label: 'Park', group: 'Natur & Freizeit', keywords: 'garten gruenflaeche' },
+  { id: 'berg', emoji: '⛰️', label: 'Berg', group: 'Natur & Freizeit', keywords: 'gipfel hügel' },
+  { id: 'see', emoji: '🏞️', label: 'Gewässer', group: 'Natur & Freizeit', keywords: 'see fluss ufer' },
+  { id: 'strand', emoji: '🏖️', label: 'Strand', group: 'Natur & Freizeit', keywords: 'küste badestelle' },
+  { id: 'park', emoji: '🌷', label: 'Park', group: 'Natur & Freizeit', keywords: 'garten grünfläche' },
   { id: 'sport', emoji: '⚽', label: 'Sport', group: 'Natur & Freizeit', keywords: 'platz verein halle' },
   { id: 'spielplatz', emoji: '🛝', label: 'Spielplatz', group: 'Natur & Freizeit', keywords: 'kinder' },
   { id: 'camping', emoji: '🏕️', label: 'Campingplatz', group: 'Natur & Freizeit', keywords: 'zelten wohnmobil' },
@@ -130,12 +130,12 @@ export const MAP_SYMBOLS: readonly MapSymbol[] = [
   { id: 'polizei', emoji: '🚓', label: 'Polizei', group: 'Versorgung & Notfall', keywords: 'wache' },
   { id: 'rettung', emoji: '🚑', label: 'Rettungsdienst', group: 'Versorgung & Notfall', keywords: 'notarzt ambulanz' },
   { id: 'arzt', emoji: '🩺', label: 'Arztpraxis', group: 'Versorgung & Notfall', keywords: 'praxis medizin' },
-  { id: 'notfall', emoji: '🆘', label: 'Notfall', group: 'Versorgung & Notfall', keywords: 'stoerung dringend' },
-  { id: 'muell', emoji: '🗑️', label: 'Entsorgung', group: 'Versorgung & Notfall', keywords: 'abfall muell tonne' },
+  { id: 'notfall', emoji: '🆘', label: 'Notfall', group: 'Versorgung & Notfall', keywords: 'störung dringend' },
+  { id: 'muell', emoji: '🗑️', label: 'Entsorgung', group: 'Versorgung & Notfall', keywords: 'abfall müll tonne' },
   { id: 'recycling', emoji: '♻️', label: 'Recycling', group: 'Versorgung & Notfall', keywords: 'wertstoff container' },
   { id: 'post', emoji: '📮', label: 'Post', group: 'Versorgung & Notfall', keywords: 'briefkasten filiale' },
   { id: 'paket', emoji: '📬', label: 'Paketstation', group: 'Versorgung & Notfall', keywords: 'abholung packstation' },
-  { id: 'feuerloescher', emoji: '🧯', label: 'Brandschutz', group: 'Versorgung & Notfall', keywords: 'loescher pruefung' },
+  { id: 'feuerloescher', emoji: '🧯', label: 'Brandschutz', group: 'Versorgung & Notfall', keywords: 'löscher prüfung' },
 ]
 
 export const DEFAULT_SYMBOL_ID = 'pin'
@@ -169,10 +169,28 @@ export function symbolLabel(id?: string | null): string {
 }
 
 /** Sucht ueber Name, Kennung und Zusatzbegriffe; leere Suche liefert alles. */
+/**
+ * Faltet Umlaute, damit beide Schreibweisen finden.
+ *
+ * Die Beschriftungen tragen jetzt echte Umlaute ("Bürogebäude"). Ohne diese
+ * Faltung faende "buero" nichts mehr - und vorher, mit ae/oe/ue in den Daten,
+ * fand "büro" nichts. Gefaltet wird auf beiden Seiten, also trifft beides.
+ * Bewusst NICHT normalizeKey: das wirft auch Leerzeichen weg und liesse
+ * "hausstern" auf "Haus Stern" passen.
+ */
+function falte(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/ä/g, 'ae')
+    .replace(/ö/g, 'oe')
+    .replace(/ü/g, 'ue')
+    .replace(/ß/g, 'ss')
+}
+
 export function searchSymbols(query: string): readonly MapSymbol[] {
-  const needle = query.trim().toLowerCase()
+  const needle = falte(query.trim())
   if (!needle) return MAP_SYMBOLS
   return MAP_SYMBOLS.filter((s) =>
-    `${s.label} ${s.id} ${s.keywords ?? ''} ${s.group}`.toLowerCase().includes(needle),
+    falte(`${s.label} ${s.id} ${s.keywords ?? ''} ${s.group}`).includes(needle),
   )
 }

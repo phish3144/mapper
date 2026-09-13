@@ -351,7 +351,7 @@ function collectFeatures(data: unknown): unknown[] | null {
 
 function parseFeature(feature: unknown, label: string): FeatureOutcome {
   if (typeof feature !== 'object' || feature === null || Array.isArray(feature)) {
-    return { ok: false, error: `${label}: Kein gueltiges Feature-Objekt.` }
+    return { ok: false, error: `${label}: Kein gültiges Feature-Objekt.` }
   }
   const source = feature as Record<string, unknown>
   const geometry = source.geometry
@@ -361,11 +361,11 @@ function parseFeature(feature: unknown, label: string): FeatureOutcome {
   const geo = geometry as Record<string, unknown>
   const geoType = typeof geo.type === 'string' ? geo.type.toLowerCase() : ''
   if (geoType !== 'point') {
-    return { ok: false, error: `${label}: Nur Punkt-Geometrien werden unterstuetzt (gefunden: "${String(geo.type)}").` }
+    return { ok: false, error: `${label}: Nur Punkt-Geometrien werden unterstützt (gefunden: "${String(geo.type)}").` }
   }
   const coordinates = geo.coordinates
   if (!Array.isArray(coordinates) || coordinates.length < 2) {
-    return { ok: false, error: `${label}: Die Koordinaten fehlen oder sind unvollstaendig.` }
+    return { ok: false, error: `${label}: Die Koordinaten fehlen oder sind unvollständig.` }
   }
   const first = parseNumberLoose(coordinates[0])
   const second = parseNumberLoose(coordinates[1])
@@ -382,7 +382,7 @@ function parseFeature(feature: unknown, label: string): FeatureOutcome {
     lng = second
   }
   if (!isValidLatLng({ lat, lng })) {
-    return { ok: false, error: `${label}: Ungueltige Koordinaten (${first} / ${second}).` }
+    return { ok: false, error: `${label}: Ungültige Koordinaten (${first} / ${second}).` }
   }
 
   const rawProperties = source.properties
@@ -400,7 +400,7 @@ function parseFeature(feature: unknown, label: string): FeatureOutcome {
   if (rawService !== undefined && String(rawService).trim() !== '') {
     const parsed = parseNumberLoose(rawService)
     if (parsed === null || parsed < 0) {
-      return { ok: false, error: `${label}: Ungueltige Aufenthaltsdauer "${String(rawService)}".` }
+      return { ok: false, error: `${label}: Ungültige Aufenthaltsdauer "${String(rawService)}".` }
     }
     serviceMinutes = parsed
   }
@@ -410,7 +410,7 @@ function parseFeature(feature: unknown, label: string): FeatureOutcome {
   if (rawActive !== undefined && String(rawActive).trim() !== '') {
     const parsed = parseBooleanish(rawActive)
     if (parsed === null) {
-      return { ok: false, error: `${label}: Unbekannter Wert fuer "aktiv": "${String(rawActive)}".` }
+      return { ok: false, error: `${label}: Unbekannter Wert für "aktiv": "${String(rawActive)}".` }
     }
     isActive = parsed
   }
@@ -456,7 +456,7 @@ export function parseGeoJson(text: string): ImportResult {
     data = JSON.parse(content)
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error)
-    return { rows, errors: [`Die Datei enthaelt kein gueltiges JSON: ${reason}`] }
+    return { rows, errors: [`Die Datei enthält kein gültiges JSON: ${reason}`] }
   }
 
   const features = collectFeatures(data)
@@ -467,7 +467,7 @@ export function parseGeoJson(text: string): ImportResult {
     }
   }
   if (features.length === 0) {
-    return { rows, errors: ['Die Datei enthaelt keine Features.'] }
+    return { rows, errors: ['Die Datei enthält keine Features.'] }
   }
 
   features.forEach((feature, index) => {

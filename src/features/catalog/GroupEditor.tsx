@@ -45,7 +45,7 @@ export default function GroupEditor({
       return
     }
     if (trimmed.length > MAX_NAME_LENGTH) {
-      setNameError(`Hoechstens ${MAX_NAME_LENGTH} Zeichen.`)
+      setNameError(`Höchstens ${MAX_NAME_LENGTH} Zeichen.`)
       return
     }
     if (!workspaceId) return
@@ -92,7 +92,7 @@ export default function GroupEditor({
         value={name}
         autoFocus
         maxLength={MAX_NAME_LENGTH}
-        placeholder="z. B. Tour Nord, Wartungsvertrag, Region Sued"
+        placeholder="z. B. Tour Nord, Wartungsvertrag, Region Süd"
         error={nameError}
         onChange={(e) => {
           setName(e.target.value)

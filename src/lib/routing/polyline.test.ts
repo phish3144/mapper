@@ -15,17 +15,17 @@ describe('decodePolyline', () => {
     expect(decodePolyline(REFERENCE_ENCODED)).toEqual(REFERENCE_POINTS)
   })
 
-  it('liefert fuer leere Eingaben eine leere Liste', () => {
+  it('liefert für leere Eingaben eine leere Liste', () => {
     expect(decodePolyline('')).toEqual([])
   })
 
-  it('bricht bei abgeschnittener Eingabe nach dem letzten vollstaendigen Paar ab', () => {
+  it('bricht bei abgeschnittener Eingabe nach dem letzten vollständigen Paar ab', () => {
     const truncated = REFERENCE_ENCODED.slice(0, REFERENCE_ENCODED.length - 3)
     const points = decodePolyline(truncated)
     expect(points).toEqual(REFERENCE_POINTS.slice(0, 2))
   })
 
-  it('dekodiert mit Praezision 6', () => {
+  it('dekodiert mit Präzision 6', () => {
     expect(decodePolyline('_izlhA~rlgdF_{geC~ywl@_kwzCn`{nI', 6)).toEqual(REFERENCE_POINTS)
   })
 })
@@ -35,11 +35,11 @@ describe('encodePolyline', () => {
     expect(encodePolyline(REFERENCE_POINTS)).toBe(REFERENCE_ENCODED)
   })
 
-  it('kodiert mit Praezision 6', () => {
+  it('kodiert mit Präzision 6', () => {
     expect(encodePolyline(REFERENCE_POINTS, 6)).toBe('_izlhA~rlgdF_{geC~ywl@_kwzCn`{nI')
   })
 
-  it('liefert fuer eine leere Liste eine leere Zeichenkette', () => {
+  it('liefert für eine leere Liste eine leere Zeichenkette', () => {
     expect(encodePolyline([])).toBe('')
   })
 
@@ -55,10 +55,10 @@ describe('encodePolyline', () => {
   })
 })
 
-describe('Hin- und Rueckrichtung', () => {
+describe('Hin- und Rückrichtung', () => {
   const cases: Array<{ name: string; points: LatLng[]; precision: number }> = [
     {
-      name: 'Berlin, Praezision 5',
+      name: 'Berlin, Präzision 5',
       points: [
         { lat: 52.52, lng: 13.405 },
         { lat: 52.5163, lng: 13.3777 },
@@ -67,7 +67,7 @@ describe('Hin- und Rueckrichtung', () => {
       precision: 5,
     },
     {
-      name: 'alle vier Quadranten, Praezision 5',
+      name: 'alle vier Quadranten, Präzision 5',
       points: [
         { lat: -33.8688, lng: 151.2093 },
         { lat: -34.6037, lng: -58.3816 },
@@ -78,7 +78,7 @@ describe('Hin- und Rueckrichtung', () => {
       precision: 5,
     },
     {
-      name: 'negative Werte, Praezision 6',
+      name: 'negative Werte, Präzision 6',
       points: [
         { lat: -12.046374, lng: -77.042793 },
         { lat: -12.046512, lng: -77.041234 },
@@ -87,7 +87,7 @@ describe('Hin- und Rueckrichtung', () => {
       precision: 6,
     },
     {
-      name: 'Extremwerte, Praezision 6',
+      name: 'Extremwerte, Präzision 6',
       points: [
         { lat: -90, lng: -180 },
         { lat: 90, lng: 180 },
@@ -98,7 +98,7 @@ describe('Hin- und Rueckrichtung', () => {
   ]
 
   for (const testCase of cases) {
-    it(`ueberlebt den Umlauf: ${testCase.name}`, () => {
+    it(`überlebt den Umlauf: ${testCase.name}`, () => {
       const encoded = encodePolyline(testCase.points, testCase.precision)
       expect(decodePolyline(encoded, testCase.precision)).toEqual(testCase.points)
     })
@@ -118,22 +118,22 @@ describe('Hin- und Rueckrichtung', () => {
   })
 })
 
-describe('decodePolyline - Muell als Eingabe', () => {
-  it('liefert fuer Zeichen unterhalb des Alphabets eine leere Liste', () => {
+describe('decodePolyline - Müll als Eingabe', () => {
+  it('liefert für Zeichen unterhalb des Alphabets eine leere Liste', () => {
     expect(decodePolyline('!!!')).toEqual([])
     expect(decodePolyline('   ')).toEqual([])
   })
 
-  it('bricht bei einer endlosen Fortsetzungskette ab, statt zu haengen', () => {
+  it('bricht bei einer endlosen Fortsetzungskette ab, statt zu hängen', () => {
     // Jedes '~' traegt das Fortsetzungsbit - die Kette endet nie sauber.
     expect(decodePolyline('~'.repeat(500))).toEqual([])
   })
 
-  it('ignoriert einen abschliessenden Zeilenumbruch', () => {
+  it('ignoriert einen abschließenden Zeilenumbruch', () => {
     expect(decodePolyline(`${REFERENCE_ENCODED}\n`)).toEqual(REFERENCE_POINTS)
   })
 
-  it('verwirft ein Paar, dem die Laengengrad-Haelfte fehlt', () => {
+  it('verwirft ein Paar, dem die Längengrad-Hälfte fehlt', () => {
     const half = encodePolyline([{ lat: 52.52, lng: 13.405 }]).slice(0, 3)
     expect(decodePolyline(half)).toEqual([])
   })

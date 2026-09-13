@@ -41,7 +41,7 @@ export default function RoutePreviewLayer() {
           <strong>{preview.toLabel}</strong>
           <br />
           {text}
-          {leg.estimated && <span> (geschaetzt)</span>}
+          {leg.estimated && <span> (geschätzt)</span>}
         </Tooltip>
       </Polyline>
     </>

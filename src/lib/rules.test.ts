@@ -63,7 +63,7 @@ const noMemberships = new Map<string, string[]>()
 const ids = (locations: MapLocation[]): string[] => locations.map((l) => l.id)
 
 describe('applyRule - Grundverhalten', () => {
-  it('waehlt ohne Filter alle aktiven Standorte', () => {
+  it('wählt ohne Filter alle aktiven Standorte', () => {
     const locations = [
       makeLocation('a', { name: 'Alpha' }),
       makeLocation('b', { name: 'Beta' }),
@@ -71,7 +71,7 @@ describe('applyRule - Grundverhalten', () => {
     expect(ids(applyRule({}, locations, noMemberships))).toEqual(['a', 'b'])
   })
 
-  it('gibt bei leerer Eingabe ein leeres Array zurueck', () => {
+  it('gibt bei leerer Eingabe ein leeres Array zurück', () => {
     expect(applyRule({ maxStops: 5 }, [], noMemberships)).toEqual([])
   })
 })
@@ -106,12 +106,12 @@ describe('applyRule - Kategorien', () => {
     expect(ids(applyRule({ categoryIds: ['cat-2'] }, locations, noMemberships))).toEqual(['b'])
   })
 
-  it('akzeptiert mehrere Kategorien als Oder-Verknuepfung', () => {
+  it('akzeptiert mehrere Kategorien als Oder-Verknüpfung', () => {
     const result = applyRule({ categoryIds: ['cat-1', 'cat-2'] }, locations, noMemberships)
     expect(ids(result)).toEqual(['a', 'b'])
   })
 
-  it('schliesst Standorte ohne Kategorie aus, sobald der Filter greift', () => {
+  it('schließt Standorte ohne Kategorie aus, sobald der Filter greift', () => {
     expect(ids(applyRule({ categoryIds: ['cat-1'] }, locations, noMemberships))).toEqual(['a'])
   })
 
@@ -135,12 +135,12 @@ describe('applyRule - Gruppen', () => {
     expect(ids(applyRule({ groupIds: ['g-nord'] }, locations, memberships))).toEqual(['a', 'b'])
   })
 
-  it('verknuepft mehrere Gruppen als Oder', () => {
+  it('verknüpft mehrere Gruppen als Oder', () => {
     const result = applyRule({ groupIds: ['g-sued', 'g-west'] }, locations, memberships)
     expect(ids(result)).toEqual(['b'])
   })
 
-  it('schliesst Standorte ohne Eintrag in der Zuordnung aus', () => {
+  it('schließt Standorte ohne Eintrag in der Zuordnung aus', () => {
     expect(ids(applyRule({ groupIds: ['g-nord'] }, locations, memberships))).not.toContain('c')
   })
 
@@ -157,7 +157,7 @@ describe('applyRule - Tags', () => {
     makeLocation('d', { name: 'Delta', tags: [] }),
   ]
 
-  it('verknuepft Tags per Vorgabe mit oder', () => {
+  it('verknüpft Tags per Vorgabe mit oder', () => {
     const result = applyRule({ tags: ['kunde', 'lager'] }, locations, noMemberships)
     expect(ids(result)).toEqual(['a', 'b', 'c'])
   })
@@ -185,7 +185,7 @@ describe('applyRule - Umkreis', () => {
     makeLocation('fern', { name: 'Fern', lat: CENTER.lat + 0.5, lng: CENTER.lng }),
   ]
 
-  it('behaelt nur Standorte innerhalb des Radius', () => {
+  it('behält nur Standorte innerhalb des Radius', () => {
     const result = applyRule({ center: CENTER, radiusKm: 10 }, locations, noMemberships)
     expect(ids(result)).toEqual(['nah', 'mittel'])
   })
@@ -227,7 +227,7 @@ describe('applyRule - Sortierung', () => {
     expect(ids(result)).toEqual(['nah', 'mittel', 'fern'])
   })
 
-  it('loest gleiche Entfernungen ueber den Namen auf', () => {
+  it('löst gleiche Entfernungen über den Namen auf', () => {
     const locations = [
       makeLocation('b', { name: 'Beta', lat: CENTER.lat + 0.01, lng: CENTER.lng }),
       makeLocation('a', { name: 'Alpha', lat: CENTER.lat + 0.01, lng: CENTER.lng }),
@@ -236,7 +236,7 @@ describe('applyRule - Sortierung', () => {
     expect(ids(result)).toEqual(['a', 'b'])
   })
 
-  it('liefert bei gleichem Namen eine feste Reihenfolge ueber die Kennung', () => {
+  it('liefert bei gleichem Namen eine feste Reihenfolge über die Kennung', () => {
     const locations = [
       makeLocation('b2', { name: 'Filiale' }),
       makeLocation('a1', { name: 'Filiale' }),
@@ -272,7 +272,7 @@ describe('applyRule - maxStops', () => {
     expect(applyRule({ maxStops: null }, locations, noMemberships)).toHaveLength(3)
   })
 
-  it('laesst eine zu grosse Obergrenze wirkungslos', () => {
+  it('lässt eine zu große Obergrenze wirkungslos', () => {
     expect(applyRule({ maxStops: 99 }, locations, noMemberships)).toHaveLength(3)
   })
 })
@@ -301,7 +301,7 @@ describe('applyRule - Kombination', () => {
       lng: CENTER.lng,
     }),
     makeLocation('falscheGruppe', {
-      name: 'Filiale Sued',
+      name: 'Filiale Süd',
       category_id: 'cat-filiale',
       tags: ['Kunde', 'Premium'],
       lat: CENTER.lat + 0.01,
@@ -354,7 +354,7 @@ describe('applyRule - Kombination', () => {
     expect(ids(applyRule(rule, locations, memberships))).toEqual(['treffer1', 'treffer2'])
   })
 
-  it('begrenzt die Kombination zusaetzlich per maxStops', () => {
+  it('begrenzt die Kombination zusätzlich per maxStops', () => {
     const rule: RouteRule = {
       categoryIds: ['cat-filiale'],
       groupIds: ['g-nord', 'g-mitte'],
@@ -367,8 +367,8 @@ describe('applyRule - Kombination', () => {
   })
 })
 
-describe('applyRule - Unveraenderlichkeit', () => {
-  it('laesst Eingabe-Array und Standorte unberuehrt', () => {
+describe('applyRule - Unveränderlichkeit', () => {
+  it('lässt Eingabe-Array und Standorte unberührt', () => {
     const locations = [
       makeLocation('c', { name: 'Gamma', tags: ['x'] }),
       makeLocation('a', { name: 'Alpha', tags: ['x'] }),
@@ -389,14 +389,14 @@ describe('applyRule - Unveraenderlichkeit', () => {
     expect(ids(applyRule({}, locations, noMemberships))).toEqual(['a', 'c'])
   })
 
-  it('veraendert die uebergebene Regel nicht', () => {
+  it('verändert die übergebene Regel nicht', () => {
     const rule: RouteRule = { categoryIds: ['cat-1'], tags: ['Kunde'] }
     applyRule(rule, [makeLocation('a', { category_id: 'cat-1', tags: ['kunde'] })], noMemberships)
     expect(rule).toEqual({ categoryIds: ['cat-1'], tags: ['Kunde'] })
   })
 })
 
-describe('applyRule - Randfaelle', () => {
+describe('applyRule - Randfälle', () => {
   it('sortiert unbrauchbare Koordinaten ans Ende, statt die Reihenfolge zu zerlegen', () => {
     const locations = [
       makeLocation('kaputt', { name: 'Kaputt', lat: Number.NaN, lng: CENTER.lng }),
@@ -408,7 +408,7 @@ describe('applyRule - Randfaelle', () => {
     expect(ids(result)).toEqual(['ok', 'kaputt2', 'kaputt'])
   })
 
-  it('schliesst unbrauchbare Koordinaten aus dem Umkreis aus', () => {
+  it('schließt unbrauchbare Koordinaten aus dem Umkreis aus', () => {
     const locations = [
       makeLocation('kaputt', { name: 'Kaputt', lat: Number.NaN, lng: CENTER.lng }),
       makeLocation('ok', { name: 'Ok' }),
@@ -431,11 +431,11 @@ describe('applyRule - Randfaelle', () => {
     expect(ids(applyRule({ maxStops: 1, center: CENTER }, locations, noMemberships))).toEqual(['a'])
   })
 
-  it('liefert fuer eine leere Standortliste auch mit Mittelpunkt ein leeres Array', () => {
+  it('liefert für eine leere Standortliste auch mit Mittelpunkt ein leeres Array', () => {
     expect(applyRule({ center: CENTER, radiusKm: 5 }, [], noMemberships)).toEqual([])
   })
 
-  it('nimmt eine voellig kaputte Regel entgegen', () => {
+  it('nimmt eine völlig kaputte Regel entgegen', () => {
     const broken = { categoryIds: 42, groupIds: null, tags: 'kunde', center: 'Berlin' } as unknown as RouteRule
     const locations = [makeLocation('a', { name: 'Alpha' }), makeLocation('b', { name: 'Beta' })]
     expect(ids(applyRule(broken, locations, noMemberships))).toEqual(['a', 'b'])
@@ -454,7 +454,7 @@ describe('normalizeRule', () => {
     maxStops: null,
   }
 
-  it('liefert fuer nicht auswertbare Eingaben die Vorgaben', () => {
+  it('liefert für nicht auswertbare Eingaben die Vorgaben', () => {
     expect(normalizeRule(null)).toEqual(fallback)
     expect(normalizeRule(undefined)).toEqual(fallback)
     expect(normalizeRule('Regel')).toEqual(fallback)
@@ -470,7 +470,7 @@ describe('normalizeRule', () => {
     expect(Object.keys(result).sort()).toEqual(Object.keys(fallback).sort())
   })
 
-  it('saeubert Listen von Muell und Dopplungen', () => {
+  it('säubert Listen von Müll und Dopplungen', () => {
     const result = normalizeRule({
       categoryIds: ['c1', ' c2 ', '', 7, null, { id: 'c3' }, 'c1'],
       groupIds: 'g1',
@@ -481,14 +481,14 @@ describe('normalizeRule', () => {
     expect(result.tags).toEqual(['Kunde', 'Nord'])
   })
 
-  it('faellt bei unbekanntem tagMatch auf any zurueck', () => {
+  it('fällt bei unbekanntem tagMatch auf any zurück', () => {
     expect(normalizeRule({ tagMatch: 'alle' }).tagMatch).toBe('any')
     expect(normalizeRule({ tagMatch: 'all' }).tagMatch).toBe('all')
     expect(normalizeRule({ tagMatch: 'any' }).tagMatch).toBe('any')
     expect(normalizeRule({ tagMatch: 1 }).tagMatch).toBe('any')
   })
 
-  it('prueft den Mittelpunkt', () => {
+  it('prüft den Mittelpunkt', () => {
     expect(normalizeRule({ center: { lat: 52.5, lng: 13.4 } }).center).toEqual({ lat: 52.5, lng: 13.4 })
     expect(normalizeRule({ center: { lat: 52.5, lng: 13.4, extra: 'x' } }).center).toEqual({
       lat: 52.5,
@@ -501,7 +501,7 @@ describe('normalizeRule', () => {
     expect(normalizeRule({ center: { lat: Number.NaN, lng: 13.4 } }).center).toBeNull()
   })
 
-  it('laesst nur einen Radius groesser als 0 zu', () => {
+  it('lässt nur einen Radius größer als 0 zu', () => {
     expect(normalizeRule({ radiusKm: 12.5 }).radiusKm).toBe(12.5)
     expect(normalizeRule({ radiusKm: 0 }).radiusKm).toBeNull()
     expect(normalizeRule({ radiusKm: -3 }).radiusKm).toBeNull()
@@ -509,7 +509,7 @@ describe('normalizeRule', () => {
     expect(normalizeRule({ radiusKm: Number.POSITIVE_INFINITY }).radiusKm).toBeNull()
   })
 
-  it('nimmt fuer onlyActive nur echte Wahrheitswerte', () => {
+  it('nimmt für onlyActive nur echte Wahrheitswerte', () => {
     expect(normalizeRule({ onlyActive: false }).onlyActive).toBe(false)
     expect(normalizeRule({ onlyActive: 'false' }).onlyActive).toBe(true)
     expect(normalizeRule({ onlyActive: 0 }).onlyActive).toBe(true)
@@ -524,20 +524,20 @@ describe('normalizeRule', () => {
     expect(normalizeRule({ maxStops: '3' }).maxStops).toBeNull()
   })
 
-  it('ist unveraenderlich unter Wiederholung', () => {
+  it('ist unveränderlich unter Wiederholung', () => {
     const once = normalizeRule({ tags: [' Kunde ', 'kunde'], maxStops: 3.7, radiusKm: 12.5 })
     expect(normalizeRule(once)).toEqual(once)
   })
 
-  it('uebernimmt kein __proto__ aus dem jsonb', () => {
-    const evil = JSON.parse('{"__proto__":{"boese":1},"categoryIds":["c1"]}') as unknown
+  it('übernimmt kein __proto__ aus dem jsonb', () => {
+    const evil = JSON.parse('{"__proto__":{"böse":1},"categoryIds":["c1"]}') as unknown
     const result = normalizeRule(evil)
     expect(result.categoryIds).toEqual(['c1'])
     expect(Object.keys(result)).not.toContain('boese')
     expect(({} as Record<string, unknown>).boese).toBeUndefined()
   })
 
-  it('veraendert die Eingabe nicht', () => {
+  it('verändert die Eingabe nicht', () => {
     const raw = { categoryIds: ['c1', 'c1'], tags: [' Kunde '], center: { lat: 52.5, lng: 13.4 } }
     const copy = JSON.parse(JSON.stringify(raw)) as unknown
     const result = normalizeRule(raw)
@@ -548,7 +548,7 @@ describe('normalizeRule', () => {
 })
 
 describe('isEmptyRule', () => {
-  it('erkennt Regeln ohne Einschraenkung', () => {
+  it('erkennt Regeln ohne Einschränkung', () => {
     expect(isEmptyRule({})).toBe(true)
     expect(isEmptyRule({ categoryIds: [], groupIds: [], tags: [] })).toBe(true)
     expect(isEmptyRule({ onlyActive: true })).toBe(true)
@@ -570,7 +570,7 @@ describe('isEmptyRule', () => {
 
 describe('describeRule', () => {
   const categories = [makeCategory('cat-1', 'Filiale'), makeCategory('cat-2', 'Lager')]
-  const groups = [makeGroup('g-1', 'Nord'), makeGroup('g-2', 'Sued')]
+  const groups = [makeGroup('g-1', 'Nord'), makeGroup('g-2', 'Süd')]
 
   it('beschreibt die leere Regel und nennt dabei die Vorgabe "nur aktive"', () => {
     expect(describeRule({}, categories, groups)).toBe('Alle aktiven Standorte')
@@ -578,7 +578,7 @@ describe('describeRule', () => {
     expect(describeRule({ center: CENTER }, categories, groups)).toBe('Alle aktiven Standorte')
   })
 
-  it('setzt eine vollstaendige Regel zusammen', () => {
+  it('setzt eine vollständige Regel zusammen', () => {
     const rule: RouteRule = {
       categoryIds: ['cat-1', 'cat-2'],
       groupIds: ['g-1'],
@@ -597,12 +597,12 @@ describe('describeRule', () => {
       'Kategorie Filiale · nur aktive',
     )
     expect(describeRule({ groupIds: ['g-1', 'g-2'] }, categories, groups)).toBe(
-      'Gruppen Nord, Sued · nur aktive',
+      'Gruppen Nord, Süd · nur aktive',
     )
     expect(describeRule({ maxStops: 1 }, categories, groups)).toBe('nur aktive · max. 1 Stopp')
   })
 
-  it('nennt die Verknuepfung der Tags', () => {
+  it('nennt die Verknüpfung der Tags', () => {
     expect(describeRule({ tags: ['kunde'] }, categories, groups)).toBe('Tag kunde · nur aktive')
     expect(describeRule({ tags: ['kunde', 'nord'] }, categories, groups)).toBe(
       'Tags kunde oder nord · nur aktive',
@@ -649,7 +649,7 @@ describe('describeRule', () => {
     )
   })
 
-  it('fasst gleichnamige Eintraege zusammen', () => {
+  it('fasst gleichnamige Einträge zusammen', () => {
     const doppelt = [makeCategory('cat-1', 'Filiale'), makeCategory('cat-3', 'Filiale')]
     expect(describeRule({ categoryIds: ['cat-1', 'cat-3'] }, doppelt, groups)).toBe(
       'Kategorie Filiale · nur aktive',
@@ -662,13 +662,13 @@ describe('describeRule', () => {
     )
   })
 
-  it('sortiert die Namen unabhaengig von der Reihenfolge in der Regel', () => {
+  it('sortiert die Namen unabhängig von der Reihenfolge in der Regel', () => {
     expect(describeRule({ categoryIds: ['cat-2', 'cat-1'] }, categories, groups)).toBe(
       'Kategorien Filiale, Lager · nur aktive',
     )
   })
 
-  it('kommt mit einer beschaedigten Regel zurecht', () => {
+  it('kommt mit einer beschädigten Regel zurecht', () => {
     const broken = { categoryIds: 'cat-1', radiusKm: -1, maxStops: 4 } as unknown as RouteRule
     expect(describeRule(broken, categories, groups)).toBe('nur aktive · max. 4 Stopps')
   })

@@ -123,9 +123,9 @@ function problemText(problem: GeocodeProblem | null): string | null {
   }
   if (problem === 'blocked') return 'Die Adressdienste haben die Anfrage abgewiesen.'
   if (problem === 'network') {
-    return 'Kein Adressdienst erreichbar. Pruefe die Internetverbindung, einen Inhaltsblocker oder die Firewall.'
+    return 'Kein Adressdienst erreichbar. Prüfe die Internetverbindung, einen Inhaltsblocker oder die Firewall.'
   }
-  if (problem === 'bad-response') return 'Die Adressdienste haben unverstaendlich geantwortet.'
+  if (problem === 'bad-response') return 'Die Adressdienste haben unverständlich geantwortet.'
   return null
 }
 
@@ -497,7 +497,7 @@ export default function AddressSearchBar() {
       {showClear && (
         <IconButton
           className="addr-search-clear"
-          label="Adresssuche zuruecksetzen"
+          label="Adresssuche zurücksetzen"
           onMouseDown={(e) => e.preventDefault()}
           onClick={clearAll}
         >

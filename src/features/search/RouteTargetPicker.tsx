@@ -117,7 +117,7 @@ export default function RouteTargetPicker({
         <div className="addr-section row-between">
           <span className="addr-section-title">Route zu …</span>
           <button type="button" className="linkish small" onClick={onCancel}>
-            Zurueck
+            Zurück
           </button>
         </div>
       )}

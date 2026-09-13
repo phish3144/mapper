@@ -54,19 +54,19 @@ function assertPoints(points: readonly LatLng[], minimum: number, context: strin
   if (points.length < minimum) {
     throw new RoutingError(
       'bad-request',
-      `${context} werden mindestens ${minimum} gueltige Punkte benoetigt (uebergeben: ${points.length}).`,
+      `${context} werden mindestens ${minimum} gültige Punkte benötigt (übergeben: ${points.length}).`,
     )
   }
   if (points.length > OSRM_MAX_POINTS) {
     throw new RoutingError(
       'bad-request',
-      `${context} sind hoechstens ${OSRM_MAX_POINTS} Punkte moeglich (uebergeben: ${points.length}). ` +
+      `${context} sind höchstens ${OSRM_MAX_POINTS} Punkte möglich (übergeben: ${points.length}). ` +
         'Die Anfrage wird sonst zu lang. Bitte die Auswahl verkleinern.',
     )
   }
   for (let i = 0; i < points.length; i++) {
     if (!isValidLatLng(points[i])) {
-      throw new RoutingError('bad-request', `Punkt ${i + 1} hat keine gueltigen Koordinaten.`)
+      throw new RoutingError('bad-request', `Punkt ${i + 1} hat keine gültigen Koordinaten.`)
     }
   }
 }
@@ -103,13 +103,13 @@ function kindForOsrmCode(code: string): RoutingErrorKind {
 function messageForOsrmCode(code: string, serverMessage: string | null): string {
   switch (code) {
     case 'NoRoute':
-      return 'Zwischen diesen Punkten laesst sich keine Strecke berechnen.'
+      return 'Zwischen diesen Punkten lässt sich keine Strecke berechnen.'
     case 'NoSegment':
       return 'Mindestens ein Punkt liegt zu weit von einer befahrbaren Strasse entfernt.'
     case 'NoTable':
       return 'Der Routing-Dienst konnte die Reisezeit-Matrix nicht berechnen.'
     case 'TooBig':
-      return 'Die Anfrage ist dem Routing-Dienst zu gross. Bitte weniger Punkte waehlen.'
+      return 'Die Anfrage ist dem Routing-Dienst zu gross. Bitte weniger Punkte wählen.'
     default:
       return serverMessage
         ? `Der Routing-Dienst meldet: ${serverMessage}`
@@ -153,7 +153,7 @@ export class OsrmProvider implements RouteProvider {
   }
 
   async route(points: LatLng[], profile: RouteProfile, signal?: AbortSignal): Promise<RouteLeg> {
-    assertPoints(points, 2, 'Fuer eine Strecke')
+    assertPoints(points, 2, 'Für eine Strecke')
     const url =
       `${this.baseUrl}/route/v1/${OSRM_PROFILE[profile]}/${joinCoordinates(points)}` +
       '?overview=full&geometries=polyline&steps=false&alternatives=false'
@@ -162,11 +162,11 @@ export class OsrmProvider implements RouteProvider {
     const routes: unknown[] = Array.isArray(body.routes) ? (body.routes as unknown[]) : []
     const first = routes[0] as Record<string, unknown> | undefined
     if (!first) {
-      throw new RoutingError('no-route', 'Zwischen diesen Punkten laesst sich keine Strecke berechnen.')
+      throw new RoutingError('no-route', 'Zwischen diesen Punkten lässt sich keine Strecke berechnen.')
     }
     const geometry: unknown = first.geometry
     if (typeof geometry !== 'string') {
-      throw new RoutingError('unknown', 'Die Antwort des Routing-Dienstes enthaelt keine Geometrie.')
+      throw new RoutingError('unknown', 'Die Antwort des Routing-Dienstes enthält keine Geometrie.')
     }
 
     return {
@@ -179,10 +179,10 @@ export class OsrmProvider implements RouteProvider {
 
   async matrix(points: LatLng[], profile: RouteProfile, signal?: AbortSignal): Promise<TravelMatrix> {
     if (points.length === 1) {
-      assertPoints(points, 1, 'Fuer eine Reisezeit-Matrix')
+      assertPoints(points, 1, 'Für eine Reisezeit-Matrix')
       return { durations: [[0]], distances: [[0]] }
     }
-    assertPoints(points, 2, 'Fuer eine Reisezeit-Matrix')
+    assertPoints(points, 2, 'Für eine Reisezeit-Matrix')
     const url =
       `${this.baseUrl}/table/v1/${OSRM_PROFILE[profile]}/${joinCoordinates(points)}` +
       '?annotations=duration,distance'
@@ -193,7 +193,7 @@ export class OsrmProvider implements RouteProvider {
     if (!rawDurations || !rawDistances) {
       throw new RoutingError(
         'unknown',
-        'Die Antwort des Routing-Dienstes enthaelt keine vollstaendige Reisezeit-Matrix.',
+        'Die Antwort des Routing-Dienstes enthält keine vollständige Reisezeit-Matrix.',
       )
     }
     const size = points.length
@@ -214,7 +214,7 @@ export class OsrmProvider implements RouteProvider {
       if (isAbortError(error)) throw error
       throw new RoutingError(
         'network',
-        `Der Routing-Dienst (${this.baseUrl}) ist nicht erreichbar. Bitte die Internetverbindung pruefen.`,
+        `Der Routing-Dienst (${this.baseUrl}) ist nicht erreichbar. Bitte die Internetverbindung prüfen.`,
         { cause: error },
       )
     }

@@ -145,7 +145,7 @@ export function resetRouteProvider(): void {
 const PROFILE_LABEL: Record<RouteProfile, string> = {
   driving: 'Auto',
   cycling: 'Fahrrad',
-  walking: 'zu Fuss',
+  walking: 'zu Fuß',
 }
 
 /**
@@ -160,10 +160,10 @@ export function providerNotice(provider: RouteProvider = getRouteProvider()): st
 
   const names = fallbacks.map((profile) => PROFILE_LABEL[profile]).join(' und ')
   return (
-    `Der Dienst "${provider.name}" berechnet Strecken fuer ${names} nicht eigenstaendig - ` +
+    `Der Dienst "${provider.name}" berechnet Strecken für ${names} nicht eigenständig - ` +
     'sie bekommen dieselben Zeiten und Distanzen wie das Auto-Profil. ' +
-    'Fuer echte Rad- und Fusswege einen OpenRouteService-Schluessel (VITE_ORS_API_KEY) ' +
-    'hinterlegen oder eine eigene OSRM-Instanz ueber VITE_OSRM_BASE_URL eintragen.'
+    'Für echte Rad- und Fußwege einen OpenRouteService-Schlüssel (VITE_ORS_API_KEY) ' +
+    'hinterlegen oder eine eigene OSRM-Instanz über VITE_OSRM_BASE_URL eintragen.'
   )
 }
 

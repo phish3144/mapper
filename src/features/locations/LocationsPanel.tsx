@@ -175,7 +175,7 @@ export default function LocationsPanel() {
       await refreshLocations()
       notify(
         'success',
-        `${pluralize(selectedForBulk.length, 'Standort', 'Standorte')} zur Gruppe hinzugefuegt.`,
+        `${pluralize(selectedForBulk.length, 'Standort', 'Standorte')} zur Gruppe hinzugefügt.`,
       )
     } catch (e) {
       reportError(e)
@@ -213,9 +213,9 @@ export default function LocationsPanel() {
       reportError(e)
     }
     confirm(
-      'Standorte loeschen',
+      'Standorte löschen',
       <>
-        Sollen <strong>{pluralize(ids.length, 'Standort', 'Standorte')}</strong> wirklich geloescht
+        Sollen <strong>{pluralize(ids.length, 'Standort', 'Standorte')}</strong> wirklich gelöscht
         werden? Sie verschwinden damit auch aus allen Routen und Gruppen.
         <RouteImpactWarning routes={betroffen} />
       </>,
@@ -254,7 +254,7 @@ export default function LocationsPanel() {
                 <input
                   type="checkbox"
                   checked={allVisibleChecked}
-                  aria-label="Alle angezeigten Standorte auswaehlen"
+                  aria-label="Alle angezeigten Standorte auswählen"
                   onChange={(e) => toggleAllVisible(e.target.checked)}
                 />
               </label>
@@ -376,7 +376,7 @@ export default function LocationsPanel() {
             </strong>
             <div className="row" style={{ gap: 4 }}>
               <Button size="sm" variant="danger" disabled={bulkBusy} onClick={() => void askBulkDelete()}>
-                Loeschen
+                Löschen
               </Button>
               <Button size="sm" variant="ghost" disabled={bulkBusy} onClick={clearChecked}>
                 Auswahl aufheben
@@ -393,10 +393,10 @@ export default function LocationsPanel() {
               <select
                 className="select grow"
                 value={bulkGroupId}
-                aria-label="Gruppe fuer die ausgewaehlten Standorte"
+                aria-label="Gruppe für die ausgewählten Standorte"
                 onChange={(e) => setBulkGroupId(e.target.value)}
               >
-                <option value="">Gruppe waehlen …</option>
+                <option value="">Gruppe wählen …</option>
                 {groups.map((g) => (
                   <option key={g.id} value={g.id}>
                     {g.name}
@@ -409,7 +409,7 @@ export default function LocationsPanel() {
                 busy={bulkBusy}
                 onClick={() => void addToGroup()}
               >
-                Hinzufuegen
+                Hinzufügen
               </Button>
               <Button size="sm" disabled={!bulkGroupId || bulkBusy} onClick={() => void removeFromGroup()}>
                 Entfernen

@@ -14,18 +14,18 @@ import type { EntityKind, VisibilityLevel } from '@/types/domain'
 
 const LEVEL_LABELS: Record<VisibilityLevel, string> = {
   workspace: 'Alle im Arbeitsbereich',
-  restricted: 'Nur ausgewaehlte Personen',
+  restricted: 'Nur ausgewählte Personen',
   private: 'Nur ich',
 }
 
 const LEVEL_HINTS: Record<VisibilityLevel, string> = {
   workspace: 'Jede Person mit Zugang zu diesem Arbeitsbereich sieht den Eintrag.',
   restricted:
-    'Sichtbar fuer die unten ausgewaehlten Personen. Zusaetzlich sehen ihn immer die Eigentuemer ' +
+    'Sichtbar für die unten ausgewählten Personen. Zusätzlich sehen ihn immer die Eigentümer ' +
     'des Arbeitsbereichs und die Person, die ihn angelegt hat.',
   private:
-    'Sichtbar nur fuer die Person, die den Eintrag angelegt hat. Die Eigentuemer des ' +
-    'Arbeitsbereichs sehen ihn weiterhin — vor ihnen laesst sich nichts verbergen.',
+    'Sichtbar nur für die Person, die den Eintrag angelegt hat. Die Eigentümer des ' +
+    'Arbeitsbereichs sehen ihn weiterhin — vor ihnen lässt sich nichts verbergen.',
 }
 
 interface Props {
@@ -182,11 +182,11 @@ export default function VisibilityEditor({
           {!entityId ? (
             <span className="field-hint">
               Einzelfreigaben lassen sich vergeben, sobald der Eintrag einmal gespeichert ist. Bis
-              dahin sehen ihn nur du und die Eigentuemer des Arbeitsbereichs.
+              dahin sehen ihn nur du und die Eigentümer des Arbeitsbereichs.
             </span>
           ) : membersFailed ? (
             <span className="field-hint">
-              Die Mitglieder konnten nicht geladen werden. Schliesse den Dialog und versuche es
+              Die Mitglieder konnten nicht geladen werden. Schließe den Dialog und versuche es
               erneut.
             </span>
           ) : !sortedMembers ? (
@@ -244,8 +244,8 @@ export default function VisibilityEditor({
               </div>
               <span className="field-hint">
                 {canManageGrants
-                  ? 'Aenderungen an dieser Liste werden sofort gespeichert, unabhaengig vom Formular.'
-                  : 'Diese Liste kann nur aendern, wer den Eintrag angelegt hat oder den Arbeitsbereich besitzt.'}
+                  ? 'Aenderungen an dieser Liste werden sofort gespeichert, unabhängig vom Formular.'
+                  : 'Diese Liste kann nur ändern, wer den Eintrag angelegt hat oder den Arbeitsbereich besitzt.'}
               </span>
             </>
           )}

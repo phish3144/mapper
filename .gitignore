@@ -9,3 +9,6 @@ dist-ssr
 node_modules/.tmp
 coverage
 *.tsbuildinfo
+
+# Arbeitsverzeichnis der Supabase-CLI.
+supabase/.temp/

@@ -138,7 +138,7 @@ export default function LocationForm({
 
   async function lookupAddress() {
     if (!point) {
-      setCoordError('Bitte zuerst gueltige Koordinaten angeben.')
+      setCoordError('Bitte zuerst gültige Koordinaten angeben.')
       return
     }
     setReverseBusy(true)
@@ -148,7 +148,7 @@ export default function LocationForm({
         search.cancel()
         setAddress(hit.label)
         setHits([])
-        notify('success', 'Adresse zum Punkt uebernommen.')
+        notify('success', 'Adresse zum Punkt übernommen.')
       } else {
         notify('info', 'Zu diesem Punkt wurde keine Adresse gefunden.')
       }
@@ -194,7 +194,7 @@ export default function LocationForm({
       return
     }
     if (!point) {
-      setCoordError('Breite muss zwischen -90 und 90 liegen, Laenge zwischen -180 und 180.')
+      setCoordError('Breite muss zwischen -90 und 90 liegen, Länge zwischen -180 und 180.')
       return
     }
     if (!workspaceId) return
@@ -255,9 +255,9 @@ export default function LocationForm({
       reportError(e)
     }
     confirm(
-      'Standort loeschen',
+      'Standort löschen',
       <>
-        Soll <strong>{location.name}</strong> wirklich geloescht werden? Der Standort verschwindet
+        Soll <strong>{location.name}</strong> wirklich gelöscht werden? Der Standort verschwindet
         damit auch aus allen Routen und Gruppen.
         <RouteImpactWarning routes={betroffen} />
       </>,
@@ -266,7 +266,7 @@ export default function LocationForm({
           await db.deleteLocation(location.id)
           await refreshLocations()
           if (useUi.getState().selectedLocationId === location.id) selectLocation(null)
-          notify('success', 'Standort geloescht.')
+          notify('success', 'Standort gelöscht.')
           onClose()
         } catch (e) {
           reportError(e)
@@ -284,7 +284,7 @@ export default function LocationForm({
         <>
           {location && (
             <Button variant="danger" onClick={() => void askDelete()} disabled={busy} style={{ marginRight: 'auto' }}>
-              Loeschen
+              Löschen
             </Button>
           )}
           <Button onClick={onClose} disabled={busy}>
@@ -322,7 +322,7 @@ export default function LocationForm({
               id={id}
               className="input"
               value={address}
-              placeholder="Strasse Hausnummer, PLZ Ort"
+              placeholder="Straße Hausnummer, PLZ Ort"
               autoComplete="off"
               onChange={(e) => onAddressChange(e.target.value)}
               onKeyDown={(e) => {
@@ -382,7 +382,7 @@ export default function LocationForm({
           }}
         />
         <TextField
-          label="Laenge"
+          label="Länge"
           value={lng}
           inputMode="decimal"
           placeholder="13.4050"
@@ -395,15 +395,15 @@ export default function LocationForm({
 
       <div className="row" style={{ flexWrap: 'wrap', marginBottom: 12 }}>
         <Button size="sm" onClick={pickOnMap}>
-          Auf der Karte waehlen
+          Auf der Karte wählen
         </Button>
         <Button size="sm" busy={reverseBusy} disabled={!point} onClick={() => void lookupAddress()}>
           Adresse zum Punkt suchen
         </Button>
       </div>
       <div className="field-hint" style={{ marginTop: -8, marginBottom: 12 }}>
-        „Auf der Karte waehlen“ schliesst dieses Formular. Nach dem Klick auf die Karte oeffnet es
-        sich mit dem gewaehlten Punkt erneut — andere noch nicht gespeicherte Eingaben gehen dabei
+        „Auf der Karte wählen“ schließt dieses Formular. Nach dem Klick auf die Karte öffnet es
+        sich mit dem gewählten Punkt erneut — andere noch nicht gespeicherte Eingaben gehen dabei
         verloren.
       </div>
 
@@ -426,7 +426,7 @@ export default function LocationForm({
         onChange={setIcon}
         inherit={{
           label: gewaehlteKategorie
-            ? `Von der Kategorie „${gewaehlteKategorie.name}" uebernehmen`
+            ? `Von der Kategorie „${gewaehlteKategorie.name}" übernehmen`
             : 'Vorgabe (Nadel)',
           emoji: symbolEmoji(gewaehlteKategorie?.icon),
         }}
@@ -504,7 +504,7 @@ export default function LocationForm({
         <input
           className="input"
           value={tagDraft}
-          placeholder="Tag eingeben, mit Komma oder Eingabetaste bestaetigen"
+          placeholder="Tag eingeben, mit Komma oder Eingabetaste bestätigen"
           aria-label="Neuen Tag eingeben"
           onChange={(e) => onTagInput(e.target.value)}
           onBlur={() => {
@@ -533,7 +533,7 @@ export default function LocationForm({
 
       <div className="field">
         <Checkbox
-          label="Aktiv — wird in Karte, Filtern und Routenregeln beruecksichtigt"
+          label="Aktiv — wird in Karte, Filtern und Routenregeln berücksichtigt"
           checked={isActive}
           onChange={setIsActive}
         />

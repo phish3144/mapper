@@ -118,7 +118,7 @@ describe('withCache', () => {
     expect(second.durations[0][1]).not.toBe(-1)
   })
 
-  it('merkt sich Fehler nicht - die naechste Anfrage darf es erneut versuchen', async () => {
+  it('merkt sich Fehler nicht - die nächste Anfrage darf es erneut versuchen', async () => {
     let attempts = 0
     const provider: RouteProvider = {
       ...stubProvider('a').provider,
@@ -135,7 +135,7 @@ describe('withCache', () => {
     expect(matrix.durations[0][1]).toBe(1)
   })
 
-  it('haelt hoechstens 200 Eintraege und verdraengt den am laengsten ungenutzten', async () => {
+  it('hält höchstens 200 Einträge und verdrängt den am längsten ungenutzten', async () => {
     const { provider, calls } = stubProvider('a')
     const cached = withCache(provider)
     const pointsAt = (i: number): LatLng[] => [BERLIN[0], { lat: 52 + i * 0.001, lng: 13.4 }]
@@ -189,7 +189,7 @@ describe('getRouteProvider', () => {
     expect(getRouteProvider()).not.toBe(first)
   })
 
-  it('liefert einen Anbieter mit vollstaendigem Vertrag', () => {
+  it('liefert einen Anbieter mit vollständigem Vertrag', () => {
     const provider = getRouteProvider()
     expect(provider.id).toMatch(/^(osrm|ors)\|/)
     expect(provider.name.length).toBeGreaterThan(0)
@@ -198,7 +198,7 @@ describe('getRouteProvider', () => {
     expect(typeof provider.matrix).toBe('function')
   })
 
-  it('verwirft beim Zuruecksetzen auch den Zwischenspeicher', async () => {
+  it('verwirft beim Zurücksetzen auch den Zwischenspeicher', async () => {
     const { provider } = stubProvider('a')
     await withCache(provider).route(BERLIN, 'driving')
     expect(routingCacheSize()).toBe(1)
@@ -214,18 +214,18 @@ describe('providerNotice', () => {
 
   it('nennt beide Ersatzprofile beim Namen', () => {
     const notice = providerNotice(stubProvider('a', (p) => p === 'driving').provider)
-    expect(notice).toContain('Fahrrad und zu Fuss')
+    expect(notice).toContain('Fahrrad und zu Fuß')
     expect(notice).toContain('Stub a')
     expect(notice).toContain('VITE_ORS_API_KEY')
   })
 
-  it('nennt nur das tatsaechlich betroffene Profil', () => {
+  it('nennt nur das tatsächlich betroffene Profil', () => {
     const notice = providerNotice(stubProvider('a', (p) => p !== 'walking').provider)
-    expect(notice).toContain('zu Fuss')
+    expect(notice).toContain('zu Fuß')
     expect(notice).not.toContain('Fahrrad')
   })
 
-  it('faellt ohne Argument auf den aktiven Anbieter zurueck', () => {
+  it('fällt ohne Argument auf den aktiven Anbieter zurück', () => {
     const provider = getRouteProvider()
     const expected = provider.profileIsDistinct('cycling') && provider.profileIsDistinct('walking')
     expect(providerNotice() === null).toBe(expected)
@@ -233,11 +233,11 @@ describe('providerNotice', () => {
 })
 
 describe('haversineMatrix', () => {
-  it('vertraegt eine leere Punktliste', () => {
+  it('verträgt eine leere Punktliste', () => {
     expect(haversineMatrix([])).toEqual({ durations: [], distances: [] })
   })
 
-  it('liefert fuer einen einzelnen Punkt die Nullmatrix', () => {
+  it('liefert für einen einzelnen Punkt die Nullmatrix', () => {
     expect(haversineMatrix([BERLIN[0]])).toEqual({ durations: [[0]], distances: [[0]] })
   })
 

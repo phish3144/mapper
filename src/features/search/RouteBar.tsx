@@ -75,7 +75,7 @@ export default function RouteBar() {
           href={navigationUrl(preview.from, preview.to)}
           target="_blank"
           rel="noreferrer"
-          title="Strecke in einer Navigations-App oeffnen"
+          title="Strecke in einer Navigations-App öffnen"
         >
           Navigation
         </a>

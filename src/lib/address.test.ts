@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildSearchSteps, cleanQuery, parseGermanAddress, precisionNote } from './address'
 
 describe('cleanQuery', () => {
-  it('entfernt Schlusskommata, Leerglieder und ueberfluessige Leerzeichen', () => {
+  it('entfernt Schlusskommata, Leerglieder und überflüssige Leerzeichen', () => {
     expect(cleanQuery('Horstwiesen 14, 29336, Nienhagen, Niedersachsen,')).toBe(
       'Horstwiesen 14, 29336, Nienhagen, Niedersachsen',
     )
@@ -30,7 +30,7 @@ describe('parseGermanAddress', () => {
     expect(parts.houseNumber).toBe('14')
   })
 
-  it('erkennt Hausnummern mit Buchstabe, Bereich und Schraegstrich', () => {
+  it('erkennt Hausnummern mit Buchstabe, Bereich und Schrägstrich', () => {
     expect(parseGermanAddress('Hauptstrasse 14a, 12345 Musterstadt').houseNumber).toBe('14a')
     expect(parseGermanAddress('Hauptstrasse 14-16, 12345 Musterstadt').houseNumber).toBe('14-16')
     expect(parseGermanAddress('Hauptstrasse 14/2, 12345 Musterstadt').houseNumber).toBe('14/2')
@@ -42,7 +42,7 @@ describe('parseGermanAddress', () => {
     expect(parts.houseNumber).toBe('14')
   })
 
-  it('haelt eine Abkuerzung im Strassennamen unangetastet', () => {
+  it('hält eine Abkürzung im Straßennamen unangetastet', () => {
     // Nominatim loest "Str." selbst auf - eigenes Umschreiben waere schaedlich.
     const parts = parseGermanAddress('Mönckebergstr. 1, 20095 Hamburg')
     expect(parts.street).toBe('Mönckebergstr.')
@@ -85,19 +85,19 @@ describe('buildSearchSteps', () => {
     })
   })
 
-  it('laesst die Hausnummer im Rueckfallschritt weg', () => {
+  it('lässt die Hausnummer im Rückfallschritt weg', () => {
     const steps = buildSearchSteps('Horstwiesen 14, 29336 Nienhagen')
     const strasse = steps.find((s) => s.precision === 'street' && s.kind === 'structured')
     expect(strasse?.params?.street).toBe('Horstwiesen')
   })
 
-  it('erzeugt ohne Hausnummer keinen Strassenrueckfall', () => {
+  it('erzeugt ohne Hausnummer keinen Straßenrückfall', () => {
     const steps = buildSearchSteps('Horstwiesen, 29336 Nienhagen')
     expect(steps.some((s) => s.precision === 'street')).toBe(false)
     expect(steps.some((s) => s.precision === 'place')).toBe(true)
   })
 
-  it('kommt bei einem blossen Ort ohne Lockerungsschritt aus', () => {
+  it('kommt bei einem bloßen Ort ohne Lockerungsschritt aus', () => {
     // Wer nur einen Ort eingibt, bekommt einen Ort - das ist kein ungenauer
     // Treffer. Der 'place'-Schritt waere hier wortgleich mit dem strukturierten
     // 'exact'-Schritt und wird deshalb als Dopplung verworfen.
@@ -106,7 +106,7 @@ describe('buildSearchSteps', () => {
     expect(steps[1].params).toEqual({ city: 'Nienhagen' })
   })
 
-  it('gibt bei leerer Eingabe keinen Schritt zurueck', () => {
+  it('gibt bei leerer Eingabe keinen Schritt zurück', () => {
     expect(buildSearchSteps('')).toEqual([])
     expect(buildSearchSteps('  ,  ')).toEqual([])
   })
@@ -119,7 +119,7 @@ describe('buildSearchSteps', () => {
 })
 
 describe('precisionNote', () => {
-  it('benennt nur die ungenauen Faelle', () => {
+  it('benennt nur die ungenauen Fälle', () => {
     expect(precisionNote('exact')).toBeNull()
     expect(precisionNote('street')).toContain('Hausnummer')
     expect(precisionNote('place')).toContain('Ort')

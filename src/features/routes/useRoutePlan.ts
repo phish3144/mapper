@@ -131,8 +131,8 @@ export function useRoutePlan(routeId: string | null): RoutePlan {
         setEstimated(true)
         setError(
           isRoutingError(e) && e.kind === 'limit'
-            ? 'Der Routing-Dienst ist ausgelastet. Die Zeiten sind vorerst geschaetzt.'
-            : 'Der Routing-Dienst ist nicht erreichbar. Die Zeiten sind geschaetzt (Luftlinie).',
+            ? 'Der Routing-Dienst ist ausgelastet. Die Zeiten sind vorerst geschätzt.'
+            : 'Der Routing-Dienst ist nicht erreichbar. Die Zeiten sind geschätzt (Luftlinie).',
         )
       } finally {
         if (!cancelled) setLoading(false)

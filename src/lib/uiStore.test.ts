@@ -54,7 +54,7 @@ describe('starteRoute', () => {
     expect(s.focus?.points).toEqual([HANNOVER, BERLIN])
   })
 
-  it('schliesst die offene Zielwahl', () => {
+  it('schließt die offene Zielwahl', () => {
     useUi.setState({ routeOrigin: { point: HANNOVER, label: 'Hannover', locationId: 'l1' } })
     useUi.getState().starteRoute(strecke())
     expect(useUi.getState().routeOrigin).toBeNull()
@@ -62,13 +62,13 @@ describe('starteRoute', () => {
 })
 
 describe('setSearchPoint', () => {
-  it('raeumt beim Leeren die Strecke der Suche weg', () => {
+  it('räumt beim Leeren die Strecke der Suche weg', () => {
     useUi.setState({ routePreview: strecke({ belongsToSearch: true }) })
     useUi.getState().setSearchPoint(null)
     expect(useUi.getState().routePreview).toBeNull()
   })
 
-  it('laesst eine Strecke zwischen zwei Standorten stehen', () => {
+  it('lässt eine Strecke zwischen zwei Standorten stehen', () => {
     // Sie haengt nicht an der Suche. Verschwaende sie mit ihr, waere das fuer
     // die Anwenderin ein Fehler ohne erkennbaren Anlass.
     useUi.setState({ routePreview: strecke() })
@@ -76,7 +76,7 @@ describe('setSearchPoint', () => {
     expect(useUi.getState().routePreview?.toLabel).toBe('Berlin')
   })
 
-  it('behaelt die Strecke, solange ein Bezugspunkt gesetzt wird', () => {
+  it('behält die Strecke, solange ein Bezugspunkt gesetzt wird', () => {
     useUi.setState({ routePreview: strecke({ belongsToSearch: true }) })
     useUi.getState().setSearchPoint({ lat: 50.1, lng: 8.7, label: 'Frankfurt' })
     expect(useUi.getState().routePreview).not.toBeNull()

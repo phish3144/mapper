@@ -37,19 +37,19 @@ function assertPoints(points: readonly LatLng[], minimum: number, context: strin
   if (points.length < minimum) {
     throw new RoutingError(
       'bad-request',
-      `${context} werden mindestens ${minimum} gueltige Punkte benoetigt (uebergeben: ${points.length}).`,
+      `${context} werden mindestens ${minimum} gültige Punkte benötigt (übergeben: ${points.length}).`,
     )
   }
   if (points.length > ORS_MAX_POINTS) {
     throw new RoutingError(
       'bad-request',
-      `${context} sind bei OpenRouteService hoechstens ${ORS_MAX_POINTS} Punkte moeglich ` +
-        `(uebergeben: ${points.length}). Bitte die Auswahl verkleinern.`,
+      `${context} sind bei OpenRouteService höchstens ${ORS_MAX_POINTS} Punkte möglich ` +
+        `(übergeben: ${points.length}). Bitte die Auswahl verkleinern.`,
     )
   }
   for (let i = 0; i < points.length; i++) {
     if (!isValidLatLng(points[i])) {
-      throw new RoutingError('bad-request', `Punkt ${i + 1} hat keine gueltigen Koordinaten.`)
+      throw new RoutingError('bad-request', `Punkt ${i + 1} hat keine gültigen Koordinaten.`)
     }
   }
 }
@@ -101,21 +101,21 @@ function classifyOrsFailure(
 ): { kind: RoutingErrorKind; text: string } {
   const text = message ?? ''
   if (code !== null && NO_ROUTE_CODES.has(code)) {
-    return { kind: 'no-route', text: 'Zwischen diesen Punkten laesst sich keine Strecke berechnen.' }
+    return { kind: 'no-route', text: 'Zwischen diesen Punkten lässt sich keine Strecke berechnen.' }
   }
   if (/route could not be found|not be found between|no route/i.test(text)) {
-    return { kind: 'no-route', text: 'Zwischen diesen Punkten laesst sich keine Strecke berechnen.' }
+    return { kind: 'no-route', text: 'Zwischen diesen Punkten lässt sich keine Strecke berechnen.' }
   }
   if (status === 429 || /quota|rate limit|daily limit/i.test(text)) {
     return {
       kind: 'limit',
-      text: 'Das Kontingent von OpenRouteService ist aufgebraucht. Bitte spaeter erneut versuchen.',
+      text: 'Das Kontingent von OpenRouteService ist aufgebraucht. Bitte später erneut versuchen.',
     }
   }
   if (status === 401 || status === 403) {
     return {
       kind: 'bad-request',
-      text: 'OpenRouteService hat den API-Schluessel abgelehnt. Bitte VITE_ORS_API_KEY pruefen.',
+      text: 'OpenRouteService hat den API-Schlüssel abgelehnt. Bitte VITE_ORS_API_KEY prüfen.',
     }
   }
   if (status >= 500) {
@@ -156,7 +156,7 @@ export class OrsProvider implements RouteProvider {
   }
 
   async route(points: LatLng[], profile: RouteProfile, signal?: AbortSignal): Promise<RouteLeg> {
-    assertPoints(points, 2, 'Fuer eine Strecke')
+    assertPoints(points, 2, 'Für eine Strecke')
     const url = `${this.baseUrl}/v2/directions/${ORS_PROFILE[profile]}/geojson`
     const body = await this.request(
       url,
@@ -168,7 +168,7 @@ export class OrsProvider implements RouteProvider {
     const features: unknown[] = Array.isArray(body.features) ? (body.features as unknown[]) : []
     const feature = features[0] as Record<string, unknown> | undefined
     if (!feature) {
-      throw new RoutingError('no-route', 'Zwischen diesen Punkten laesst sich keine Strecke berechnen.')
+      throw new RoutingError('no-route', 'Zwischen diesen Punkten lässt sich keine Strecke berechnen.')
     }
 
     const geometry = asRecord(feature.geometry)
@@ -191,10 +191,10 @@ export class OrsProvider implements RouteProvider {
 
   async matrix(points: LatLng[], profile: RouteProfile, signal?: AbortSignal): Promise<TravelMatrix> {
     if (points.length === 1) {
-      assertPoints(points, 1, 'Fuer eine Reisezeit-Matrix')
+      assertPoints(points, 1, 'Für eine Reisezeit-Matrix')
       return { durations: [[0]], distances: [[0]] }
     }
-    assertPoints(points, 2, 'Fuer eine Reisezeit-Matrix')
+    assertPoints(points, 2, 'Für eine Reisezeit-Matrix')
     const url = `${this.baseUrl}/v2/matrix/${ORS_PROFILE[profile]}`
     const body = await this.request(
       url,
@@ -212,7 +212,7 @@ export class OrsProvider implements RouteProvider {
     if (!rawDurations || !rawDistances) {
       throw new RoutingError(
         'unknown',
-        'Die Antwort von OpenRouteService enthaelt keine vollstaendige Reisezeit-Matrix.',
+        'Die Antwort von OpenRouteService enthält keine vollständige Reisezeit-Matrix.',
       )
     }
     const size = points.length
@@ -231,7 +231,7 @@ export class OrsProvider implements RouteProvider {
     if (!this.apiKey) {
       throw new RoutingError(
         'bad-request',
-        'Es ist kein OpenRouteService-Schluessel hinterlegt. Bitte VITE_ORS_API_KEY setzen.',
+        'Es ist kein OpenRouteService-Schlüssel hinterlegt. Bitte VITE_ORS_API_KEY setzen.',
       )
     }
 
@@ -251,7 +251,7 @@ export class OrsProvider implements RouteProvider {
       if (isAbortError(error)) throw error
       throw new RoutingError(
         'network',
-        'OpenRouteService ist nicht erreichbar. Bitte die Internetverbindung pruefen.',
+        'OpenRouteService ist nicht erreichbar. Bitte die Internetverbindung prüfen.',
         { cause: error },
       )
     }

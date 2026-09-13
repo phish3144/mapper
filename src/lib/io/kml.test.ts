@@ -5,7 +5,7 @@ import { looksLikeKml, parseCoordinates, parseKml, parseKmz, parseXml, stripHtml
 const MY_MAPS = `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
-    <name>Aussendienst 2026</name>
+    <name>Außendienst 2026</name>
     <Folder>
       <name>Kunden Nord</name>
       <Placemark>
@@ -36,7 +36,7 @@ const MY_MAPS = `<?xml version="1.0" encoding="UTF-8"?>
 describe('parseKml', () => {
   it('liest Platzmarken samt Ebene, Adresse und Beschreibung', () => {
     const result = parseKml(MY_MAPS)
-    expect(result.mapName).toBe('Aussendienst 2026')
+    expect(result.mapName).toBe('Außendienst 2026')
     expect(result.rows).toHaveLength(2)
 
     const [erste] = result.rows
@@ -55,28 +55,28 @@ describe('parseKml', () => {
     expect(erste.notes).not.toContain('<b>')
   })
 
-  it('nimmt Koordinaten auch ohne Hoehenangabe an', () => {
+  it('nimmt Koordinaten auch ohne Höhenangabe an', () => {
     const result = parseKml(MY_MAPS)
     expect(result.rows[1]).toMatchObject({ name: 'Lager Altona' })
     expect(result.rows[1].lat).toBeCloseTo(53.55, 4)
   })
 
-  it('sammelt die Ebenennamen und ueberspringt Linien mit Begruendung', () => {
+  it('sammelt die Ebenennamen und überspringt Linien mit Begründung', () => {
     const result = parseKml(MY_MAPS)
     expect(result.layerNames).toEqual(['Kunden Nord', 'Routen'])
     expect(result.skippedShapes).toBe(1)
     expect(result.errors.join(' ')).toContain('Tour A')
-    expect(result.errors.join(' ')).toContain('Linien und Flaechen')
+    expect(result.errors.join(' ')).toContain('Linien und Flächen')
   })
 
-  it('versteht Namensraum-Praefixe', () => {
+  it('versteht Namensraum-Präfixe', () => {
     const text = `<kml:kml xmlns:kml="http://www.opengis.net/kml/2.2"><kml:Document>
-      <kml:Placemark><kml:name>Mit Praefix</kml:name>
+      <kml:Placemark><kml:name>Mit Präfix</kml:name>
       <kml:Point><kml:coordinates>13.405,52.52</kml:coordinates></kml:Point>
       </kml:Placemark></kml:Document></kml:kml>`
     const result = parseKml(text)
     expect(result.rows).toHaveLength(1)
-    expect(result.rows[0].name).toBe('Mit Praefix')
+    expect(result.rows[0].name).toBe('Mit Präfix')
     expect(result.rows[0].lng).toBeCloseTo(13.405, 3)
   })
 
@@ -108,7 +108,7 @@ describe('parseKml', () => {
     expect(parseKml('<kml><Document></Document></kml>').errors[0]).toContain('keine Platzmarken')
   })
 
-  it('laesst sich von einem verirrten Endetag nicht aus dem Tritt bringen', () => {
+  it('lässt sich von einem verirrten Endetag nicht aus dem Tritt bringen', () => {
     const text = `<kml><Document></fremd>
       <Placemark><name>Trotzdem da</name><Point><coordinates>6.9,50.9</coordinates></Point></Placemark>
       </Document></kml>`
@@ -133,7 +133,7 @@ describe('Hilfsfunktionen', () => {
     expect(stripHtml('')).toBe('')
   })
 
-  it('parseXml behandelt CDATA woertlich und dekodiert sonst Entitaeten', () => {
+  it('parseXml behandelt CDATA wörtlich und dekodiert sonst Entitäten', () => {
     const node = parseXml('<a><b><![CDATA[roh &amp; ungefiltert]]></b><c>a &amp; b</c></a>')
     expect(node?.children[0].text).toBe('roh &amp; ungefiltert')
     expect(node?.children[1].text).toBe('a & b')
@@ -143,7 +143,7 @@ describe('Hilfsfunktionen', () => {
     expect(looksLikeKml(MY_MAPS)).toBe(true)
     expect(looksLikeKml('﻿<kml></kml>')).toBe(true)
     expect(looksLikeKml('{"type":"FeatureCollection"}')).toBe(false)
-    expect(looksLikeKml('Name;Breite;Laenge')).toBe(false)
+    expect(looksLikeKml('Name;Breite;Länge')).toBe(false)
   })
 })
 
@@ -191,7 +191,7 @@ describe('parseKmz', () => {
   it('packt ein Archiv aus und liest die enthaltene KML', async () => {
     const result = await parseKmz(makeStoredZip('doc.kml', MY_MAPS))
     expect(result.rows).toHaveLength(2)
-    expect(result.mapName).toBe('Aussendienst 2026')
+    expect(result.mapName).toBe('Außendienst 2026')
   })
 
   it('meldet ein Archiv ohne KML statt zu werfen', async () => {
@@ -200,9 +200,9 @@ describe('parseKmz', () => {
     expect(result.errors[0]).toContain('keine KML')
   })
 
-  it('meldet eine beschaedigte Datei statt zu werfen', async () => {
+  it('meldet eine beschädigte Datei statt zu werfen', async () => {
     const result = await parseKmz(new TextEncoder().encode('gar kein zip').buffer as ArrayBuffer)
     expect(result.rows).toHaveLength(0)
-    expect(result.errors[0]).toMatch(/ZIP|beschaedigt/)
+    expect(result.errors[0]).toMatch(/ZIP|beschädigt/)
   })
 })

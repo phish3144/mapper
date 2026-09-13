@@ -236,7 +236,7 @@ export function buildSearchSteps(input: string): SearchStep[] {
 
 /** Hinweistext, wenn der Treffer ungenauer ist als gesucht. */
 export function precisionNote(precision: SearchPrecision): string | null {
-  if (precision === 'street') return 'Hausnummer nicht gefunden — Strassenmitte'
+  if (precision === 'street') return 'Hausnummer nicht gefunden — Straßenmitte'
   if (precision === 'place') return 'Nur Ort gefunden — keine genaue Adresse'
   return null
 }

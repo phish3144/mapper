@@ -254,7 +254,7 @@ async function callProvider(provider: Provider, url: string): Promise<Fetched> {
 
 Deno.serve(async (req: Request): Promise<Response> => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS_HEADERS })
-  if (req.method !== 'POST') return fail('Nur POST wird unterstuetzt.', 405)
+  if (req.method !== 'POST') return fail('Nur POST wird unterstützt.', 405)
 
   if (!hasUserToken(req.headers.get('Authorization'))) {
     return fail('Nicht angemeldet.', 401)
@@ -262,14 +262,14 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
   const url = Deno.env.get('SUPABASE_URL')
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-  if (!url || !serviceKey) return fail('Der Dienst ist nicht vollstaendig eingerichtet.', 500)
+  if (!url || !serviceKey) return fail('Der Dienst ist nicht vollständig eingerichtet.', 500)
   const service = createClient(url, serviceKey, { auth: { persistSession: false } })
 
   let body: RequestBody
   try {
     body = (await req.json()) as RequestBody
   } catch {
-    return fail('Der Anfragerumpf ist kein gueltiges JSON.', 400)
+    return fail('Der Anfragerumpf ist kein gültiges JSON.', 400)
   }
 
   const query = typeof body.q === 'string' ? body.q.slice(0, 300) : ''
@@ -277,7 +277,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
   const limit = clampLimit(body.limit)
   const countryCodes = normalizeCountryCodes(body.countryCodes)
   if (query.trim() === '' && Object.keys(fields).length === 0) {
-    return fail('Es wurde keine Anfrage uebergeben.', 400)
+    return fail('Es wurde keine Anfrage übergeben.', 400)
   }
 
   const wanted = body.provider === 'nominatim' || body.provider === 'photon' ? body.provider : 'auto'

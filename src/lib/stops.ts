@@ -13,7 +13,7 @@
 import type { MapLocation, RouteStop } from '@/types/domain'
 
 /** Wie ein Stopp heisst, dessen Standort geloescht wurde und der keine Beschriftung hat. */
-export const ORPHAN_FALLBACK_NAME = 'Geloeschter Standort'
+export const ORPHAN_FALLBACK_NAME = 'Gelöschter Standort'
 
 /**
  * Der Standort eines Stopps, notfalls als Platzhalter.

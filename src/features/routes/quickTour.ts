@@ -128,13 +128,13 @@ export function findByPoint(
 export function problemHint(problem: GeocodeProblem | null): string {
   switch (problem) {
     case 'rate-limit':
-      return 'Der Adressdienst hat gedrosselt - spaeter noch einmal versuchen.'
+      return 'Der Adressdienst hat gedrosselt - später noch einmal versuchen.'
     case 'blocked':
       return 'Der Adressdienst hat die Anfrage abgewiesen.'
     case 'network':
       return 'Der Adressdienst war nicht erreichbar.'
     case 'bad-response':
-      return 'Der Adressdienst hat unverstaendlich geantwortet.'
+      return 'Der Adressdienst hat unverständlich geantwortet.'
     default:
       return 'Keine Adresse gefunden.'
   }
@@ -173,7 +173,7 @@ export function checkMatch(lookup: AddressLookup): AddressCheck {
     // Photon kennt keinen Laenderfilter. Eine Zeile ohne Ort trifft sonst
     // widerspruchslos irgendwo in Europa, und die Tour bekommt eine
     // 700-km-Etappe, die niemand bestellt hat.
-    gruende.push('Liegt ausserhalb von Deutschland, Oesterreich und der Schweiz')
+    gruende.push('Liegt außerhalb von Deutschland, Oesterreich und der Schweiz')
   }
 
   return { match, hint: gruende.length > 0 ? gruende.join(' · ') : null }

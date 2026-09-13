@@ -22,7 +22,7 @@ const THEMES = [
 const ROLE_LABEL: Record<MemberRole, string> = {
   viewer: 'Leser',
   editor: 'Bearbeiter',
-  owner: 'Eigentuemer',
+  owner: 'Eigentümer',
 }
 
 export default function UserMenu() {
@@ -115,26 +115,26 @@ export default function UserMenu() {
     setOpen(false)
     const doomed = workspace
     confirm(
-      'Arbeitsbereich loeschen',
+      'Arbeitsbereich löschen',
       <>
         <p>
-          Der Arbeitsbereich <strong>{doomed.name}</strong> wird endgueltig geloescht.
+          Der Arbeitsbereich <strong>{doomed.name}</strong> wird endgültig gelöscht.
         </p>
         <p style={{ marginBottom: 0 }}>
           Mit ihm verschwinden <strong>alle Standorte, Kategorien, Gruppen, Routen und
-          Mitgliedschaften</strong> dieses Bereichs. Das laesst sich nicht rueckgaengig machen.
+          Mitgliedschaften</strong> dieses Bereichs. Das lässt sich nicht rückgängig machen.
         </p>
       </>,
       async () => {
         try {
           await db.deleteWorkspace(doomed.id)
           await loadWorkspaces()
-          notify('success', `Arbeitsbereich "${doomed.name}" wurde geloescht.`)
+          notify('success', `Arbeitsbereich "${doomed.name}" wurde gelöscht.`)
         } catch (error) {
           reportError(error)
         }
       },
-      'Endgueltig loeschen',
+      'Endgültig löschen',
     )
   }
 
@@ -230,7 +230,7 @@ export default function UserMenu() {
                 style={{ width: '100%', justifyContent: 'flex-start' }}
                 onClick={askDelete}
               >
-                Bereich loeschen
+                Bereich löschen
               </button>
             </>
           )}

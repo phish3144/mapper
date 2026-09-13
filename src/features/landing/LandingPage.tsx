@@ -99,7 +99,7 @@ const GRENZEN: { was: string; text: string }[] = [
   {
     was: 'Verkehr wird gezeigt, nicht eingeplant',
     text:
-      'Sperrungen und Baustellen liegen auf der Karte. In die Berechnung der Fahrzeiten fliessen sie nicht ein — die Tour ist nach freier Strecke geplant.',
+      'Sperrungen und Baustellen liegen auf der Karte. In die Berechnung der Fahrzeiten fließen sie nicht ein — die Tour ist nach freier Strecke geplant.',
   },
   {
     was: 'Keine Stauprognose',

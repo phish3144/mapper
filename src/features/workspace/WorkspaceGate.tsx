@@ -59,7 +59,7 @@ export default function WorkspaceGate() {
       // Ohne Rueckmeldung waere nicht zu erkennen, ob ueberhaupt etwas geprueft
       // wurde: bei Erfolg wechselt die Ansicht, sonst passiert sichtbar nichts.
       if (useStore.getState().workspaces.length === 0) {
-        notify('info', 'Es liegt keine Einladung fuer deine Adresse vor.')
+        notify('info', 'Es liegt keine Einladung für deine Adresse vor.')
       }
     } finally {
       setChecking(false)
@@ -79,13 +79,13 @@ export default function WorkspaceGate() {
       <div className="auth-card panel" style={{ maxWidth: 460 }}>
         <h1 className="auth-title">Noch kein Arbeitsbereich</h1>
         <p className="auth-sub">
-          Ein Arbeitsbereich ist der Rahmen fuer alles, was du hier pflegst.
+          Ein Arbeitsbereich ist der Rahmen für alles, was du hier pflegst.
         </p>
 
         <ul className="small muted" style={{ margin: '0 0 18px', paddingLeft: 18, lineHeight: 1.7 }}>
-          <li>Standorte, Kategorien, Gruppen und Routen gehoeren immer genau einem Bereich.</li>
+          <li>Standorte, Kategorien, Gruppen und Routen gehören immer genau einem Bereich.</li>
           <li>
-            Du entscheidest, wer mitarbeitet: als Leser, Bearbeiter oder Eigentuemer.
+            Du entscheidest, wer mitarbeitet: als Leser, Bearbeiter oder Eigentümer.
           </li>
           <li>Mehrere Bereiche bleiben streng getrennt — etwa je Region oder je Kunde.</li>
         </ul>
@@ -97,11 +97,11 @@ export default function WorkspaceGate() {
         <div className="divider" />
 
         <p className="small faint" style={{ marginBottom: 8 }}>
-          Wurdest du eingeladen? Einladungen werden beim Anmelden eingeloest. Fehlt der
-          Bereich, pruefe hier noch einmal.
+          Wurdest du eingeladen? Einladungen werden beim Anmelden eingelöst. Fehlt der
+          Bereich, prüfe hier noch einmal.
         </p>
         <Button block busy={checking} onClick={() => void recheck()}>
-          Einladungen pruefen
+          Einladungen prüfen
         </Button>
       </div>
 
@@ -127,7 +127,7 @@ export default function WorkspaceGate() {
               error={nameError}
               autoFocus
               maxLength={80}
-              placeholder="z. B. Aussendienst Nord"
+              placeholder="z. B. Außendienst Nord"
               onChange={(e) => {
                 setName(e.target.value)
                 if (nameError) setNameError(null)
@@ -143,7 +143,7 @@ export default function WorkspaceGate() {
               <span className="field-hint">Kennzeichnet den Bereich in der Kopfzeile.</span>
             </div>
             <p className="small muted" style={{ margin: 0 }}>
-              Du wirst automatisch Eigentuemer und kannst anschliessend weitere Personen einladen.
+              Du wirst automatisch Eigentümer und kannst anschließend weitere Personen einladen.
             </p>
           </form>
         </Modal>

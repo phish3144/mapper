@@ -86,7 +86,7 @@ export default function RuleEditor({
       </Field>
 
       <div className="field-row">
-        <Field label="Umkreis um (Breite / Laenge)" hint="Leer lassen fuer keinen Umkreisfilter">
+        <Field label="Umkreis um (Breite / Länge)" hint="Leer lassen für keinen Umkreisfilter">
           {(id) => (
             <input
               id={id}
@@ -125,7 +125,7 @@ export default function RuleEditor({
       </div>
 
       <div className="field-row">
-        <Field label="Hoechstzahl der Stopps" hint="Leer = alle Treffer">
+        <Field label="Höchstzahl der Stopps" hint="Leer = alle Treffer">
           {(id) => (
             <input
               id={id}

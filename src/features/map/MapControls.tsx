@@ -76,7 +76,7 @@ export const BASE_LAYERS: Record<BaseLayerId, BaseLayer> = {
   },
   terrain: {
     id: 'terrain',
-    label: 'Gelaende',
+    label: 'Gelände',
     sources: [
       {
         provider: 'OpenTopoMap',

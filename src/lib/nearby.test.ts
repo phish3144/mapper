@@ -64,7 +64,7 @@ describe('bearingDegrees - Himmelsrichtungen', () => {
     expectBearing(bearingDegrees(BERLIN, { lat: BERLIN.lat, lng: BERLIN.lng + 1 }), 90)
   })
 
-  it('zeigt nach Sueden', () => {
+  it('zeigt nach Süden', () => {
     expectBearing(bearingDegrees(BERLIN, { lat: BERLIN.lat - 1, lng: BERLIN.lng }), 180)
   })
 
@@ -78,8 +78,8 @@ describe('bearingDegrees - Himmelsrichtungen', () => {
   })
 })
 
-describe('bearingDegrees - Randfaelle', () => {
-  it('liefert fuer den identischen Punkt kein NaN', () => {
+describe('bearingDegrees - Randfälle', () => {
+  it('liefert für den identischen Punkt kein NaN', () => {
     const bearing = bearingDegrees(BERLIN, { ...BERLIN })
     expect(Number.isNaN(bearing)).toBe(false)
     expect(bearing).toBe(0)
@@ -100,7 +100,7 @@ describe('bearingDegrees - Randfaelle', () => {
     }
   })
 
-  it('rechnet ueber den Grosskreis, nicht ueber die naive Koordinatendifferenz', () => {
+  it('rechnet über den Großkreis, nicht über die naive Koordinatendifferenz', () => {
     // Gleiche Breite, 40 Grad weiter oestlich: naiv waere das exakt 90 Grad,
     // ueber den Grosskreis sind es rund 71.
     const bearing = bearingDegrees({ lat: 70, lng: 0 }, { lat: 70, lng: 40 })
@@ -109,7 +109,7 @@ describe('bearingDegrees - Randfaelle', () => {
     expect(angleDiff(bearing, 90)).toBeGreaterThan(10)
   })
 
-  it('ueberquert den Datumswechsel ohne Sprung', () => {
+  it('überquert den Datumswechsel ohne Sprung', () => {
     expectBearing(bearingDegrees({ lat: 0, lng: 179.5 }, { lat: 0, lng: -179.5 }), 90)
   })
 
@@ -132,7 +132,7 @@ describe('compassPoint - Sektoren', () => {
     expect(compassPoint(315)).toBe('NW')
   })
 
-  it('schlaegt die Sektorgrenze dem naechsten Sektor zu', () => {
+  it('schlägt die Sektorgrenze dem nächsten Sektor zu', () => {
     expect(compassPoint(22.4)).toBe('N')
     expect(compassPoint(22.5)).toBe('NO')
     expect(compassPoint(67.4)).toBe('NO')
@@ -144,14 +144,14 @@ describe('compassPoint - Sektoren', () => {
     expect(compassPoint(292.5)).toBe('NW')
   })
 
-  it('haelt Norden ueber die 360-Grad-Naht zusammen', () => {
+  it('hält Norden über die 360-Grad-Naht zusammen', () => {
     expect(compassPoint(337.4)).toBe('NW')
     expect(compassPoint(337.5)).toBe('N')
     expect(compassPoint(359.9)).toBe('N')
     expect(compassPoint(360)).toBe('N')
   })
 
-  it('normalisiert negative Werte und Werte ueber 360', () => {
+  it('normalisiert negative Werte und Werte über 360', () => {
     expect(compassPoint(-45)).toBe('NW')
     expect(compassPoint(-90)).toBe('W')
     expect(compassPoint(-1)).toBe('N')
@@ -160,7 +160,7 @@ describe('compassPoint - Sektoren', () => {
     expect(compassPoint(-405)).toBe('NW')
   })
 
-  it('faellt bei unbrauchbaren Zahlen auf Norden zurueck', () => {
+  it('fällt bei unbrauchbaren Zahlen auf Norden zurück', () => {
     expect(compassPoint(Number.NaN)).toBe('N')
     expect(compassPoint(Number.POSITIVE_INFINITY)).toBe('N')
     expect(compassPoint(Number.NEGATIVE_INFINITY)).toBe('N')
@@ -173,9 +173,9 @@ describe('directionLabel', () => {
       N: 'Norden',
       NO: 'Nordosten',
       O: 'Osten',
-      SO: 'Suedosten',
-      S: 'Sueden',
-      SW: 'Suedwesten',
+      SO: 'Südosten',
+      S: 'Süden',
+      SW: 'Südwesten',
       W: 'Westen',
       NW: 'Nordwesten',
     }
@@ -214,7 +214,7 @@ describe('nearestLocations - Reihenfolge', () => {
     expect(byId.get('west')).toBe('W')
   })
 
-  it('laesst Fahrzeit und Fahrstrecke zunaechst leer', () => {
+  it('lässt Fahrzeit und Fahrstrecke zunächst leer', () => {
     const [entry] = nearestLocations(BERLIN, [northOf('a', 0.01)])
     expect(entry.travelSec).toBeNull()
     expect(entry.travelMeters).toBeNull()
@@ -240,7 +240,7 @@ describe('nearestLocations - Gleichstand', () => {
     expect(ids(nearestLocations(BERLIN, locations))).toEqual(['s1', 's2', 's10'])
   })
 
-  it('bleibt bei gleichem Namen ueber die Kennung eindeutig', () => {
+  it('bleibt bei gleichem Namen über die Kennung eindeutig', () => {
     const locations = [
       makeLocation('z', { name: 'Filiale' }),
       makeLocation('a', { name: 'Filiale' }),
@@ -248,7 +248,7 @@ describe('nearestLocations - Gleichstand', () => {
     expect(ids(nearestLocations(BERLIN, locations))).toEqual(['a', 'z'])
   })
 
-  it('liefert unabhaengig von der Eingabereihenfolge dasselbe Ergebnis', () => {
+  it('liefert unabhängig von der Eingabereihenfolge dasselbe Ergebnis', () => {
     // Spiegelbildliche Punkte haben exakt dieselbe Luftlinie - der reine
     // Entfernungsvergleich koennte hier beliebig ausgehen.
     const locations = [
@@ -275,7 +275,7 @@ describe('nearestLocations - Optionen', () => {
     expect(ids(nearestLocations(BERLIN, many, { limit: 3 }))).toEqual(['l00', 'l01', 'l02'])
   })
 
-  it('gibt bei Limit 0 nichts zurueck', () => {
+  it('gibt bei Limit 0 nichts zurück', () => {
     expect(nearestLocations(BERLIN, many, { limit: 0 })).toEqual([])
   })
 
@@ -297,18 +297,18 @@ describe('nearestLocations - Optionen', () => {
   it('setzt die Richtung auch nach dem Abschneiden richtig', () => {
     // Der naechste Standort liegt im Sueden, alle weiter entfernten im Norden:
     // wird die Peilung erst nach dem Sortieren gerechnet, muss sie mitwandern.
-    const locations = [northOf('nord', 0.4, { name: 'Nord' }), northOf('sued', -0.1, { name: 'Sued' })]
+    const locations = [northOf('nord', 0.4, { name: 'Nord' }), northOf('sued', -0.1, { name: 'Süd' })]
     const entries = nearestLocations(BERLIN, locations, { limit: 1 })
     expect(ids(entries)).toEqual(['sued'])
     expect(entries[0].direction).toBe('S')
   })
 
-  it('laesst bei maxKm 0 nur den Standort auf dem Suchpunkt uebrig', () => {
+  it('lässt bei maxKm 0 nur den Standort auf dem Suchpunkt übrig', () => {
     const locations = [makeLocation('hier', { name: 'Hier' }), northOf('dort', 0.01, { name: 'Dort' })]
     expect(ids(nearestLocations(BERLIN, locations, { maxKm: 0 }))).toEqual(['hier'])
   })
 
-  it('gibt bei negativem maxKm nichts zurueck', () => {
+  it('gibt bei negativem maxKm nichts zurück', () => {
     expect(nearestLocations(BERLIN, many, { maxKm: -1 })).toEqual([])
   })
 
@@ -330,7 +330,7 @@ describe('nearestLocations - Optionen', () => {
     ])
   })
 
-  it('schneidet ueber maxKm ab', () => {
+  it('schneidet über maxKm ab', () => {
     // 0,05 Grad Breite sind rund 5,6 km - vier Standorte liegen darunter.
     const entries = nearestLocations(BERLIN, many, { maxKm: 5.6, limit: 20 })
     expect(ids(entries)).toEqual(['l00', 'l01', 'l02', 'l03', 'l04'])
@@ -360,8 +360,8 @@ describe('nearestLocations - Optionen', () => {
   })
 })
 
-describe('nearestLocations - Grenzfaelle', () => {
-  it('gibt bei leerer Liste ein leeres Array zurueck', () => {
+describe('nearestLocations - Grenzfälle', () => {
+  it('gibt bei leerer Liste ein leeres Array zurück', () => {
     expect(nearestLocations(BERLIN, [])).toEqual([])
   })
 
@@ -379,22 +379,22 @@ describe('nearestLocations - Grenzfaelle', () => {
     expect(entries[0].direction).toBe('N')
   })
 
-  it('ueberspringt Standorte mit unbrauchbaren Koordinaten', () => {
+  it('überspringt Standorte mit unbrauchbaren Koordinaten', () => {
     const locations = [
       makeLocation('kaputt', { name: 'Kaputt', lat: Number.NaN, lng: Number.NaN }),
-      makeLocation('ausserhalb', { name: 'Ausserhalb', lat: 999, lng: 13.4 }),
+      makeLocation('ausserhalb', { name: 'Außerhalb', lat: 999, lng: 13.4 }),
       northOf('gut', 0.3, { name: 'Gut' }),
     ]
     expect(ids(nearestLocations(BERLIN, locations))).toEqual(['gut'])
   })
 
-  it('gibt ohne gueltigen Suchpunkt nichts zurueck', () => {
+  it('gibt ohne gültigen Suchpunkt nichts zurück', () => {
     const locations = [northOf('a', 0.01)]
     expect(nearestLocations({ lat: Number.NaN, lng: 13.4 }, locations)).toEqual([])
     expect(nearestLocations({ lat: 91, lng: 13.4 }, locations)).toEqual([])
   })
 
-  it('veraendert die Eingabe nicht', () => {
+  it('verändert die Eingabe nicht', () => {
     const locations = [
       northOf('fern', 0.5, { name: 'Fern' }),
       northOf('nah', 0.01, { name: 'Nah' }),
@@ -425,14 +425,14 @@ describe('withTravel', () => {
     expect(ids(result)).toEqual(['a', 'b', 'c'])
   })
 
-  it('laesst die Luftlinie und die Richtung unangetastet', () => {
+  it('lässt die Luftlinie und die Richtung unangetastet', () => {
     const entries = base()
     const result = withTravel(entries, [60, 120, 180], [1000, 2000, 3000])
     expect(result.map((e) => e.airKm)).toEqual(entries.map((e) => e.airKm))
     expect(result.map((e) => e.direction)).toEqual(entries.map((e) => e.direction))
   })
 
-  it('akzeptiert die Null als gueltigen Wert', () => {
+  it('akzeptiert die Null als gültigen Wert', () => {
     const result = withTravel(base(), [0, 1, 2], [0, 1, 2])
     expect(result[0].travelSec).toBe(0)
     expect(result[0].travelMeters).toBe(0)
@@ -448,29 +448,29 @@ describe('withTravel', () => {
     expect(result.map((e) => e.travelMeters)).toEqual([null, null, null])
   })
 
-  it('mischt gueltige und unbrauchbare Werte richtig', () => {
+  it('mischt gültige und unbrauchbare Werte richtig', () => {
     const result = withTravel(base(), [60, Number.NaN, 180], [1000, 2000, -5])
     expect(result.map((e) => e.travelSec)).toEqual([60, null, 180])
     expect(result.map((e) => e.travelMeters)).toEqual([1000, 2000, null])
   })
 
-  it('laesst den Rest bei kuerzeren Arrays leer', () => {
+  it('lässt den Rest bei kürzeren Arrays leer', () => {
     const result = withTravel(base(), [60], [1000, 2000])
     expect(result.map((e) => e.travelSec)).toEqual([60, null, null])
     expect(result.map((e) => e.travelMeters)).toEqual([1000, 2000, null])
   })
 
-  it('kommt mit gaenzlich leeren Arrays zurecht', () => {
+  it('kommt mit gänzlich leeren Arrays zurecht', () => {
     const result = withTravel(base(), [], [])
     expect(result).toHaveLength(3)
     expect(result.every((e) => e.travelSec === null && e.travelMeters === null)).toBe(true)
   })
 
-  it('gibt bei leerer Eintragsliste ein leeres Array zurueck', () => {
+  it('gibt bei leerer Eintragsliste ein leeres Array zurück', () => {
     expect(withTravel([], [60], [1000])).toEqual([])
   })
 
-  it('veraendert die Eingabe nicht und liefert neue Objekte', () => {
+  it('verändert die Eingabe nicht und liefert neue Objekte', () => {
     const entries = base()
     const snapshot = entries.map((e) => ({ ...e }))
     const result = withTravel(entries, [60, 120, 180], [1000, 2000, 3000])

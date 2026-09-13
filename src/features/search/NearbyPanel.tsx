@@ -330,7 +330,7 @@ export default function NearbyPanel({ point }: { point: SearchPoint }) {
 
       {!originValid && (
         <EmptyState>
-          Diese Adresse hat keine brauchbaren Koordinaten — ohne sie laesst sich keine
+          Diese Adresse hat keine brauchbaren Koordinaten — ohne sie lässt sich keine
           Entfernung messen.
         </EmptyState>
       )}
@@ -338,7 +338,7 @@ export default function NearbyPanel({ point }: { point: SearchPoint }) {
       {originValid && (
         <div className="addr-section">
           <div className="row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
-            <span className="addr-section-title">Naechste gespeicherte Standorte</span>
+            <span className="addr-section-title">Nächste gespeicherte Standorte</span>
             <Checkbox
               checked={withinFilter}
               onChange={setWithinFilter}
@@ -355,7 +355,7 @@ export default function NearbyPanel({ point }: { point: SearchPoint }) {
           )}
           {status === 'failed' && (
             <div className="small faint" style={{ marginTop: 4 }}>
-              Fahrzeiten nicht verfuegbar — es gilt die Luftlinie.
+              Fahrzeiten nicht verfügbar — es gilt die Luftlinie.
             </div>
           )}
         </div>
@@ -367,7 +367,7 @@ export default function NearbyPanel({ point }: { point: SearchPoint }) {
 
       {originValid && locations.length > 0 && pool.length === 0 && (
         <EmptyState>
-          <div>Der Filter laesst keinen Standort uebrig.</div>
+          <div>Der Filter lässt keinen Standort übrig.</div>
           <div style={{ marginTop: 8 }}>
             <Button type="button" size="sm" onClick={() => setWithinFilter(false)}>
               Gegen alle Standorte messen
@@ -377,7 +377,7 @@ export default function NearbyPanel({ point }: { point: SearchPoint }) {
       )}
 
       {originValid && pool.length > 0 && entries.length === 0 && (
-        <EmptyState>Kein Standort mit brauchbaren Koordinaten in der Naehe.</EmptyState>
+        <EmptyState>Kein Standort mit brauchbaren Koordinaten in der Nähe.</EmptyState>
       )}
 
       {entries.length > 0 && (
@@ -388,7 +388,7 @@ export default function NearbyPanel({ point }: { point: SearchPoint }) {
         <div
           ref={listRef}
           role="group"
-          aria-label="Naechste gespeicherte Standorte"
+          aria-label="Nächste gespeicherte Standorte"
           aria-busy={status === 'loading'}
           onKeyDown={onListKeyDown}
         >

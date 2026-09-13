@@ -67,7 +67,7 @@ describe('locationsToGeoJson', () => {
     })
   })
 
-  it('uebernimmt Kategorie, Gruppen und Zeitfenster in die Eigenschaften', () => {
+  it('übernimmt Kategorie, Gruppen und Zeitfenster in die Eigenschaften', () => {
     const location = makeLocation({
       category_id: 'cat-1',
       address: 'Hauptstrasse 1',
@@ -98,7 +98,7 @@ describe('locationsToGeoJson', () => {
 })
 
 describe('parseGeoJson', () => {
-  it('liest den Export verlustfrei zurueck', () => {
+  it('liest den Export verlustfrei zurück', () => {
     const locations = [
       makeLocation({
         id: 'loc-1',
@@ -115,7 +115,7 @@ describe('parseGeoJson', () => {
       }),
       makeLocation({
         id: 'loc-2',
-        name: 'Depot Sued',
+        name: 'Depot Süd',
         lat: -33.8688,
         lng: 151.2093,
         is_active: false,
@@ -148,7 +148,7 @@ describe('parseGeoJson', () => {
         isActive: true,
       },
       {
-        name: 'Depot Sued',
+        name: 'Depot Süd',
         lat: -33.8688,
         lng: 151.2093,
         tags: [],
@@ -188,7 +188,7 @@ describe('parseGeoJson', () => {
     expect(swapped.rows[0]).toMatchObject({ lat: -33.87, lng: 151.21 })
   })
 
-  it('akzeptiert BOM, englische Schluessel und Zeitfenster als Text', () => {
+  it('akzeptiert BOM, englische Schlüssel und Zeitfenster als Text', () => {
     const text =
       '\uFEFF' +
       JSON.stringify({
@@ -269,21 +269,21 @@ describe('parseGeoJson', () => {
     expect(result.errors[4]).toContain('Feature 6')
   })
 
-  it('meldet ungueltiges JSON und fremde Strukturen, ohne zu werfen', () => {
+  it('meldet ungültiges JSON und fremde Strukturen, ohne zu werfen', () => {
     const broken = parseGeoJson('{ "type": "FeatureCollection", ')
     expect(broken.rows).toEqual([])
     expect(broken.errors).toHaveLength(1)
-    expect(broken.errors[0]).toContain('kein gueltiges JSON')
+    expect(broken.errors[0]).toContain('kein gültiges JSON')
 
     expect(parseGeoJson('   ').errors).toEqual(['Die Datei ist leer.'])
     expect(parseGeoJson('{"type":"Topology"}').errors[0]).toContain('Unerwarteter Aufbau')
     expect(parseGeoJson('{"type":"FeatureCollection","features":[]}').errors).toEqual([
-      'Die Datei enthaelt keine Features.',
+      'Die Datei enthält keine Features.',
     ])
   })
 })
 
-describe('parseGeoJson, Randfaelle', () => {
+describe('parseGeoJson, Randfälle', () => {
   const parse = (value: unknown) => parseGeoJson(JSON.stringify(value))
 
   it('nimmt ein einzelnes Zeitfenster auch ohne umgebende Liste an', () => {
@@ -301,7 +301,7 @@ describe('parseGeoJson, Randfaelle', () => {
       'Unerwarteter Aufbau',
     )
     expect(parse({ type: 'FeatureCollection' }).errors).toEqual([
-      'Die Datei enthaelt keine Features.',
+      'Die Datei enthält keine Features.',
     ])
   })
 
@@ -314,7 +314,7 @@ describe('parseGeoJson, Randfaelle', () => {
     expect(result.errors[0]).toContain('Geometrie')
   })
 
-  it('liest die Nullinsel als gueltigen Punkt', () => {
+  it('liest die Nullinsel als gültigen Punkt', () => {
     const result = parse({
       type: 'Feature',
       geometry: { type: 'Point', coordinates: [0, 0] },
@@ -324,11 +324,11 @@ describe('parseGeoJson, Randfaelle', () => {
     expect(result.rows[0]).toMatchObject({ lat: 0, lng: 0, serviceMinutes: 0, isActive: false })
   })
 
-  it('uebernimmt eine leere Sammlung ohne Standorte fehlerfrei aus dem Export', () => {
+  it('übernimmt eine leere Sammlung ohne Standorte fehlerfrei aus dem Export', () => {
     const collection = locationsToGeoJson([], [], new Map())
     expect(collection.features).toEqual([])
     expect(parseGeoJson(JSON.stringify(collection)).errors).toEqual([
-      'Die Datei enthaelt keine Features.',
+      'Die Datei enthält keine Features.',
     ])
   })
 

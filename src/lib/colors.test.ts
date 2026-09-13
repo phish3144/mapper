@@ -61,12 +61,12 @@ describe('groupColorsOf', () => {
     expect(vorwaerts).toEqual(rueckwaerts)
   })
 
-  it('liefert nichts fuer einen Standort ohne Gruppe', () => {
+  it('liefert nichts für einen Standort ohne Gruppe', () => {
     expect(groupColorsOf(ort('a'), GRUPPEN, zuordnung({}))).toEqual([])
     expect(groupColorsOf(ort('a'), GRUPPEN, zuordnung({ a: [] }))).toEqual([])
   })
 
-  it('uebergeht Zuordnungen auf Gruppen, die es nicht mehr gibt', () => {
+  it('übergeht Zuordnungen auf Gruppen, die es nicht mehr gibt', () => {
     // Kann auftreten, solange eine geloeschte Gruppe noch im Zustand haengt.
     expect(groupColorsOf(ort('a'), GRUPPEN, zuordnung({ a: ['weg', 'g2'] }))).toEqual(['#059669'])
   })
@@ -100,7 +100,7 @@ describe('locationColors', () => {
     expect(farben).toEqual(['#059669'])
   })
 
-  it('faellt ohne Gruppe auf die Kategorie zurueck', () => {
+  it('fällt ohne Gruppe auf die Kategorie zurück', () => {
     expect(locationColors(ort('a', 'c1'), GRUPPEN, zuordnung({}), { color: '#ff0000' })).toEqual([
       '#ff0000',
     ])
@@ -119,7 +119,7 @@ describe('locationColors', () => {
 })
 
 describe('hexColor', () => {
-  it('laesst echte Hex-Werte durch', () => {
+  it('lässt echte Hex-Werte durch', () => {
     for (const wert of ['#fff', '#2563eb', '#2563ebff', '#ABC']) {
       expect(hexColor(wert)).toBe(wert)
     }
@@ -137,7 +137,7 @@ describe('hexColor', () => {
 })
 
 describe('sanitizeColors', () => {
-  it('laesst eine ungueltige Farbe WEGFALLEN statt sie grau zu malen', () => {
+  it('lässt eine ungültige Farbe WEGFALLEN statt sie grau zu malen', () => {
     // Ein graues Band wuerde eine Gruppe behaupten, die es nicht gibt.
     expect(sanitizeColors(['#2563eb', 'kaputt'])).toEqual(['#2563eb'])
     expect(sanitizeColors(['kaputt', 'auch kaputt'])).toEqual([])
@@ -191,13 +191,13 @@ describe('bandsBackground', () => {
     expect(new Set(pixelwerte)).toEqual(new Set(['0.50px']))
   })
 
-  it('nimmt fuer den ungedrehten Listenpunkt einen anderen Winkel', () => {
+  it('nimmt für den ungedrehten Listenpunkt einen anderen Winkel', () => {
     const punkt = bandsBackground(['#2563eb', '#059669'], { angle: 90, seam: 'var(--bg-panel)' })
     expect(punkt).toContain('linear-gradient(90deg')
     expect(punkt).toContain('var(--bg-panel) calc(50.000% - 0.50px)')
   })
 
-  it('laesst nichts Ungeprueftes in den Hintergrundwert', () => {
+  it('lässt nichts Ungeprüftes in den Hintergrundwert', () => {
     const boese = bandsBackground(['#2563eb', 'red;background:url(evil)'], NADEL)
     expect(boese).toBe('#2563eb')
     expect(boese).not.toContain('url')

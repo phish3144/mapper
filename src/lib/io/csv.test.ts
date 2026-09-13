@@ -63,7 +63,7 @@ describe('toCsv', () => {
     const csv = toCsv([], [], NO_GROUPS)
     expect(csv.startsWith(CSV_BOM)).toBe(true)
     expect(csv.slice(CSV_BOM.length).split('\r\n')[0]).toBe(
-      'Name;Kategorie;Gruppen;Breite;Laenge;Adresse;Notizen;Tags;Aufenthalt (min);Aktiv;Zeitfenster;Symbol',
+      'Name;Kategorie;Gruppen;Breite;Länge;Adresse;Notizen;Tags;Aufenthalt (min);Aktiv;Zeitfenster;Symbol',
     )
     expect(CSV_HEADER).toHaveLength(12)
   })
@@ -92,7 +92,7 @@ describe('toCsv', () => {
 })
 
 describe('parseCsv', () => {
-  it('liest den Export verlustfrei zurueck', () => {
+  it('liest den Export verlustfrei zurück', () => {
     const locations = [
       makeLocation({
         id: 'loc-1',
@@ -109,7 +109,7 @@ describe('parseCsv', () => {
       }),
       makeLocation({
         id: 'loc-2',
-        name: 'Depot Sued',
+        name: 'Depot Süd',
         lat: -33.8688,
         lng: 151.2093,
         is_active: false,
@@ -140,7 +140,7 @@ describe('parseCsv', () => {
         isActive: true,
       },
       {
-        name: 'Depot Sued',
+        name: 'Depot Süd',
         lat: -33.8688,
         lng: 151.2093,
         tags: [],
@@ -192,9 +192,9 @@ describe('parseCsv', () => {
     ])
   })
 
-  it('zaehlt Zeilen ueber eingebettete Zeilenumbrueche hinweg richtig', () => {
+  it('zählt Zeilen über eingebettete Zeilenumbrüche hinweg richtig', () => {
     const text = [
-      'Name;Breite;Laenge;Notizen',
+      'Name;Breite;Länge;Notizen',
       'Erster;52,5;13,4;"Zeile 1',
       'Zeile 2"',
       ';52,5;13,4;',
@@ -209,7 +209,7 @@ describe('parseCsv', () => {
 
   it('sammelt kaputte Zeilen, statt zu werfen', () => {
     const text = [
-      'Name;Breite;Laenge;Aufenthalt (min);Aktiv;Zeitfenster',
+      'Name;Breite;Länge;Aufenthalt (min);Aktiv;Zeitfenster',
       'Gut;52,5;13,4;10;ja;Mo 08:00-12:00',
       'Ohne Koordinaten;;13,4;;;',
       'Falsche Breite;95,0;13,4;;;',
@@ -229,12 +229,12 @@ describe('parseCsv', () => {
       timeWindows: [{ dow: 6, from: '09:00', to: '13:00' }],
     })
     expect(result.errors).toEqual([
-      'Zeile 3: Breite oder Laenge fehlt.',
-      'Zeile 4: Ungueltige Koordinaten ("95,0" / "13,4").',
-      'Zeile 5: Ungueltige Koordinaten ("abc" / "13,4").',
+      'Zeile 3: Breite oder Länge fehlt.',
+      'Zeile 4: Ungültige Koordinaten ("95,0" / "13,4").',
+      'Zeile 5: Ungültige Koordinaten ("abc" / "13,4").',
       'Zeile 6: 7 Felder gefunden, erwartet wurden 6.',
-      'Zeile 7: Ungueltige Aufenthaltsdauer "zwanzig".',
-      'Zeile 8: Unbekannter Wert fuer "Aktiv": "vielleicht".',
+      'Zeile 7: Ungültige Aufenthaltsdauer "zwanzig".',
+      'Zeile 8: Unbekannter Wert für "Aktiv": "vielleicht".',
       'Zeile 9: Zeitfenster "Mo 25:00-99:00" konnten nicht gelesen werden.',
     ])
   })
@@ -243,31 +243,31 @@ describe('parseCsv', () => {
     expect(parseCsv('').errors).toEqual(['Die Datei ist leer.'])
     expect(parseCsv(`${CSV_BOM}\r\n\r\n`).errors).toEqual(['Die Datei ist leer.'])
     expect(parseCsv('Bezeichnung;Ort\nEins;Berlin\n').errors).toEqual([
-      'Die Kopfzeile enthaelt keine Spalte fuer "Breite", "Laenge".',
+      'Die Kopfzeile enthält keine Spalte für "Breite", "Länge".',
     ])
-    expect(parseCsv('Name;Breite;Laenge\n').errors).toEqual([
-      'Die Datei enthaelt ausser der Kopfzeile keine Daten.',
+    expect(parseCsv('Name;Breite;Länge\n').errors).toEqual([
+      'Die Datei enthält außer der Kopfzeile keine Daten.',
     ])
   })
 })
 
 describe('Symbol', () => {
-  it('uebersteht den Rundlauf und wird aus einer fremden Spaltenschreibweise gelesen', () => {
-    const csv = toCsv([makeLocation({ name: 'Werk Sued', icon: 'werk' })], [], NO_GROUPS)
+  it('übersteht den Rundlauf und wird aus einer fremden Spaltenschreibweise gelesen', () => {
+    const csv = toCsv([makeLocation({ name: 'Werk Süd', icon: 'werk' })], [], NO_GROUPS)
     expect(csv).toContain(';werk')
     expect(parseCsv(csv).rows[0].icon).toBe('werk')
 
-    const fremd = 'Name;Breite;Laenge;icon\r\nHalle;52,5;13,4;lager\r\n'
+    const fremd = 'Name;Breite;Länge;icon\r\nHalle;52,5;13,4;lager\r\n'
     expect(parseCsv(fremd).rows[0].icon).toBe('lager')
   })
 
-  it('laesst das Symbol weg, wenn die Spalte leer ist', () => {
+  it('lässt das Symbol weg, wenn die Spalte leer ist', () => {
     const csv = toCsv([makeLocation({ name: 'Ohne' })], [], NO_GROUPS)
     expect(parseCsv(csv).rows[0].icon).toBeUndefined()
   })
 })
 
-describe('parseCsv, Randfaelle', () => {
+describe('parseCsv, Randfälle', () => {
   it('erkennt zerlegte Umlaute in der Kopfzeile (Dateien von macOS)', () => {
     const nfd = 'Name;Breite;L\u0061\u0308nge\nHafen;52,5;13,4\n'
     const result = parseCsv(nfd)
@@ -275,41 +275,41 @@ describe('parseCsv, Randfaelle', () => {
     expect(result.rows[0]).toMatchObject({ name: 'Hafen', lat: 52.5, lng: 13.4 })
 
     const decomposedHours = parseCsv(
-      'Name;Breite;Laenge;O\u0308ffnungszeiten\nHafen;52,5;13,4;Mo 08:00-12:00\n',
+      'Name;Breite;Länge;O\u0308ffnungszeiten\nHafen;52,5;13,4;Mo 08:00-12:00\n',
     )
     expect(decomposedHours.errors).toEqual([])
     expect(decomposedHours.rows[0].timeWindows).toEqual([{ dow: 1, from: '08:00', to: '12:00' }])
   })
 
-  it('laesst sich von einem einzelnen Zoll-Zeichen in der Kopfzeile nicht beirren', () => {
-    const result = parseCsv('Na"me,Breite,Laenge\nHafen,52.5,13.4\n')
+  it('lässt sich von einem einzelnen Zoll-Zeichen in der Kopfzeile nicht beirren', () => {
+    const result = parseCsv('Na"me,Breite,Länge\nHafen,52.5,13.4\n')
     expect(result.errors).toEqual([])
     expect(result.rows[0]).toMatchObject({ name: 'Hafen', lat: 52.5, lng: 13.4 })
   })
 
   it('nimmt 24:00 als Tagesende an, weist aber echte Unzeiten ab', () => {
-    const ok = parseCsv('Name;Breite;Laenge;Zeitfenster\nA;52,5;13,4;Mo 08:00-24:00|Di 00:00-24:00\n')
+    const ok = parseCsv('Name;Breite;Länge;Zeitfenster\nA;52,5;13,4;Mo 08:00-24:00|Di 00:00-24:00\n')
     expect(ok.errors).toEqual([])
     expect(ok.rows[0].timeWindows).toEqual([
       { dow: 1, from: '08:00', to: '00:00' },
       { dow: 2, from: '00:00', to: '00:00' },
     ])
-    expect(parseCsv('Name;Breite;Laenge;Zeitfenster\nA;52,5;13,4;Mo 08:00-24:30\n').rows).toEqual([])
+    expect(parseCsv('Name;Breite;Länge;Zeitfenster\nA;52,5;13,4;Mo 08:00-24:30\n').rows).toEqual([])
   })
 
-  it('liest Nullkoordinaten und die Dauer 0 als Werte, nicht als Luecke', () => {
-    const result = parseCsv('Name;Breite;Laenge;Aufenthalt (min);Aktiv\nNullinsel;0;0;0;nein\n')
+  it('liest Nullkoordinaten und die Dauer 0 als Werte, nicht als Lücke', () => {
+    const result = parseCsv('Name;Breite;Länge;Aufenthalt (min);Aktiv\nNullinsel;0;0;0;nein\n')
     expect(result.errors).toEqual([])
     expect(result.rows[0]).toMatchObject({ lat: 0, lng: 0, serviceMinutes: 0, isActive: false })
   })
 
-  it('bricht bei einem unbeendeten Anfuehrungszeichen nicht ab', () => {
-    const result = parseCsv('Name;Breite;Laenge\n"Hafen;52,5;13,4\n')
+  it('bricht bei einem unbeendeten Anführungszeichen nicht ab', () => {
+    const result = parseCsv('Name;Breite;Länge\n"Hafen;52,5;13,4\n')
     expect(result.rows).toEqual([])
     expect(result.errors).toHaveLength(1)
   })
 
-  it('haelt Zeilen mit fehlender Kategorie und leeren Listen zusammen', () => {
+  it('hält Zeilen mit fehlender Kategorie und leeren Listen zusammen', () => {
     const csv = toCsv([makeLocation({ tags: [], time_windows: [] })], [], NO_GROUPS)
     const result = parseCsv(csv)
     expect(result.errors).toEqual([])

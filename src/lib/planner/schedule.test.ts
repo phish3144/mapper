@@ -73,7 +73,7 @@ describe('checkTimeWindows', () => {
     expect(checkTimeWindows(MONDAY, null)).toEqual({ waitMinutes: 0, violation: 'none' })
   })
 
-  it('wartet bis zum naechsten Fenster desselben Tages', () => {
+  it('wartet bis zum nächsten Fenster desselben Tages', () => {
     const windows: TimeWindow[] = [
       { dow: 1, from: '08:00', to: '10:00' },
       { dow: 1, from: '14:00', to: '16:00' },
@@ -94,7 +94,7 @@ describe('checkTimeWindows', () => {
 })
 
 describe('computeSchedule', () => {
-  it('wartet, bis das Zeitfenster oeffnet', () => {
+  it('wartet, bis das Zeitfenster öffnet', () => {
     const stops = [makeStop(0), makeStop(1, 15, [{ dow: 1, from: '10:00', to: '12:00' }])]
     const matrix = { durations: [[0, 3600], [3600, 0]], distances: [[0, 12000], [12000, 0]] }
 
@@ -115,7 +115,7 @@ describe('computeSchedule', () => {
     expect(schedule.finishAt).toEqual(new Date(2026, 2, 16, 10, 15))
   })
 
-  it('meldet eine zu spaete Ankunft als "late"', () => {
+  it('meldet eine zu späte Ankunft als "late"', () => {
     const stops = [makeStop(0, 15, [{ dow: 1, from: '10:00', to: '12:00' }])]
 
     const schedule = computeSchedule([0], stops, SINGLE, makeOptions({
@@ -139,7 +139,7 @@ describe('computeSchedule', () => {
     expect(schedule.violations).toBe(1)
   })
 
-  it('behandelt ein ueber Mitternacht laufendes Fenster', () => {
+  it('behandelt ein über Mitternacht laufendes Fenster', () => {
     const nightly: TimeWindow[] = [{ dow: 1, from: '22:00', to: '02:00' }]
     const stops = [makeStop(0, 0, nightly)]
 
@@ -170,7 +170,7 @@ describe('computeSchedule', () => {
     expect(tooLate.stops[0].violation).toBe('late')
   })
 
-  it('zieht den Sonntagsauslaeufer auf den Montag herueber', () => {
+  it('zieht den Sonntagsausläufer auf den Montag herüber', () => {
     // Sonntag ist ISO 7, Montag ISO 1 - der Vortag muss ueber die Woche hinweg stimmen.
     const windows: TimeWindow[] = [{ dow: 7, from: '23:00', to: '01:00' }]
 
@@ -208,7 +208,7 @@ describe('computeSchedule', () => {
     expect(closed.stops[0].violation).toBe('closed-day')
   })
 
-  it('zaehlt die Rueckfahrt der Rundtour ohne zusaetzlichen Eintrag', () => {
+  it('zählt die Rückfahrt der Rundtour ohne zusätzlichen Eintrag', () => {
     const stops = [makeStop(0), makeStop(1), makeStop(2)]
     const matrix = lineMatrix([0, 1, 3], 600)
     const options = makeOptions({ departAt: MONDAY, roundtrip: true })
@@ -227,7 +227,7 @@ describe('computeSchedule', () => {
     expect(oneWay.finishAt).toEqual(new Date(2026, 2, 16, 8, 30))
   })
 
-  it('summiert ohne departAt weiter, laesst aber alle Uhrzeiten leer', () => {
+  it('summiert ohne departAt weiter, lässt aber alle Uhrzeiten leer', () => {
     const stops = [makeStop(0, 10), makeStop(1, 10), makeStop(2, 10)]
     const matrix = lineMatrix([0, 1, 3], 600)
 
@@ -247,7 +247,7 @@ describe('computeSchedule', () => {
     expect(schedule.violations).toBe(0)
   })
 
-  it('liest die Matrix richtungsabhaengig [von][nach]', () => {
+  it('liest die Matrix richtungsabhängig [von][nach]', () => {
     const stops = [makeStop(0), makeStop(1), makeStop(2)]
     const matrix = {
       durations: [[0, 100, 200], [300, 0, 400], [500, 600, 0]],
@@ -263,7 +263,7 @@ describe('computeSchedule', () => {
     expect(backward.totalDistanceM).toBe(20)
   })
 
-  it('liefert fuer eine leere Reihenfolge einen leeren Plan', () => {
+  it('liefert für eine leere Reihenfolge einen leeren Plan', () => {
     const schedule = computeSchedule([], [], { durations: [], distances: [] }, makeOptions())
     expect(schedule.stops).toEqual([])
     expect(schedule.totalTravelSec).toBe(0)
@@ -272,7 +272,7 @@ describe('computeSchedule', () => {
     expect(schedule.finishAt).toBeNull()
   })
 
-  it('schaetzt fehlende Matrixeintraege aus der Luftlinie', () => {
+  it('schätzt fehlende Matrixeinträge aus der Luftlinie', () => {
     const stops = [makeStop(0), makeStop(1)]
     const schedule = computeSchedule([0, 1], stops, { durations: [], distances: [] }, makeOptions())
 
@@ -280,7 +280,7 @@ describe('computeSchedule', () => {
     expect(schedule.totalDistanceM).toBeGreaterThan(0)
   })
 
-  it('bestraft eine als unerreichbar gemeldete Kante, statt sie zu schaetzen', () => {
+  it('bestraft eine als unerreichbar gemeldete Kante, statt sie zu schätzen', () => {
     const stops = [makeStop(0), makeStop(1)]
     const matrix = {
       durations: [[0, Infinity], [Infinity, 0]],
@@ -309,7 +309,7 @@ describe('computeSchedule', () => {
     expect(distanceBetween(matrix, stops, 0, 1)).toBeGreaterThan(0)
   })
 
-  it('behandelt eine ungueltige Abfahrtszeit wie eine fehlende', () => {
+  it('behandelt eine ungültige Abfahrtszeit wie eine fehlende', () => {
     const stops = [makeStop(0, 10)]
 
     const schedule = computeSchedule([0], stops, SINGLE, makeOptions({
@@ -323,7 +323,7 @@ describe('computeSchedule', () => {
     expect(schedule.totalServiceMinutes).toBe(10)
   })
 
-  it('ueberspringt Indizes ausserhalb der Stoppliste', () => {
+  it('überspringt Indizes außerhalb der Stoppliste', () => {
     const stops = [makeStop(0), makeStop(1)]
     const matrix = lineMatrix([0, 1], 600)
 

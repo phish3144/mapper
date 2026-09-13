@@ -78,9 +78,9 @@ const COMPASS_LABELS: Record<CompassPoint, string> = {
   N: 'Norden',
   NO: 'Nordosten',
   O: 'Osten',
-  SO: 'Suedosten',
-  S: 'Sueden',
-  SW: 'Suedwesten',
+  SO: 'Südosten',
+  S: 'Süden',
+  SW: 'Südwesten',
   W: 'Westen',
   NW: 'Nordwesten',
 }

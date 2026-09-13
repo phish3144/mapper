@@ -92,10 +92,10 @@ export default function CatalogPanel() {
   function askDeleteCategory(category: Category) {
     const used = countByCategory.get(category.id) ?? 0
     confirm(
-      'Kategorie loeschen?',
+      'Kategorie löschen?',
       <>
         <p>
-          Die Kategorie <strong>{category.name}</strong> wird geloescht.
+          Die Kategorie <strong>{category.name}</strong> wird gelöscht.
         </p>
         <p className="muted">
           {used === 0
@@ -112,7 +112,7 @@ export default function CatalogPanel() {
           // im Speicher sind damit veraltet.
           await Promise.all([refreshCategories(), refreshLocations()])
           dropCategoryFromFilter(category.id)
-          notify('success', 'Kategorie geloescht.')
+          notify('success', 'Kategorie gelöscht.')
         } catch (e) {
           reportError(e)
         }
@@ -123,17 +123,17 @@ export default function CatalogPanel() {
   function askDeleteGroup(group: Group) {
     const used = countByGroup.get(group.id) ?? 0
     confirm(
-      'Gruppe loeschen?',
+      'Gruppe löschen?',
       <>
         <p>
-          Die Gruppe <strong>{group.name}</strong> wird geloescht.
+          Die Gruppe <strong>{group.name}</strong> wird gelöscht.
         </p>
         <p className="muted">
           {used === 0
             ? 'Ihr ist derzeit kein Standort zugeordnet.'
             : used === 1
-              ? 'Der zugeordnete Standort bleibt erhalten, nur die Zuordnung zu dieser Gruppe entfaellt.'
-              : `Die ${countLabel(used)} bleiben erhalten, nur die Zuordnung zu dieser Gruppe entfaellt.`}
+              ? 'Der zugeordnete Standort bleibt erhalten, nur die Zuordnung zu dieser Gruppe entfällt.'
+              : `Die ${countLabel(used)} bleiben erhalten, nur die Zuordnung zu dieser Gruppe entfällt.`}
         </p>
       </>,
       async () => {
@@ -141,7 +141,7 @@ export default function CatalogPanel() {
           await db.deleteGroup(group.id)
           await refreshGroups()
           dropGroupFromFilter(group.id)
-          notify('success', 'Gruppe geloescht.')
+          notify('success', 'Gruppe gelöscht.')
         } catch (e) {
           reportError(e)
         }
@@ -265,7 +265,7 @@ export default function CatalogPanel() {
               {canEdit ? (
                 <>
                   <br />
-                  Gruppen buendeln Standorte quer zu den Kategorien — etwa fuer eine Tour.
+                  Gruppen bündeln Standorte quer zu den Kategorien — etwa für eine Tour.
                 </>
               ) : null}
             </EmptyState>
@@ -325,7 +325,7 @@ export default function CatalogPanel() {
 
       <div className="sidebar-foot">
         <span className="small muted">
-          Ein Klick auf einen Eintrag zeigt die zugehoerigen Standorte in der Standortliste.
+          Ein Klick auf einen Eintrag zeigt die zugehörigen Standorte in der Standortliste.
         </span>
       </div>
 

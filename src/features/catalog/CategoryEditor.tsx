@@ -57,7 +57,7 @@ export default function CategoryEditor({
       return
     }
     if (trimmed.length > MAX_NAME_LENGTH) {
-      setNameError(`Hoechstens ${MAX_NAME_LENGTH} Zeichen.`)
+      setNameError(`Höchstens ${MAX_NAME_LENGTH} Zeichen.`)
       return
     }
     if (!workspaceId) return
@@ -120,7 +120,7 @@ export default function CategoryEditor({
         label="Beschreibung"
         value={description}
         rows={2}
-        placeholder="Optional — wofuer steht diese Kategorie?"
+        placeholder="Optional — wofür steht diese Kategorie?"
         onChange={(e) => setDescription(e.target.value)}
       />
 
@@ -131,7 +131,7 @@ export default function CategoryEditor({
         <div role="group" aria-labelledby={colorLabelId}>
           <ColorPicker value={color} onChange={setColor} />
         </div>
-        <span className="field-hint">Faerbt die Kartennadeln dieser Kategorie.</span>
+        <span className="field-hint">Färbt die Kartennadeln dieser Kategorie.</span>
       </div>
 
       <SymbolPicker value={icon} onChange={(id) => setIcon(id ?? DEFAULT_SYMBOL_ID)} />

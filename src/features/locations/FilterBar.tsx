@@ -130,7 +130,7 @@ export default function FilterBar() {
         />
         {active && (
           <Button size="sm" variant="ghost" onClick={resetFilter}>
-            Filter zuruecksetzen
+            Filter zurücksetzen
           </Button>
         )}
       </div>

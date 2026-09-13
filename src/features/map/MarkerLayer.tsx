@@ -342,7 +342,7 @@ function LocationPopup({ location }: { location: MapLocation }) {
       const position = stops.reduce((max, stop) => Math.max(max, stop.position), -1) + 1
       await db.addRouteStop(activeRouteId, db.placeOfLocation(location), position)
       await loadStops(activeRouteId)
-      notify('success', `"${location.name}" zur Route hinzugefuegt.`)
+      notify('success', `"${location.name}" zur Route hinzugefügt.`)
     } catch (error) {
       reportError(error)
     } finally {
@@ -405,7 +405,7 @@ function LocationPopup({ location }: { location: MapLocation }) {
         )}
         {canAddToRoute && (
           <Button size="sm" variant="primary" busy={busy} onClick={() => void addToRoute()}>
-            Zur Route hinzufuegen
+            Zur Route hinzufügen
           </Button>
         )}
       </div>

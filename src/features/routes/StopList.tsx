@@ -30,7 +30,7 @@ interface Entry {
 }
 
 function violationLabel(v: ScheduledStop['violation']): string | null {
-  if (v === 'late') return 'zu spaet'
+  if (v === 'late') return 'zu spät'
   if (v === 'closed-day') return 'geschlossen'
   return null
 }
@@ -92,7 +92,7 @@ function SortableStop({
           <GroupStripe colors={colors} />
           <span className="truncate">{entry.location.name}</span>
           {entry.location.id === '' && (
-            <Badge tone="warning">Standort geloescht</Badge>
+            <Badge tone="warning">Standort gelöscht</Badge>
           )}
         </span>
         <span className="stop-time">
@@ -159,7 +159,7 @@ export default function StopList({
   if (entries.length === 0) {
     return (
       <div className="empty">
-        Noch keine Stopps. Waehle Standorte auf der Karte oder in der Liste aus und fuege sie hinzu.
+        Noch keine Stopps. Wähle Standorte auf der Karte oder in der Liste aus und füge sie hinzu.
       </div>
     )
   }

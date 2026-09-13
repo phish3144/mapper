@@ -14,7 +14,7 @@ describe('navigationUrl', () => {
     expect(url.searchParams.get('travelmode')).toBe('driving')
   })
 
-  it('uebergibt reine Koordinaten', () => {
+  it('übergibt reine Koordinaten', () => {
     // Ein Standortname wie "Bisol GmbH - Team Hannover" ist keine Adresse und
     // wuerde dort neu und womoeglich falsch gesucht. Start und Ziel duerfen
     // deshalb nichts als Zahlen enthalten.
@@ -24,7 +24,7 @@ describe('navigationUrl', () => {
     }
   })
 
-  it('haelt die Reihenfolge ein - Start ist Start', () => {
+  it('hält die Reihenfolge ein - Start ist Start', () => {
     const hin = new URL(navigationUrl(HANNOVER, BERLIN))
     const zurueck = new URL(navigationUrl(BERLIN, HANNOVER))
     expect(hin.searchParams.get('origin')).toBe(zurueck.searchParams.get('destination'))

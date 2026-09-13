@@ -274,7 +274,7 @@ export function Modal({
       >
         <div className="modal-header">
           <h2>{title}</h2>
-          <IconButton label="Schliessen" onClick={onClose}>
+          <IconButton label="Schließen" onClick={onClose}>
             ✕
           </IconButton>
         </div>
@@ -289,7 +289,7 @@ export function Modal({
 export function ConfirmDialog({
   title,
   message,
-  confirmLabel = 'Loeschen',
+  confirmLabel = 'Löschen',
   onConfirm,
   onCancel,
   busy,
@@ -428,7 +428,7 @@ export function RouteImpactWarning({ routes }: { routes: readonly AffectedRoute[
       </ul>
       <div className="small muted" style={{ marginTop: 6 }}>
         Die Stopps bleiben erhalten und behalten ihre Adresse — sie sind danach
-        aber nicht mehr mit einem Standort verknuepft.
+        aber nicht mehr mit einem Standort verknüpft.
       </div>
     </div>
   )
@@ -439,7 +439,7 @@ export function EmptyState({ children }: { children: ReactNode }) {
 }
 
 export function Spinner() {
-  return <span className="spinner" role="status" aria-label="Laedt" />
+  return <span className="spinner" role="status" aria-label="Lädt" />
 }
 
 export function Tabs<T extends string>({

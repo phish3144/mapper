@@ -147,17 +147,17 @@ function errorText(error: unknown): string {
 function translateAuthError(error: { message?: string } | null, fallback: string): string {
   const raw = error?.message ?? ''
   if (/already been registered|already registered|already exists|duplicate key/i.test(raw)) {
-    return 'Fuer diese E-Mail-Adresse gibt es bereits ein Konto.'
+    return 'Für diese E-Mail-Adresse gibt es bereits ein Konto.'
   }
   if (/user not found|user_not_found/i.test(raw)) return 'Dieses Konto existiert nicht (mehr).'
   if (/password/i.test(raw) && /(weak|short|at least|characters)/i.test(raw)) {
     return `Das Passwort ist zu schwach. Es braucht mindestens ${MIN_PASSWORD_LENGTH} Zeichen.`
   }
   if (/invalid.*email|email.*invalid|unable to validate email/i.test(raw)) {
-    return 'Die E-Mail-Adresse ist ungueltig.'
+    return 'Die E-Mail-Adresse ist ungültig.'
   }
   if (/database error/i.test(raw)) {
-    return `${fallback} Die Datenbank hat das Anlegen des Profils abgelehnt — moeglicherweise ist die E-Mail-Adresse bereits vergeben.`
+    return `${fallback} Die Datenbank hat das Anlegen des Profils abgelehnt — möglicherweise ist die E-Mail-Adresse bereits vergeben.`
   }
   return fallback
 }
@@ -218,7 +218,7 @@ async function applyAdminFlag(
   if (!missing) {
     console.error(`admin-users: set_app_admin fehlgeschlagen (${error.code ?? 'ohne Code'})`)
     return {
-      message: describeDbError(error, 'Der Administratorstatus konnte nicht geaendert werden.'),
+      message: describeDbError(error, 'Der Administratorstatus konnte nicht geändert werden.'),
       status: error.code === '42501' ? 403 : error.code === '23514' ? 409 : 500,
     }
   }
@@ -227,7 +227,7 @@ async function applyAdminFlag(
   if (updateError) {
     console.error(`admin-users: profiles.is_app_admin fehlgeschlagen (${updateError.code ?? 'ohne Code'})`)
     return {
-      message: describeDbError(updateError, 'Der Administratorstatus konnte nicht geaendert werden.'),
+      message: describeDbError(updateError, 'Der Administratorstatus konnte nicht geändert werden.'),
       status: updateError.code === '42501' ? 403 : updateError.code === '23514' ? 409 : 500,
     }
   }
@@ -268,7 +268,7 @@ async function listAccounts(service: Client): Promise<Response> {
   )
   if (memberError) {
     console.error(`admin-users: Mitgliedschaften fehlgeschlagen (${memberError.code ?? 'ohne Code'})`)
-    return fail('Die Arbeitsbereiche der Konten konnten nicht gezaehlt werden.', 500)
+    return fail('Die Arbeitsbereiche der Konten konnten nicht gezählt werden.', 500)
   }
 
   const counts = new Map<string, number>()
@@ -314,8 +314,8 @@ async function countWorkspaces(service: Client, userId: string): Promise<number>
 async function abortCreate(service: Client, userId: string, reason: string): Promise<Response> {
   const { error } = await service.auth.admin.deleteUser(userId)
   if (error) {
-    console.error(`admin-users: Ruecknahme des Kontos fehlgeschlagen (${error.message})`)
-    return fail(`${reason} Das Konto besteht bereits, ist aber unvollstaendig eingerichtet.`, 500)
+    console.error(`admin-users: Rücknahme des Kontos fehlgeschlagen (${error.message})`)
+    return fail(`${reason} Das Konto besteht bereits, ist aber unvollständig eingerichtet.`, 500)
   }
   return fail(`${reason} Das Konto wurde deshalb nicht angelegt.`, 400)
 }
@@ -327,7 +327,7 @@ async function createAccount(
 ): Promise<Response> {
   const email = text(body.email).toLowerCase()
   if (!EMAIL_PATTERN.test(email)) {
-    return fail('Bitte eine gueltige E-Mail-Adresse angeben.', 400)
+    return fail('Bitte eine gültige E-Mail-Adresse angeben.', 400)
   }
   // Passwoerter werden nicht beschnitten: Leerzeichen am Rand gehoeren zum
   // Passwort und muessten beim Anmelden sonst wieder erraten werden.
@@ -344,23 +344,23 @@ async function createAccount(
   let workspaceId = ''
   if (body.workspace_id !== undefined && body.workspace_id !== null) {
     if (typeof body.workspace_id !== 'string') {
-      return fail('Die Kennung des Arbeitsbereichs ist ungueltig.', 400)
+      return fail('Die Kennung des Arbeitsbereichs ist ungültig.', 400)
     }
     workspaceId = body.workspace_id.trim()
     if (workspaceId !== '' && !UUID_PATTERN.test(workspaceId)) {
-      return fail('Die Kennung des Arbeitsbereichs ist ungueltig.', 400)
+      return fail('Die Kennung des Arbeitsbereichs ist ungültig.', 400)
     }
   }
 
   let role: MemberRole = 'viewer'
   if (body.role !== undefined && body.role !== null) {
     if (typeof body.role !== 'string') {
-      return fail('Ungueltige Rolle. Erlaubt sind "viewer", "editor" und "owner".', 400)
+      return fail('Ungültige Rolle. Erlaubt sind "viewer", "editor" und "owner".', 400)
     }
     const candidate = body.role.trim()
     if (candidate !== '') {
       if (!isRole(candidate)) {
-        return fail('Ungueltige Rolle. Erlaubt sind "viewer", "editor" und "owner".', 400)
+        return fail('Ungültige Rolle. Erlaubt sind "viewer", "editor" und "owner".', 400)
       }
       role = candidate
     }
@@ -383,10 +383,10 @@ async function createAccount(
       .eq('id', workspaceId)
       .maybeSingle()
     if (error) {
-      console.error(`admin-users: Arbeitsbereich nicht pruefbar (${error.code ?? 'ohne Code'})`)
-      return fail('Der Arbeitsbereich konnte nicht geprueft werden.', 500)
+      console.error(`admin-users: Arbeitsbereich nicht prüfbar (${error.code ?? 'ohne Code'})`)
+      return fail('Der Arbeitsbereich konnte nicht geprüft werden.', 500)
     }
-    if (!workspace) return fail('Der gewaehlte Arbeitsbereich existiert nicht.', 404)
+    if (!workspace) return fail('Der gewählte Arbeitsbereich existiert nicht.', 404)
   }
 
   // email_confirm: true — das Konto ist sofort nutzbar. Ein Bestaetigungsmail
@@ -416,7 +416,7 @@ async function createAccount(
       .upsert({ workspace_id: workspaceId, user_id: userId, role }, { onConflict: 'workspace_id,user_id' })
     if (error) {
       console.error(`admin-users: Mitgliedschaft fehlgeschlagen (${error.code ?? 'ohne Code'})`)
-      return await abortCreate(service, userId, 'Das Konto konnte dem Arbeitsbereich nicht hinzugefuegt werden.')
+      return await abortCreate(service, userId, 'Das Konto konnte dem Arbeitsbereich nicht hinzugefügt werden.')
     }
   }
 
@@ -443,7 +443,7 @@ async function createAccount(
 async function resetPassword(service: Client, body: RequestBody): Promise<Response> {
   const userId = text(body.user_id)
   if (!UUID_PATTERN.test(userId)) {
-    return fail('Die Kennung des Kontos ist ungueltig.', 400)
+    return fail('Die Kennung des Kontos ist ungültig.', 400)
   }
   const password = typeof body.password === 'string' ? body.password : ''
   if (password.length < MIN_PASSWORD_LENGTH) {
@@ -468,7 +468,7 @@ async function setAdmin(
 ): Promise<Response> {
   const userId = text(body.user_id)
   if (!UUID_PATTERN.test(userId)) {
-    return fail('Die Kennung des Kontos ist ungueltig.', 400)
+    return fail('Die Kennung des Kontos ist ungültig.', 400)
   }
   if (typeof body.is_app_admin !== 'boolean') {
     return fail('Der Administratorstatus muss true oder false sein.', 400)
@@ -482,7 +482,7 @@ async function setAdmin(
     .maybeSingle()
   if (error) {
     console.error(`admin-users: Zielprofil nicht lesbar (${error.code ?? 'ohne Code'})`)
-    return fail('Das Konto konnte nicht geprueft werden.', 500)
+    return fail('Das Konto konnte nicht geprüft werden.', 500)
   }
   if (!target) return fail('Dieses Konto existiert nicht (mehr).', 404)
 
@@ -495,8 +495,8 @@ async function setAdmin(
       .select('id', { count: 'exact', head: true })
       .eq('is_app_admin', true)
     if (countError) {
-      console.error(`admin-users: Administratoren nicht zaehlbar (${countError.code ?? 'ohne Code'})`)
-      return fail('Die Zahl der App-Administratoren konnte nicht geprueft werden.', 500)
+      console.error(`admin-users: Administratoren nicht zählbar (${countError.code ?? 'ohne Code'})`)
+      return fail('Die Zahl der App-Administratoren konnte nicht geprüft werden.', 500)
     }
     // Ohne App-Administrator liesse sich nie wieder einer ernennen.
     if ((count ?? 0) <= 1) {
@@ -569,10 +569,10 @@ async function deleteAccount(
 ): Promise<Response> {
   const userId = text(body.user_id)
   if (!UUID_PATTERN.test(userId)) {
-    return fail('Die Kennung des Kontos ist ungueltig.', 400)
+    return fail('Die Kennung des Kontos ist ungültig.', 400)
   }
   if (userId === callerId) {
-    return fail('Das eigene Konto kann hier nicht geloescht werden.', 400)
+    return fail('Das eigene Konto kann hier nicht gelöscht werden.', 400)
   }
 
   // Zwei Faelle, in denen die Datenbank das Loeschen ohnehin abweisen wuerde —
@@ -587,22 +587,22 @@ async function deleteAccount(
   //    Konto irgendwo alleiniger Eigentuemer ist.
   const created = await createdWorkspaces(service, userId)
   if (created === null) {
-    return fail('Die Arbeitsbereiche des Kontos konnten nicht geprueft werden.', 500)
+    return fail('Die Arbeitsbereiche des Kontos konnten nicht geprüft werden.', 500)
   }
   if (created.length > 0) {
     return fail(
-      `Das Konto hat ${nameList(created)} angelegt. Solche Arbeitsbereiche wuerden mitsamt Inhalt verschwinden, deshalb laesst sich das Konto nicht loeschen. Bitte die Arbeitsbereiche zuerst loeschen.`,
+      `Das Konto hat ${nameList(created)} angelegt. Solche Arbeitsbereiche würden mitsamt Inhalt verschwinden, deshalb lässt sich das Konto nicht löschen. Bitte die Arbeitsbereiche zuerst löschen.`,
       409,
     )
   }
 
   const orphaned = await soleOwnerWorkspaces(service, userId)
   if (orphaned === null) {
-    return fail('Die Arbeitsbereiche des Kontos konnten nicht geprueft werden.', 500)
+    return fail('Die Arbeitsbereiche des Kontos konnten nicht geprüft werden.', 500)
   }
   if (orphaned.length > 0) {
     return fail(
-      `Das Konto ist alleiniger Eigentuemer von ${nameList(orphaned)}. Bitte dort zuerst eine andere Person zum Eigentuemer machen.`,
+      `Das Konto ist alleiniger Eigentümer von ${nameList(orphaned)}. Bitte dort zuerst eine andere Person zum Eigentümer machen.`,
       409,
     )
   }
@@ -611,7 +611,7 @@ async function deleteAccount(
   if (error) {
     console.error(`admin-users: deleteUser fehlgeschlagen (${error.message})`)
     return fail(
-      translateAuthError(error, 'Das Konto konnte nicht geloescht werden.'),
+      translateAuthError(error, 'Das Konto konnte nicht gelöscht werden.'),
       authErrorStatus(error, 400),
     )
   }
@@ -629,7 +629,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return new Response(null, { status: 204, headers: CORS_HEADERS })
   }
   if (req.method !== 'POST') {
-    return fail('Diese Funktion nimmt ausschliesslich POST-Anfragen entgegen.', 405)
+    return fail('Diese Funktion nimmt ausschließlich POST-Anfragen entgegen.', 405)
   }
 
   try {
@@ -637,14 +637,14 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     if (!url || !serviceKey) {
       console.error('admin-users: SUPABASE_URL oder SUPABASE_SERVICE_ROLE_KEY ist nicht gesetzt.')
-      return fail('Die Kontenverwaltung ist auf dem Server nicht vollstaendig eingerichtet.', 500)
+      return fail('Die Kontenverwaltung ist auf dem Server nicht vollständig eingerichtet.', 500)
     }
 
     // 1. Token des Aufrufers.
     const authHeader = req.headers.get('Authorization') ?? ''
     const token = authHeader.replace(/^Bearer\s+/i, '').trim()
     if (!token) {
-      return fail('Nicht angemeldet: Die Anfrage traegt kein Zugangstoken.', 401)
+      return fail('Nicht angemeldet: Die Anfrage trägt kein Zugangstoken.', 401)
     }
 
     // 2. Token pruefen — mit dem oeffentlichen Schluessel und dem
@@ -678,11 +678,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
       .eq('id', callerId)
       .maybeSingle()
     if (profileError) {
-      console.error(`admin-users: Berechtigung nicht pruefbar (${profileError.code ?? 'ohne Code'})`)
-      return fail('Die Berechtigung konnte nicht geprueft werden.', 500)
+      console.error(`admin-users: Berechtigung nicht prüfbar (${profileError.code ?? 'ohne Code'})`)
+      return fail('Die Berechtigung konnte nicht geprüft werden.', 500)
     }
     if (!(callerProfile as { is_app_admin: boolean } | null)?.is_app_admin) {
-      return fail('Nur App-Administratoren duerfen Konten verwalten.', 403)
+      return fail('Nur App-Administratoren dürfen Konten verwalten.', 403)
     }
 
     // 4. Ab hier sind privilegierte Operationen erlaubt.

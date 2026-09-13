@@ -67,12 +67,12 @@ describe('stopPlace', () => {
     expect(stopPlace(stop(), undefined).category_id).toBeNull()
   })
 
-  it('faellt auf einen benennenden Text zurueck, wenn auch die Beschriftung fehlt', () => {
+  it('fällt auf einen benennenden Text zurück, wenn auch die Beschriftung fehlt', () => {
     expect(stopPlace(stop({ label: null }), undefined).name).toBe(ORPHAN_FALLBACK_NAME)
     expect(stopPlace(stop({ label: '   ' }), undefined).name).toBe(ORPHAN_FALLBACK_NAME)
   })
 
-  it('erfindet keine Zeitfenster fuer einen Platzhalter', () => {
+  it('erfindet keine Zeitfenster für einen Platzhalter', () => {
     const ort = stopPlace(stop(), undefined)
     expect(ort.time_windows).toEqual([])
     expect(ort.service_minutes).toBe(0)

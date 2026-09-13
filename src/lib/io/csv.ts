@@ -24,7 +24,7 @@ export const CSV_HEADER: readonly string[] = [
   'Kategorie',
   'Gruppen',
   'Breite',
-  'Laenge',
+  'Länge',
   'Adresse',
   'Notizen',
   'Tags',
@@ -272,14 +272,14 @@ export function parseCsv(text: string): ImportResult {
   const missing: string[] = []
   if (columns.name === undefined) missing.push('Name')
   if (columns.lat === undefined) missing.push('Breite')
-  if (columns.lng === undefined) missing.push('Laenge')
+  if (columns.lng === undefined) missing.push('Länge')
   if (missing.length > 0) {
     const list = missing.map((entry) => `"${entry}"`).join(', ')
-    errors.push(`Die Kopfzeile enthaelt keine Spalte fuer ${list}.`)
+    errors.push(`Die Kopfzeile enthält keine Spalte für ${list}.`)
     return { rows, errors }
   }
   if (records.length === 1) {
-    errors.push('Die Datei enthaelt ausser der Kopfzeile keine Daten.')
+    errors.push('Die Datei enthält außer der Kopfzeile keine Daten.')
     return { rows, errors }
   }
 
@@ -302,13 +302,13 @@ export function parseCsv(text: string): ImportResult {
     const latText = cell(columns.lat)
     const lngText = cell(columns.lng)
     if (latText === '' || lngText === '') {
-      errors.push(`${at}: Breite oder Laenge fehlt.`)
+      errors.push(`${at}: Breite oder Länge fehlt.`)
       continue
     }
     const lat = parseNumberLoose(latText)
     const lng = parseNumberLoose(lngText)
     if (lat === null || lng === null || !isValidLatLng({ lat, lng })) {
-      errors.push(`${at}: Ungueltige Koordinaten ("${latText}" / "${lngText}").`)
+      errors.push(`${at}: Ungültige Koordinaten ("${latText}" / "${lngText}").`)
       continue
     }
 
@@ -317,7 +317,7 @@ export function parseCsv(text: string): ImportResult {
     if (serviceText !== '') {
       const parsed = parseNumberLoose(serviceText)
       if (parsed === null || parsed < 0) {
-        errors.push(`${at}: Ungueltige Aufenthaltsdauer "${serviceText}".`)
+        errors.push(`${at}: Ungültige Aufenthaltsdauer "${serviceText}".`)
         continue
       }
       serviceMinutes = parsed
@@ -328,7 +328,7 @@ export function parseCsv(text: string): ImportResult {
     if (activeText !== '') {
       const parsed = parseBooleanish(activeText)
       if (parsed === null) {
-        errors.push(`${at}: Unbekannter Wert fuer "Aktiv": "${activeText}".`)
+        errors.push(`${at}: Unbekannter Wert für "Aktiv": "${activeText}".`)
         continue
       }
       isActive = parsed

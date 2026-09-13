@@ -310,7 +310,7 @@ export function parseKml(text: string): KmlResult {
   if (root === null) {
     return {
       rows,
-      errors: ['Die Datei enthaelt kein lesbares XML.'],
+      errors: ['Die Datei enthält kein lesbares XML.'],
       layerNames,
       skippedShapes,
       mapName: null,
@@ -341,11 +341,11 @@ export function parseKml(text: string): KmlResult {
         if (hasShape(placemark)) {
           skippedShapes += 1
           errors.push(
-            `Platzmarke ${index}${name ? ` ("${name}")` : ''}: Linien und Flaechen koennen nicht ` +
-              'uebernommen werden, nur Punkte.',
+            `Platzmarke ${index}${name ? ` ("${name}")` : ''}: Linien und Flächen können nicht ` +
+              'übernommen werden, nur Punkte.',
           )
         } else {
-          errors.push(`Platzmarke ${index}${name ? ` ("${name}")` : ''}: keine gueltigen Koordinaten.`)
+          errors.push(`Platzmarke ${index}${name ? ` ("${name}")` : ''}: keine gültigen Koordinaten.`)
         }
         return
       }
@@ -376,7 +376,7 @@ export function parseKml(text: string): KmlResult {
   )
 
   if (rows.length === 0 && errors.length === 0) {
-    errors.push('Die Datei enthaelt keine Platzmarken.')
+    errors.push('Die Datei enthält keine Platzmarken.')
   }
   return { rows, errors, layerNames, skippedShapes, mapName }
 }
@@ -419,7 +419,7 @@ function readCentralDirectory(view: DataView): ZipEntry[] {
       break
     }
   }
-  if (eocd < 0) throw new Error('Kein ZIP-Ende gefunden — die Datei ist vermutlich beschaedigt.')
+  if (eocd < 0) throw new Error('Kein ZIP-Ende gefunden — die Datei ist vermutlich beschädigt.')
 
   const count = view.getUint16(eocd + 10, true)
   let offset = view.getUint32(eocd + 16, true)
@@ -444,9 +444,9 @@ function readCentralDirectory(view: DataView): ZipEntry[] {
 
 async function inflate(data: Uint8Array, method: number): Promise<Uint8Array> {
   if (method === 0) return data
-  if (method !== 8) throw new Error(`Nicht unterstuetzte ZIP-Kompression (Methode ${method}).`)
+  if (method !== 8) throw new Error(`Nicht unterstützte ZIP-Kompression (Methode ${method}).`)
   if (typeof DecompressionStream === 'undefined') {
-    throw new Error('Diese Umgebung kann KMZ nicht entpacken. Bitte die enthaltene KML-Datei einzeln waehlen.')
+    throw new Error('Diese Umgebung kann KMZ nicht entpacken. Bitte die enthaltene KML-Datei einzeln wählen.')
   }
   const stream = new Blob([data as BlobPart]).stream().pipeThrough(new DecompressionStream('deflate-raw'))
   return new Uint8Array(await new Response(stream).arrayBuffer())
@@ -480,12 +480,12 @@ export async function readKmzText(buffer: ArrayBuffer): Promise<string> {
   const entries = readCentralDirectory(view)
 
   const kmlEntries = entries.filter((entry) => entry.name.toLowerCase().endsWith('.kml'))
-  if (kmlEntries.length === 0) throw new Error('Das Archiv enthaelt keine KML-Datei.')
+  if (kmlEntries.length === 0) throw new Error('Das Archiv enthält keine KML-Datei.')
   const chosen = kmlEntries.find((entry) => entry.name.toLowerCase().endsWith('doc.kml')) ?? kmlEntries[0]
 
   const local = chosen.localOffset
   if (local + 30 > view.byteLength || view.getUint32(local, true) !== LOCAL_SIGNATURE) {
-    throw new Error('Die KMZ-Datei ist beschaedigt (unerwarteter Kopfsatz).')
+    throw new Error('Die KMZ-Datei ist beschädigt (unerwarteter Kopfsatz).')
   }
   const nameLength = view.getUint16(local + 26, true)
   const extraLength = view.getUint16(local + 28, true)

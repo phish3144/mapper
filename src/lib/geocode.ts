@@ -460,7 +460,7 @@ async function viaProxy(request: ProxyRequest, signal?: AbortSignal): Promise<un
   } catch (error) {
     if (isAbort(error)) throw error
     proxyDownAt = Date.now()
-    console.warn('geocode: Bote nicht verfuegbar, es wird vorerst unmittelbar gefragt.', error)
+    console.warn('geocode: Bote nicht verfügbar, es wird vorerst unmittelbar gefragt.', error)
     return null
   }
 }

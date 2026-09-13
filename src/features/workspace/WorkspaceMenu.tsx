@@ -220,7 +220,7 @@ export default function WorkspaceMenu() {
                 error={nameError}
                 autoFocus
                 maxLength={80}
-                placeholder="z. B. Aussendienst Nord"
+                placeholder="z. B. Außendienst Nord"
                 onChange={(e) => {
                   setName(e.target.value)
                   if (nameError) setNameError(null)
@@ -236,7 +236,7 @@ export default function WorkspaceMenu() {
                 <span className="field-hint">Kennzeichnet den Bereich in der Kopfzeile.</span>
               </div>
               <p className="small muted" style={{ margin: 0 }}>
-                Du wirst automatisch Eigentuemer und kannst anschliessend weitere Personen einladen.
+                Du wirst automatisch Eigentümer und kannst anschließend weitere Personen einladen.
               </p>
             </form>
           </Modal>,

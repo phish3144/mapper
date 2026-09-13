@@ -276,7 +276,7 @@ export default function ImportExportDialog({ onClose }: { onClose: () => void })
             const missing = chunk.length - inserted.length
             failed += missing
             errors.push(
-              `Ein Block kam unvollstaendig zurueck: ${pluralize(missing, 'Zeile', 'Zeilen')} ohne Bestaetigung.`,
+              `Ein Block kam unvollständig zurück: ${pluralize(missing, 'Zeile', 'Zeilen')} ohne Bestätigung.`,
             )
           }
 
@@ -335,7 +335,7 @@ export default function ImportExportDialog({ onClose }: { onClose: () => void })
       footer={
         <>
           <Button onClick={requestClose} disabled={running}>
-            Schliessen
+            Schließen
           </Button>
           {tab === 'export' ? (
             <Button variant="primary" onClick={runExport}>
@@ -376,8 +376,8 @@ export default function ImportExportDialog({ onClose }: { onClose: () => void })
             onChange={(e) => setFormat(e.target.value as ExportFormat)}
             hint={
               format === 'geojson'
-                ? 'GeoJSON — fuer Karten- und GIS-Programme, verlustfrei.'
-                : 'CSV mit Semikolon und Komma als Dezimaltrennzeichen — fuer deutsches Excel.'
+                ? 'GeoJSON — für Karten- und GIS-Programme, verlustfrei.'
+                : 'CSV mit Semikolon und Komma als Dezimaltrennzeichen — für deutsches Excel.'
             }
           >
             <option value="geojson">GeoJSON</option>
@@ -410,7 +410,7 @@ export default function ImportExportDialog({ onClose }: { onClose: () => void })
         </>
       ) : (
         <>
-          <Field label="Datei waehlen" hint="GeoJSON (.json, .geojson) oder CSV (.csv, .txt)">
+          <Field label="Datei wählen" hint="GeoJSON (.json, .geojson) oder CSV (.csv, .txt)">
             {(id) => (
               <input
                 id={id}
@@ -429,7 +429,7 @@ export default function ImportExportDialog({ onClose }: { onClose: () => void })
           </Field>
 
           <Field
-            label="Oder Text einfuegen"
+            label="Oder Text einfügen"
             hint={
               detectedFormat
                 ? `Erkanntes Format: ${detectedFormat}`
@@ -443,7 +443,7 @@ export default function ImportExportDialog({ onClose }: { onClose: () => void })
                 rows={5}
                 value={text}
                 disabled={running}
-                placeholder="Inhalt hier einfuegen …"
+                placeholder="Inhalt hier einfügen …"
                 onChange={(e) => {
                   setText(e.target.value)
                   setFileName(null)
@@ -552,7 +552,7 @@ export default function ImportExportDialog({ onClose }: { onClose: () => void })
           />
           <div style={{ height: 6 }} />
           <Checkbox
-            label="Standorte mit bereits vorhandenem Namen ueberspringen"
+            label="Standorte mit bereits vorhandenem Namen überspringen"
             checked={skipExisting}
             disabled={running}
             onChange={setSkipExisting}
@@ -588,7 +588,7 @@ export default function ImportExportDialog({ onClose }: { onClose: () => void })
                 </div>
                 <div className="stat">
                   <div className="stat-value">{report.skipped}</div>
-                  <div className="stat-label">uebersprungen</div>
+                  <div className="stat-label">übersprungen</div>
                 </div>
                 <div className="stat">
                   <div className="stat-value">{report.failed}</div>
