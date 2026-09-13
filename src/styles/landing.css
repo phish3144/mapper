@@ -1,0 +1,312 @@
+/* ==========================================================================
+   Oeffentliche Startseite.
+   Eigene Datei, weil sie mit der Anwendung nichts teilt ausser den Token:
+   die Anwendung ist ein Raster ueber die volle Hoehe, die Startseite ist ein
+   Dokument, das scrollt.
+   ========================================================================== */
+
+.lp {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  overflow-y: auto;
+}
+
+/* --- Kopf ---------------------------------------------------------------- */
+
+.lp-kopf {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 12px 24px;
+  /* Leicht durchscheinend, damit beim Scrollen sichtbar bleibt, dass darunter
+     weitergeht - eine deckende Leiste sieht aus wie ein Seitenende. */
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+}
+@supports not (background: color-mix(in srgb, red 50%, blue)) {
+  .lp-kopf { background: var(--bg); }
+}
+
+.lp-marke {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+
+.lp-kopf-nav {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.lp-link {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+.lp-link:hover { color: var(--text); }
+
+/* --- Held ---------------------------------------------------------------- */
+
+.lp-held {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 48px 24px 8px;
+}
+
+.lp-held h1 {
+  margin: 0;
+  /* Mitwachsend statt in Stufen: die Ueberschrift traegt zwei Zeilen, und die
+     sollen auf jedem Geraet zwei bleiben. */
+  font-size: clamp(30px, 5.2vw, 50px);
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  font-weight: 700;
+}
+
+.lp-lead {
+  max-width: 62ch;
+  margin: 18px 0 0;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.lp-knoepfe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 26px;
+}
+.lp-knopf-gross {
+  padding: 11px 20px;
+  font-size: 15px;
+  border-radius: var(--radius);
+}
+
+/* Der Hinweis auf die geschlossene Registrierung. Gedeckt und nicht rot: es
+   ist keine Stoerung, sondern eine Auskunft. */
+.lp-hinweis {
+  max-width: 62ch;
+  margin: 18px 0 0;
+  padding: 11px 14px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text);
+  background: var(--warning-subtle);
+  border: 1px solid color-mix(in srgb, var(--warning) 35%, transparent);
+  border-radius: var(--radius);
+}
+@supports not (background: color-mix(in srgb, red 50%, blue)) {
+  .lp-hinweis { border-color: var(--border-strong); }
+}
+
+/* --- Bild ---------------------------------------------------------------- */
+
+.lp-bild {
+  margin: 40px 0 0;
+}
+.lp-bild img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  background: var(--bg-subtle);
+}
+.lp-bildtext {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--text-faint);
+}
+
+/* --- Abschnitte ---------------------------------------------------------- */
+
+.lp-abschnitt {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 56px 24px;
+}
+/* Getoente Abschnitte spannen ueber die volle Breite, ihr Inhalt nicht. */
+.lp-abschnitt-getoent {
+  max-width: none;
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.lp-abschnitt-getoent > * {
+  max-width: 1040px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.lp-abschnitt h2 {
+  margin: 0;
+  font-size: clamp(22px, 3vw, 28px);
+  letter-spacing: -0.02em;
+}
+.lp-abschnitt-lead {
+  max-width: 62ch;
+  margin: 12px 0 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+/* --- Arbeitstag ---------------------------------------------------------- */
+
+.lp-schritte {
+  list-style: none;
+  margin: 28px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 22px;
+}
+.lp-schritte > li {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.lp-nummer {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-subtle);
+}
+.lp-schritte h3 {
+  margin: 4px 0 4px;
+  font-size: 16px;
+}
+.lp-schritte p {
+  margin: 0;
+  max-width: 68ch;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+/* --- Herkunft und Fragen ------------------------------------------------- */
+
+.lp-herkunft,
+.lp-fragen {
+  margin: 26px 0 0;
+  display: grid;
+  gap: 20px;
+}
+.lp-herkunft > div,
+.lp-fragen > div {
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.lp-herkunft dt,
+.lp-fragen dt {
+  font-weight: 700;
+  font-size: 15px;
+}
+.lp-herkunft dd,
+.lp-fragen dd {
+  margin: 5px 0 0;
+  max-width: 74ch;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+/* Offene Stellen erkennbar, aber nicht schreiend: sie sind ehrlich, nicht
+   kaputt. */
+.lp-offen { color: var(--text-faint); }
+
+/* --- Grenzen ------------------------------------------------------------- */
+
+.lp-grenzen {
+  list-style: none;
+  margin: 26px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+.lp-grenzen > li {
+  padding: 16px 18px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.lp-abschnitt-getoent .lp-grenzen > li { background: var(--bg); }
+.lp-grenzen h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+.lp-grenzen p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+/* --- Baustellenhinweis --------------------------------------------------- */
+
+.lp-baustelle {
+  padding: 14px 16px;
+  font-size: 14px;
+  line-height: 1.55;
+  background: var(--warning-subtle);
+  border: 1px dashed var(--warning);
+  border-radius: var(--radius);
+}
+.lp-baustelle code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+}
+
+/* --- Fuss ---------------------------------------------------------------- */
+
+.lp-fuss {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 28px 24px 44px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 20px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.lp-fuss-nav {
+  display: flex;
+  gap: 16px;
+}
+.lp-fuss-quellen {
+  flex: 1 1 100%;
+  color: var(--text-faint);
+}
+
+/* --- Schmale Geraete ----------------------------------------------------- */
+
+@media (max-width: 620px) {
+  .lp-kopf { padding: 10px 16px; }
+  /* Die Ankerverweise fallen weg: auf 360 px draengen sie den einzigen
+     Knopf, auf den es ankommt, aus der Zeile. */
+  .lp-kopf-nav .lp-link { display: none; }
+  .lp-held { padding: 32px 16px 4px; }
+  .lp-abschnitt { padding: 40px 16px; }
+  .lp-fuss { padding: 24px 16px 36px; }
+  .lp-knopf-gross { flex: 1 1 auto; }
+}

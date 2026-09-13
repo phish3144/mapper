@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="robots" content="index, follow" />
+    <title>Impressum — mapper</title>
+    <meta name="description" content="Anbieterkennzeichnung nach § 5 DDG für mapper." />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48" />
+    <style>
+      :root { color-scheme: light dark;
+        --bg:#f6f7f9; --panel:#fff; --text:#16191d; --muted:#5c6672; --faint:#8b95a1;
+        --border:#d8dde3; --accent:#2563eb; --warn-bg:#fdf3e3; --warn:#b45309; }
+      @media (prefers-color-scheme: dark) { :root {
+        --bg:#16191c; --panel:#1c2024; --text:#e8eaed; --muted:#9aa4b0; --faint:#6f7883;
+        --border:#333a42; --accent:#5b8def; --warn-bg:#3a2d14; --warn:#fbbf24; } }
+      * { box-sizing: border-box; }
+      body { margin:0; background:var(--bg); color:var(--text);
+        font:15px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+      .huelle { max-width: 760px; margin: 0 auto; padding: 24px 20px 72px; }
+      header { display:flex; align-items:center; justify-content:space-between; gap:16px;
+        padding-bottom:16px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+      .marke { display:flex; align-items:center; gap:8px; font-weight:700; font-size:16px;
+        color:var(--text); text-decoration:none; }
+      .marke img { display:block; border-radius:4px; }
+      nav { display:flex; gap:16px; font-size:14px; }
+      a { color: var(--accent); }
+      h1 { font-size: clamp(24px,4vw,32px); letter-spacing:-0.02em; margin:28px 0 4px; }
+      h2 { font-size:18px; margin:30px 0 6px; letter-spacing:-0.01em; }
+      h3 { font-size:15px; margin:18px 0 4px; }
+      p, li { max-width: 70ch; }
+      .muted { color: var(--muted); }
+      .stand { color: var(--faint); font-size:13px; margin:0 0 8px; }
+      .hinweis { margin:20px 0; padding:14px 16px; background:var(--warn-bg);
+        border:1px dashed var(--warn); border-radius:8px; font-size:14px; }
+      .platzhalter { display:inline-block; padding:1px 7px; border-radius:4px;
+        background:var(--warn-bg); border:1px dashed var(--warn); color:var(--text);
+        font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:13px; }
+      table { border-collapse: collapse; width:100%; margin:10px 0; font-size:14px; }
+      th, td { text-align:left; vertical-align:top; padding:8px 10px;
+        border-bottom:1px solid var(--border); }
+      th { color: var(--muted); font-weight:600; white-space:nowrap; }
+      .tabelle-huelle { overflow-x:auto; }
+      footer { margin-top:44px; padding-top:16px; border-top:1px solid var(--border);
+        font-size:13px; color:var(--muted); display:flex; gap:16px; flex-wrap:wrap; }
+    </style>
+  </head>
+  <body>
+    <div class="huelle">
+      <header>
+        <a class="marke" href="./"><img src="favicon.svg" width="20" height="20" alt="" />mapper</a>
+        <nav>
+          <a href="./">Startseite</a>
+          <a href="impressum.html">Impressum</a>
+          <a href="datenschutz.html">Datenschutz</a>
+        </nav>
+      </header>
+
+      <h1>Impressum</h1>
+      <p class="stand">Angaben gemäß &sect; 5 Digitale-Dienste-Gesetz (DDG)</p>
+
+      <div class="hinweis">
+        <strong>Dieses Impressum ist noch nicht ausgefüllt.</strong>
+        Die markierten Stellen müssen durch die tatsächlichen Angaben des Betreibers
+        ersetzt werden, bevor die Anwendung öffentlich erreichbar ist. Ein unvollständiges
+        oder falsches Impressum ist abmahnfähig. Diesen Kasten danach löschen.
+      </div>
+
+      <h2>Diensteanbieter</h2>
+      <p>
+        <span class="platzhalter">Vollständiger Name bzw. Firma</span><br />
+        <span class="platzhalter">Straße und Hausnummer</span><br />
+        <span class="platzhalter">Postleitzahl und Ort</span><br />
+        <span class="platzhalter">Land</span>
+      </p>
+      <p class="muted">
+        Bei juristischen Personen zusätzlich die Rechtsform und alle Vertretungsberechtigten
+        angeben (z.&nbsp;B. &bdquo;Geschäftsführer: Vorname Nachname&ldquo;).
+      </p>
+
+      <h2>Kontakt</h2>
+      <p>
+        E-Mail: <span class="platzhalter">adresse@beispiel.de</span><br />
+        Telefon: <span class="platzhalter">optional, aber empfohlen</span>
+      </p>
+      <p class="muted">
+        Das Gesetz verlangt eine Möglichkeit zur unmittelbaren und schnellen
+        elektronischen Kontaktaufnahme. Eine E-Mail-Adresse genügt; ein reines
+        Kontaktformular genügt nicht.
+      </p>
+
+      <h2>Registereintrag</h2>
+      <p>
+        <span class="platzhalter">Registergericht und Registernummer — entfällt bei Einzelpersonen ohne Eintrag</span>
+      </p>
+
+      <h2>Umsatzsteuer-Identifikationsnummer</h2>
+      <p>
+        <span class="platzhalter">USt-IdNr. nach § 27a UStG — entfällt, wenn keine vorhanden</span>
+      </p>
+
+      <h2>Verantwortlich für den Inhalt</h2>
+      <p>
+        <span class="platzhalter">Name und Anschrift, falls abweichend von oben</span>
+      </p>
+
+      <h2>Streitbeilegung</h2>
+      <p>
+        Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung bereit:
+        <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noreferrer">ec.europa.eu/consumers/odr</a>.
+      </p>
+      <p>
+        <span class="platzhalter">Angabe wählen: bereit oder nicht bereit zur Teilnahme an einem Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle</span>
+      </p>
+
+      <h2>Haftung für Verweise</h2>
+      <p>
+        Diese Anwendung verweist auf externe Seiten Dritter, auf deren Inhalte kein Einfluss
+        besteht. Für diese Inhalte ist stets der jeweilige Anbieter verantwortlich. Zum
+        Zeitpunkt der Verlinkung waren keine Rechtsverstöße erkennbar.
+      </p>
+
+      <h2>Kartendaten und Quellen</h2>
+      <p>
+        Kartendarstellung und Adresssuche beruhen auf Daten von
+        <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>
+        und dessen Mitwirkenden, veröffentlicht unter der Open Database License (ODbL).
+        Satellitenbilder stammen von Esri und den dort genannten Quellen. Meldungen zu
+        Sperrungen und Baustellen stammen von der
+        <a href="https://autobahn.api.bund.de/" target="_blank" rel="noreferrer">Autobahn GmbH des Bundes</a>
+        und stehen unter der Datenlizenz Deutschland &mdash; Namensnennung &mdash; Version 2.0.
+      </p>
+      <footer>
+        <a href="./">Zurück zu mapper</a>
+        <a href="impressum.html">Impressum</a>
+        <a href="datenschutz.html">Datenschutz</a>
+      </footer>
+    </div>
+  </body>
+</html>

@@ -5,6 +5,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.css'
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
 import './styles/global.css'
 import './styles/layout.css'
+import './styles/landing.css'
 import App from './App'
 import { useUi, applyTheme } from './lib/uiStore'
 

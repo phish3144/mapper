@@ -29,6 +29,40 @@ frei zu gruppieren und daraus Routen zu planen — manuell wie regelbasiert.
 > anschließend alle weiteren Konten selbst anlegen — dafür ist dann keine E-Mail
 > mehr im Spiel, weil die Kontenverwaltung die Adressen direkt bestätigt.
 
+## Vor dem öffentlichen Start
+
+Die Anwendung zeigt nicht angemeldeten Besuchern eine Startseite
+(`src/features/landing/`). Impressum und Datenschutzerklärung liegen als
+eigenständige Seiten in `public/impressum.html` und `public/datenschutz.html` —
+ohne JavaScript und ohne Anmeldung erreichbar, verlinkt aus der Startseite und
+aus dem Benutzermenü der Anwendung.
+
+**Beides ist ein Gerüst und noch nicht ausgefüllt.** Auszufüllen sind:
+
+1. `src/features/landing/angaben.ts` — Betreiber, Kontaktadresse, Kosten,
+   und der Schalter `registrierungOffen`. Solange dort Platzhalter stehen,
+   zeigt die Startseite sichtbare Hinweise statt stiller Lücken.
+2. `public/impressum.html` — die markierten Stellen nach § 5 DDG.
+3. `public/datenschutz.html` — die markierten Stellen; zusätzlich sind der
+   Vertrag zur Auftragsverarbeitung (Art. 28 DSGVO) mit jedem genannten
+   Anbieter und die Grundlage für eine Übermittlung in die USA zu klären.
+   Der Text beschreibt die Datenflüsse so, wie sie im Quelltext angelegt
+   sind, ersetzt aber keine Rechtsberatung.
+
+Dazu drei betriebliche Punkte, die nicht im Repository stehen:
+
+- **Registrierung.** Im Supabase-Projekt ist `mailer_autoconfirm = false` und
+  `disable_signup = false`: jeder kann sich registrieren, aber die
+  Bestätigungsmail des Free Tiers kommt in aller Regel nicht an. Entweder
+  einen echten Maildienst anschließen, oder „Confirm email" abschalten (dann
+  wird jede fremde Adresse ungeprüft gespeichert), oder die Registrierung
+  schließen.
+- **Routing.** Ab Werk läuft es gegen `router.project-osrm.org`, den
+  Demoserver des OSRM-Projekts. Der ist nicht für Dauerbetrieb gedacht.
+- **Kacheln.** Der Stil von openstreetmap.de ist laut dessen
+  Nutzungsbedingungen nichtkommerziellen und kleineren Anwendungen
+  vorbehalten.
+
 ## Was sie kann
 
 **Standorte**

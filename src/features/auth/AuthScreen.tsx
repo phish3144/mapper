@@ -64,7 +64,7 @@ function describeAuthError(error: unknown): string {
   return describeError(error)
 }
 
-export default function AuthScreen() {
+export default function AuthScreen({ onZurueck }: { onZurueck?: () => void }) {
   const signIn = useStore((s) => s.signIn)
   const signUp = useStore((s) => s.signUp)
 
@@ -210,6 +210,15 @@ export default function AuthScreen() {
           mapper
         </h1>
         <p className="auth-sub">Standorte pflegen, gruppieren und Routen planen.</p>
+
+        {/* Rueckweg zur Startseite. Fehlt, wenn man ueber einen Link aus einer
+            E-Mail hier gelandet ist - dann gibt es keine Seite, auf die
+            "zurueck" zeigen koennte. */}
+        {onZurueck && (
+          <button type="button" className="linkish small" onClick={onZurueck}>
+            &larr; Zurueck zur Startseite
+          </button>
+        )}
 
         {/* Der Umschalter steht ausserhalb des Formulars: seine Schaltflaechen
             wuerden sonst als Absenden zaehlen. */}

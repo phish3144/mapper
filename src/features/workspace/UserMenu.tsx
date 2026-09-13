@@ -256,6 +256,21 @@ export default function UserMenu() {
 
           <div className="divider" style={{ margin: '4px 0' }} />
 
+          {/* Pflichtangaben muessen aus der gesamten Anwendung erreichbar sein,
+              nicht nur von der Startseite - wer angemeldet ist, sieht die nie
+              wieder. Eigene Dateien in public/, damit sie ohne JavaScript und
+              ohne Anmeldung aufgehen. */}
+          <div className="row small" style={{ gap: 12, padding: '2px 8px 6px' }}>
+            <a href={`${import.meta.env.BASE_URL}impressum.html`} target="_blank" rel="noreferrer">
+              Impressum
+            </a>
+            <a href={`${import.meta.env.BASE_URL}datenschutz.html`} target="_blank" rel="noreferrer">
+              Datenschutz
+            </a>
+          </div>
+
+          <div className="divider" style={{ margin: '4px 0' }} />
+
           <button
             type="button"
             className="btn btn-ghost"
