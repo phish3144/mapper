@@ -82,8 +82,8 @@ function SortableStop({
         className="grow truncate"
         style={{ background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', padding: 0, font: 'inherit', color: 'inherit' }}
         onClick={() => {
-          // Leere Kennung heisst: der Standort ist weg. Dann gibt es nichts
-          // auszuwaehlen, wohl aber einen Ort zum Hinfliegen.
+          // Leere Kennung heisst: hinter dem Stopp steht kein Standort. Dann
+          // gibt es nichts auszuwaehlen, wohl aber einen Ort zum Hinfliegen.
           if (entry.location.id !== '') selectLocation(entry.location.id)
           focusPoint({ lat: entry.location.lat, lng: entry.location.lng })
         }}
@@ -91,9 +91,11 @@ function SortableStop({
         <span className="row" style={{ gap: 6 }}>
           <GroupStripe colors={colors} />
           <span className="truncate">{entry.location.name}</span>
-          {entry.location.id === '' && (
-            <Badge tone="warning">Standort gelöscht</Badge>
-          )}
+          {/* Ob der Standort nie einer war oder geloescht wurde, laesst sich
+              nicht unterscheiden - beide Faelle stehen ohne Verknuepfung da.
+              Also sagt das Zeichen nur, was sicher stimmt: dieser Stopp
+              gehoert dieser Tour und sonst niemandem. */}
+          {entry.location.id === '' && <Badge>nur in dieser Tour</Badge>}
         </span>
         <span className="stop-time">
           {scheduled?.arrival ? (

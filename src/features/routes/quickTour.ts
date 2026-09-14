@@ -4,7 +4,7 @@
  * Der Dialog macht die Netzaufrufe, hier steht alles, was ohne sie auskommt:
  * Zeilen lesen, vorhandene Standorte wiederfinden, einen Geocoder-Treffer
  * bewerten. Getrennt, damit genau die Entscheidungen pruefbar sind, an denen
- * ein Fehler teuer waere - ein Standort am falschen Fleck faellt spaeter
+ * ein Fehler teuer waere - ein Stopp am falschen Fleck faellt spaeter
  * niemandem mehr auf.
  */
 import { cleanQuery, parseGermanAddress } from '@/lib/address'
@@ -24,18 +24,24 @@ export const AMBIGUOUS_DISTANCE_KM = 20
 /** Grobes Rechteck um Deutschland, Oesterreich und die Schweiz. */
 export const DACH_BOUNDS = { minLat: 45.5, maxLat: 55.5, minLng: 5.5, maxLng: 17.2 }
 
-export const TOUR_GROUP_NAME = 'Adresstouren'
+/** Laenger beschriftet kein Stopp - der Rest waere in jeder Liste abgeschnitten. */
+const MAX_LABEL_LENGTH = 160
 
-/** Das Schema begrenzt Standortnamen auf 160 Zeichen (0002_catalog…sql). */
-const MAX_NAME_LENGTH = 160
-
-export type LineKind = 'created' | 'reused' | 'unsure' | 'missing'
+/**
+ * Was aus einer Zeile geworden ist.
+ *
+ * `new` heisst: die Adresse wurde gefunden, aber es gibt keinen gespeicherten
+ * Standort dazu - und es entsteht auch keiner. Der Stopp traegt seine
+ * Koordinate selbst. `reused` heisst: die Zeile zeigt auf einen Standort, den
+ * es in diesem Arbeitsbereich schon gibt.
+ */
+export type LineKind = 'new' | 'reused' | 'unsure' | 'missing'
 
 export interface ResolvedLine {
   /** Die Zeile, wie sie eingegeben wurde. */
   raw: string
   kind: LineKind
-  /** Gesetzt, sobald ein Standort dazu existiert. */
+  /** Kennung des vorhandenen Standorts; null, wenn die Zeile nur in der Tour lebt. */
   locationId: string | null
   point: LatLng | null
   /** Beschriftung des Treffers oder Name des wiederverwendeten Standorts. */
@@ -185,11 +191,74 @@ export function needsReview(line: string): boolean {
   return teile.postalCode === null && teile.city === null
 }
 
-export function locationName(line: string): string {
+/**
+ * Woran ein Stopp wiedererkannt wird, bevor er eine eigene Kennung hat.
+ *
+ * Ueber den Standort, wo es einen gibt - sonst ueber die Koordinate, denn ein
+ * Stopp ohne Standort hat nichts anderes, was schon vor dem Speichern
+ * feststeht. Dieselbe Form fuer vorhandene Stopps wie fuer aufgeloeste Zeilen,
+ * damit beide Seiten vergleichbar sind.
+ *
+ * Fuenf Nachkommastellen sind rund ein Meter: nahe genug, dass dieselbe
+ * Adresse denselben Schluessel bekommt, weit genug, dass zwei Hausnummern
+ * nicht zusammenfallen. Standortkennungen sind UUIDs und koennen deshalb nie
+ * wie ein Koordinatenpaar aussehen - die beiden Formen vermischen sich nicht.
+ */
+export function stoppSchluessel(locationId: string | null, lat: number, lng: number): string {
+  return locationId ?? `${lat.toFixed(5)},${lng.toFixed(5)}`
+}
+
+/** Beschriftung eines Stopps: aufgeraeumt und auf eine lesbare Laenge gekuerzt. */
+export function stoppName(line: string): string {
   const sauber = cleanQuery(line)
-  return sauber.length <= MAX_NAME_LENGTH
+  return sauber.length <= MAX_LABEL_LENGTH
     ? sauber
-    : sauber.slice(0, MAX_NAME_LENGTH - 1).trimEnd() + '…'
+    : sauber.slice(0, MAX_LABEL_LENGTH - 1).trimEnd() + '…'
+}
+
+/**
+ * Was ein Stopp mitbringt.
+ *
+ * Deckungsgleich mit db.StopPlace, aber ohne dessen Modul: hier soll nichts
+ * hineinragen, was eine Verbindung braucht.
+ */
+export interface StoppOrt {
+  locationId: string | null
+  lat: number
+  lng: number
+  label: string
+}
+
+/**
+ * Welche Stopps aus den uebernommenen Zeilen neu entstehen.
+ *
+ * Zeilen ohne Koordinate fallen weg, und was schon in der Tour steht, kommt
+ * nicht ein zweites Mal hinein. Standorte entstehen dabei keine - eine Zeile,
+ * hinter der keiner steckt, wird ein Stopp mit eigener Koordinate und eigener
+ * Beschriftung. Genau das ist der Unterschied zu frueher, und genau deshalb
+ * steht die Entscheidung hier und nicht im Dialog.
+ */
+export function neueStopps(
+  lines: readonly ResolvedLine[],
+  vorhandene: readonly { location_id: string | null; lat: number; lng: number }[],
+): StoppOrt[] {
+  const schonDrin = new Set(vorhandene.map((s) => stoppSchluessel(s.location_id, s.lat, s.lng)))
+  const out: StoppOrt[] = []
+  for (const l of lines) {
+    if (l.point === null) continue
+    const schluessel = stoppSchluessel(l.locationId, l.point.lat, l.point.lng)
+    if (schonDrin.has(schluessel)) continue
+    schonDrin.add(schluessel)
+    out.push({
+      locationId: l.locationId,
+      lat: l.point.lat,
+      lng: l.point.lng,
+      // Die Rohzeile rettet die Beschriftung, wenn der Geocoder keine liefert -
+      // ein Stopp ohne Namen hiesse in der Liste "Gelöschter Standort".
+      label: stoppName(l.label?.trim() || l.raw),
+    })
+  }
+  return out
 }
 
 export function tourName(now: Date): string {

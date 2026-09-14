@@ -4,13 +4,16 @@ import {
   checkMatch,
   findByPoint,
   findByText,
-  locationName,
   needsReview,
+  neueStopps,
   normalizeAddressKey,
   orderedUnique,
   parseAddressLines,
+  stoppName,
+  stoppSchluessel,
   tourName,
 } from './quickTour'
+import type { ResolvedLine } from './quickTour'
 import type { AddressLookup, AddressMatch } from '@/lib/geocode'
 import type { MapLocation } from '@/types/domain'
 
@@ -171,15 +174,93 @@ describe('needsReview', () => {
   })
 })
 
-describe('locationName', () => {
-  it('kürzt auf die im Schema erlaubten 160 Zeichen', () => {
-    const name = locationName('x'.repeat(200))
+describe('stoppName', () => {
+  it('kürzt auf 160 Zeichen', () => {
+    const name = stoppName('x'.repeat(200))
     expect(name).toHaveLength(160)
     expect(name.endsWith('…')).toBe(true)
   })
 
   it('lässt kurze Namen unangetastet', () => {
-    expect(locationName('  Bahnhofstr. 5, 29336 Nienhagen  ')).toBe('Bahnhofstr. 5, 29336 Nienhagen')
+    expect(stoppName('  Bahnhofstr. 5, 29336 Nienhagen  ')).toBe('Bahnhofstr. 5, 29336 Nienhagen')
+  })
+})
+
+describe('stoppSchluessel', () => {
+  it('nimmt den Standort, wo es einen gibt', () => {
+    expect(stoppSchluessel('abc', 52.1, 9.9)).toBe('abc')
+  })
+
+  it('faellt ohne Standort auf die Koordinate zurueck', () => {
+    expect(stoppSchluessel(null, 52.1, 9.9)).toBe('52.10000,9.90000')
+  })
+
+  it('erkennt dieselbe Stelle wieder, auch nach dem Umweg ueber die Datenbank', () => {
+    // Ein Meter Unterschied ist derselbe Stopp, zwei Hausnummern sind es nicht.
+    expect(stoppSchluessel(null, 52.123456, 9.876543)).toBe(stoppSchluessel(null, 52.1234561, 9.8765432))
+    expect(stoppSchluessel(null, 52.1234, 9.8765)).not.toBe(stoppSchluessel(null, 52.1244, 9.8765))
+  })
+})
+
+describe('neueStopps', () => {
+  function zeile(patch: Partial<ResolvedLine> & Pick<ResolvedLine, 'raw'>): ResolvedLine {
+    return { kind: 'new', locationId: null, point: null, label: null, hint: null, ...patch }
+  }
+
+  it('macht aus einer gefundenen Adresse einen Stopp ohne Standort', () => {
+    const stopps = neueStopps(
+      [zeile({ raw: 'Bahnhofstr. 5, 29336 Nienhagen', point: { lat: 52.6, lng: 10.1 }, label: 'Bahnhofstraße 5' })],
+      [],
+    )
+    expect(stopps).toEqual([
+      { locationId: null, lat: 52.6, lng: 10.1, label: 'Bahnhofstraße 5' },
+    ])
+  })
+
+  it('haengt den gespeicherten Standort an, wo es einen gibt', () => {
+    const stopps = neueStopps(
+      [zeile({ raw: 'Lager', kind: 'reused', locationId: 'a', point: { lat: 52, lng: 10 }, label: 'Lager Nord' })],
+      [],
+    )
+    expect(stopps[0].locationId).toBe('a')
+    expect(stopps[0].label).toBe('Lager Nord')
+  })
+
+  it('laesst Zeilen ohne Koordinate weg', () => {
+    expect(neueStopps([zeile({ raw: 'Nirgendwo', kind: 'missing' })], [])).toEqual([])
+  })
+
+  it('nimmt nichts zweimal auf, weder denselben Standort noch dieselbe Stelle', () => {
+    const stopps = neueStopps(
+      [
+        zeile({ raw: 'a', locationId: 'x', point: { lat: 52, lng: 10 } }),
+        zeile({ raw: 'b', locationId: 'x', point: { lat: 52, lng: 10 } }),
+        zeile({ raw: 'c', point: { lat: 53, lng: 11 } }),
+        zeile({ raw: 'd', point: { lat: 53, lng: 11 } }),
+      ],
+      [],
+    )
+    expect(stopps).toHaveLength(2)
+  })
+
+  it('uebergeht, was schon in der Tour steht', () => {
+    const stopps = neueStopps(
+      [
+        zeile({ raw: 'schon da', locationId: 'x', point: { lat: 52, lng: 10 } }),
+        zeile({ raw: 'auch schon da', point: { lat: 53, lng: 11 } }),
+        zeile({ raw: 'neu', point: { lat: 54, lng: 12 } }),
+      ],
+      [
+        { location_id: 'x', lat: 52, lng: 10 },
+        { location_id: null, lat: 53, lng: 11 },
+      ],
+    )
+    expect(stopps.map((s) => s.label)).toEqual(['neu'])
+  })
+
+  it('beschriftet notfalls mit der Rohzeile', () => {
+    const stopps = neueStopps([zeile({ raw: 'Am Markt 2', label: '   ', point: { lat: 52, lng: 10 } })], [])
+    expect(stopps[0].label).toBe('Am Markt 2')
   })
 })
 

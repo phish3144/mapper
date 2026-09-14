@@ -10,9 +10,14 @@
  *
  * Liegt eine Route offen, haengt der Kasten an sie an, statt eine zweite
  * danebenzustellen.
+ *
+ * Eine Tour zu bauen legt keine Standorte an. Die Stopps tragen ihre
+ * Koordinate selbst (siehe 0011_route_stops_own_their_points.sql), also
+ * braucht eine eingeworfene Adresse keinen Eintrag in der Karte - und
+ * hinterlaesst auch keinen, den danach jemand von Hand wegraeumen muss.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Badge, Button, PALETTE } from '@/components/ui'
+import { Badge, Button } from '@/components/ui'
 import { useCanEdit, useStore } from '@/lib/store'
 import { useUi } from '@/lib/uiStore'
 import * as db from '@/lib/db'
@@ -25,15 +30,15 @@ import type { PlanStopInput } from '@/lib/planner'
 import { pluralize } from '@/lib/format'
 import {
   MAX_ADDRESSES,
-  TOUR_GROUP_NAME,
   buildAddressIndex,
   checkMatch,
   findByPoint,
   findByText,
-  locationName,
   needsReview,
+  neueStopps,
   normalizeAddressKey,
   parseAddressLines,
+  stoppSchluessel,
   tourName,
 } from './quickTour'
 import type { ResolvedLine } from './quickTour'
@@ -48,8 +53,10 @@ const MAX_START_SUGGESTIONS = 8
 const ADDR_HIT_CLASS = (aktiv: boolean): string => (aktiv ? 'addr-hit is-active' : 'addr-hit')
 
 interface TourReport {
-  created: number
-  reused: number
+  /** Zeilen, die nur als Stopp in der Tour stehen. */
+  neu: number
+  /** Zeilen, hinter denen ein gespeicherter Standort steckt. */
+  bekannt: number
   missing: number
   lines: ResolvedLine[]
   note: string | null
@@ -65,9 +72,9 @@ interface Vorschau {
 /**
  * Laesst sich diese Zeile in die Tour uebernehmen?
  *
- * Ohne Koordinate geht es nicht - eine nicht gefundene Adresse kann weder
- * Standort noch Stopp werden. Sie bleibt in der Liste sichtbar, damit man sie
- * nachbessern kann, aber ohne Haekchen.
+ * Ohne Koordinate geht es nicht - eine nicht gefundene Adresse kann kein Stopp
+ * werden. Sie bleibt in der Liste sichtbar, damit man sie nachbessern kann,
+ * aber ohne Haekchen.
  */
 function uebernehmbar(line: ResolvedLine): boolean {
   return line.locationId !== null || line.point !== null
@@ -237,7 +244,7 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
     const zweifel = hint ?? (needsReview(line) ? 'Ohne Ort und Postleitzahl - bitte prüfen' : null)
     return {
       raw: line,
-      kind: zweifel ? 'unsure' : 'created',
+      kind: zweifel ? 'unsure' : 'new',
       locationId: null,
       point: punkt,
       label: match.label,
@@ -288,7 +295,7 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
       }
 
       if (controller.signal.aborted) {
-        setReport({ created: 0, reused: 0, missing: 0, lines: [], note: 'Abgebrochen. Es wurde nichts angelegt.' })
+        setReport({ neu: 0, bekannt: 0, missing: 0, lines: [], note: 'Abgebrochen. Es wurde nichts gespeichert.' })
         return
       }
 
@@ -296,20 +303,18 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
 
       if (gefunden.length === 0) {
         setReport({
-          created: 0,
-          reused: 0,
+          neu: 0,
+          bekannt: 0,
           missing: aufgeloest.length,
           lines: aufgeloest,
-          note: 'Keine der Adressen wurde gefunden. Es wurde nichts angelegt.',
+          note: 'Keine der Adressen wurde gefunden. Es wurde nichts gespeichert.',
         })
         return
       }
 
       // HIER endet der suchende Teil. Bis zu dieser Stelle ist NICHTS
       // gespeichert worden: es wurde nur gefragt, wo die Adressen liegen.
-      // Was daraus ein Standort wird, entscheidet die naechste Ansicht -
-      // frueher entstanden hier ungefragt Standorte, die anschliessend von
-      // Hand wieder aus der Karte geraeumt werden mussten.
+      // Was daraus ein Stopp wird, entscheidet die naechste Ansicht.
       setVorschau({
         lines: aufgeloest,
         startGesetzt,
@@ -318,7 +323,7 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
       })
       setAuswahl(new Set(aufgeloest.map((_, i) => i).filter((i) => uebernehmbar(aufgeloest[i]))))
     } catch (e) {
-      setReport({ created: 0, reused: 0, missing: 0, lines: [], note: describeError(e) })
+      setReport({ neu: 0, bekannt: 0, missing: 0, lines: [], note: describeError(e) })
     } finally {
       abortRef.current = null
       setRunning(false)
@@ -326,21 +331,17 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
   }
 
   /**
-   * Uebernimmt die angehakten Adressen: legt die neuen an, baut die Tour.
+   * Baut die Tour aus den angehakten Adressen.
    *
-   * Erst ab hier wird geschrieben. Alles davor war eine Frage an den
-   * Geocoder.
+   * Erst ab hier wird geschrieben - und geschrieben werden nur Route und
+   * Stopps. Alles davor war eine Frage an den Geocoder.
    */
   async function uebernehmen(): Promise<void> {
     const schau = vorschau
     if (!workspaceId || !schau) return
 
-    // Auf Kopien arbeiten: locationId wird beim Anlegen nachgetragen, und der
-    // Zustand darf davon nicht heimlich mitveraendert werden.
-    const aufgeloest: ResolvedLine[] = schau.lines
-      .map((l, i) => ({ ...l, gewaehlt: auswahl.has(i) }))
-      .filter((l) => l.gewaehlt)
-      .map(({ gewaehlt: _gewaehlt, ...rest }) => rest)
+    // Die angehakten Zeilen in der Reihenfolge der Vorschau.
+    const aufgeloest: ResolvedLine[] = schau.lines.filter((_, i) => auswahl.has(i))
 
     if (aufgeloest.length === 0) return
 
@@ -353,55 +354,13 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
     setProgress({ done: 0, total: 0 })
 
     try {
-      // --- Standorte anlegen -------------------------------------------------
-      // Nur die angehakten, und nur die, die es noch nicht gibt.
-      const anzulegen = aufgeloest.filter((l) => l.locationId === null && l.point !== null)
-      if (anzulegen.length > 0) {
-        const angelegt = await db.createLocations(
-          workspaceId,
-          anzulegen.map((l) => ({
-            name: locationName(l.raw),
-            lat: l.point?.lat ?? 0,
-            lng: l.point?.lng ?? 0,
-            address: l.label,
-            notes: null,
-            category_id: null,
-            service_minutes: 0,
-            time_windows: [],
-            tags: [],
-            is_active: true,
-            icon: null,
-            visibility: 'workspace' as const,
-          })),
-        )
-        // Zuordnung ueber den Namen, nicht ueber die Position: das INSERT sagt
-        // keine Reihenfolge zu. Die Namen sind nach der Entdopplung eindeutig.
-        const nachName = new Map(angelegt.map((l) => [l.name, l]))
-        for (const zeile of anzulegen) {
-          const treffer = nachName.get(locationName(zeile.raw))
-          if (treffer) zeile.locationId = treffer.id
-        }
-
-        // Die Gruppe erst jetzt - sie soll nicht entstehen, wenn nichts hineinkommt.
-        const neueIds = anzulegen.map((l) => l.locationId).filter((id): id is string => id !== null)
-        if (neueIds.length > 0) {
-          const vorhandeneGruppe = useStore
-            .getState()
-            .groups.find((g) => g.name.toLowerCase() === TOUR_GROUP_NAME.toLowerCase())
-          const gruppe =
-            vorhandeneGruppe ??
-            (await db.createGroup(workspaceId, {
-              name: TOUR_GROUP_NAME,
-              color: PALETTE[useStore.getState().groups.length % PALETTE.length],
-            }))
-          await db.addLocationsToGroup(neueIds, gruppe.id)
-          if (!vorhandeneGruppe) await useStore.getState().reloadWorkspaceData()
-        }
-      }
-
-      await useStore.getState().refreshLocations()
-
       // --- Route und Stopps --------------------------------------------------
+      // Hier entsteht kein einziger Standort. Eine Zeile, hinter der kein
+      // gespeicherter Standort steckt, wird ein Stopp mit eigener Koordinate
+      // und eigener Beschriftung - mehr braucht eine Tour nicht. Frueher legte
+      // dieser Schritt fuer jede solche Adresse einen Standort an; die Karte
+      // fuellte sich damit Tour um Tour mit Punkten, die niemand dort haben
+      // wollte.
       const startZeile = startGesetzt ? aufgeloest[0] : null
       let routeId = routeIdRef.current ?? route?.id ?? null
       if (routeId === null) {
@@ -409,6 +368,9 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
           name: tourName(new Date()),
           mode: 'manual',
           rule: {},
+          // Nur ein gespeicherter Standort kann hier stehen. Eine frei
+          // eingegebene Startadresse bleibt ohne Kennung - sie wird weiter
+          // unten ueber ihre Koordinate als erster Stopp festgehalten.
           start_location_id: startZeile?.locationId ?? null,
         })
         routeId = neu.id
@@ -417,30 +379,10 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
 
       await useStore.getState().loadStops(routeId)
       const vorhandene = useStore.getState().stopsByRoute[routeId] ?? []
-      // Doppelte erkennen: ueber den Standort, wo es einen gibt, sonst ueber
-      // die Koordinate - ein Stopp ohne Standort hat keine Kennung.
-      const schonDrin = new Set(
-        vorhandene.map((s) => s.location_id ?? `${s.lat.toFixed(5)},${s.lng.toFixed(5)}`),
-      )
-      const neueStopps: db.StopPlace[] = []
-      for (const l of aufgeloest) {
-        // Der Punkt kommt aus der Zeile selbst und nicht aus dem Standort:
-        // so bekommt der Stopp seine Koordinate auch dann, wenn das Anlegen
-        // des Standorts danebengegangen ist.
-        if (l.point === null) continue
-        const schluessel = l.locationId ?? `${l.point.lat.toFixed(5)},${l.point.lng.toFixed(5)}`
-        if (schonDrin.has(schluessel)) continue
-        schonDrin.add(schluessel)
-        neueStopps.push({
-          locationId: l.locationId,
-          lat: l.point.lat,
-          lng: l.point.lng,
-          label: l.label ?? l.raw,
-        })
-      }
-      if (neueStopps.length > 0) {
+      const neue: db.StopPlace[] = neueStopps(aufgeloest, vorhandene)
+      if (neue.length > 0) {
         const hoechste = vorhandene.reduce((max, s) => Math.max(max, s.position), -1)
-        await db.addRouteStops(routeId, neueStopps, hoechste + 1)
+        await db.addRouteStops(routeId, neue, hoechste + 1)
         await useStore.getState().loadStops(routeId)
       }
 
@@ -471,9 +413,17 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
           serviceMinutes: e.location.service_minutes,
           timeWindows: e.location.time_windows,
         }))
-        const startLocationId = startZeile?.locationId ?? route?.start_location_id ?? null
-        const startIndex = startLocationId
-          ? stopps.findIndex((e) => e.location.id === startLocationId)
+        // Der Start haelt seinen Platz auch ohne Standort: gesucht wird der
+        // Stopp mit demselben Schluessel, nicht mehr der mit derselben
+        // Standortkennung.
+        const startSchluessel =
+          startZeile?.point != null
+            ? stoppSchluessel(startZeile.locationId, startZeile.point.lat, startZeile.point.lng)
+            : (route?.start_location_id ?? null)
+        const startIndex = startSchluessel
+          ? stopps.findIndex(
+              (e) => stoppSchluessel(e.stop.location_id, e.stop.lat, e.stop.lng) === startSchluessel,
+            )
           : -1
         const ergebnis = optimizeOrder(planStopps, matrix, {
           departAt: route?.depart_at ? new Date(route.depart_at) : null,
@@ -493,8 +443,8 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
       focusBounds(stopps.map((e) => ({ lat: e.location.lat, lng: e.location.lng })))
       if (startGesetzt) rememberStart(start.text, startZeile?.locationId ?? null)
 
-      const erzeugt = aufgeloest.filter((l) => l.kind === 'created' || l.kind === 'unsure').length
-      const wiederverwendet = aufgeloest.filter((l) => l.kind === 'reused').length
+      const frische = aufgeloest.filter((l) => l.kind === 'new' || l.kind === 'unsure').length
+      const bekannte = aufgeloest.filter((l) => l.kind === 'reused').length
       const fehlend = aufgeloest.filter((l) => l.kind === 'missing')
       const zuPruefen = aufgeloest.filter((l) => l.hint !== null && l.kind !== 'missing')
 
@@ -514,16 +464,16 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
         `${pluralize(stopps.length, 'Stopp', 'Stopps')} in der Tour${geschaetzt ? ' (Fahrzeiten geschaetzt)' : ''}.`,
       )
       setReport({
-        created: erzeugt,
-        reused: wiederverwendet,
+        neu: frische,
+        bekannt: bekannte,
         missing: fehlend.length,
         lines: [...fehlend, ...zuPruefen],
         note: geschaetzt ? 'Der Routing-Dienst hat nicht geantwortet - Reihenfolge nach Luftlinie.' : null,
       })
     } catch (e) {
       setReport({
-        created: aufgeloest.filter((l) => l.locationId !== null).length,
-        reused: 0,
+        neu: 0,
+        bekannt: 0,
         missing: 0,
         lines: [],
         note: `${describeError(e)}${
@@ -558,7 +508,7 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
     )
   }
 
-  /** Vorschau wegwerfen. Es war nie etwas gespeichert, also faellt auch nichts an. */
+  /** Vorschau wegwerfen. Es war nie etwas gespeichert, also bleibt auch nichts zurueck. */
   function verwerfen(): void {
     setVorschau(null)
     setAuswahl(new Set())
@@ -715,10 +665,10 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
                       </span>
                       <span className="small faint truncate">
                         {line.kind === 'reused'
-                          ? 'bereits gespeichert'
+                          ? 'gespeicherter Standort'
                           : line.kind === 'missing'
                             ? (line.hint ?? 'nicht gefunden')
-                            : `wird neu angelegt${line.hint ? ` · ${line.hint}` : ''}`}
+                            : `nur in dieser Tour${line.hint ? ` · ${line.hint}` : ''}`}
                       </span>
                     </span>
                   </label>
@@ -727,7 +677,7 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
             </div>
 
             <div className="small faint" style={{ marginTop: 6 }}>
-              Nur Angehaktes wird gespeichert und auf der Karte sichtbar.
+              Nur Angehaktes kommt in die Tour. Es entstehen keine neuen Standorte auf der Karte.
             </div>
           </div>
         )}
@@ -803,7 +753,8 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
         {report && !running && (
           <div style={{ marginTop: 10 }}>
             <div className="small muted" style={{ marginBottom: report.lines.length > 0 ? 6 : 0 }}>
-              {report.created} angelegt · {report.reused} wiederverwendet · {report.missing} nicht gefunden
+              {report.neu} neu in der Tour · {report.bekannt} gespeicherte Standorte ·{' '}
+              {report.missing} nicht gefunden
               {report.note ? ` · ${report.note}` : ''}
             </div>
             {report.lines.length > 0 && (

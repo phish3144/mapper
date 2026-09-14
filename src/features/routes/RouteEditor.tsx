@@ -80,7 +80,15 @@ export default function RouteEditor({ route, onBack }: { route: Route; onBack: (
     }
   }
 
-  const stopOptions = plan.entries.map((e) => ({ id: e.location.id, name: e.location.name }))
+  // Start und Ziel zeigen auf die Standorttabelle. Ein Stopp, der nur in
+  // dieser Tour lebt, hat nichts, worauf sie zeigen koennten - er bleibt
+  // trotzdem in der Liste, nur unwaehlbar. Ihn wegzulassen hiesse, dass man
+  // die gerade eingeworfene Adresse hier vergeblich sucht.
+  const stopOptions = plan.entries.map((e) => ({
+    key: e.stop.id,
+    id: e.location.id,
+    name: e.location.id === '' ? `${e.location.name} (kein Standort)` : e.location.name,
+  }))
   const schedule = plan.schedule
 
   return (
@@ -177,7 +185,7 @@ export default function RouteEditor({ route, onBack }: { route: Route; onBack: (
               >
                 <option value="">frei wählbar</option>
                 {stopOptions.map((o) => (
-                  <option key={o.id} value={o.id}>
+                  <option key={o.key} value={o.id} disabled={o.id === ''}>
                     {o.name}
                   </option>
                 ))}
@@ -190,7 +198,7 @@ export default function RouteEditor({ route, onBack }: { route: Route; onBack: (
               >
                 <option value="">frei wählbar</option>
                 {stopOptions.map((o) => (
-                  <option key={o.id} value={o.id}>
+                  <option key={o.key} value={o.id} disabled={o.id === ''}>
                     {o.name}
                   </option>
                 ))}
