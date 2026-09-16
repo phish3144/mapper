@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="robots" content="index, follow" />
+    <title>Datenschutzerklärung — mapper</title>
+    <meta name="description" content="Welche Daten mapper verarbeitet, wo sie liegen und an welche Dienste bei der Nutzung Daten fliessen." />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48" />
+    <style>
+      /* Dieselbe Familie wie die Startseite und sanctora.eu: dunkler Grund,
+         Amber als einziger Akzent, Mono-Kleinlabels. Nur dunkel - eine
+         Rechtsseite, die je nach Systemeinstellung anders aussieht als die
+         Seite, von der man kommt, wirkt wie eine fremde Seite. */
+      :root { color-scheme: dark;
+        --grund:#050810; --flaeche:#0b1322; --tinte:#e3eaf6; --dunst:#78889f;
+        --rand:#1b2841; --rand-zart:#111b2d; --licht:#f2b544; --kreide:#7fb4d4;
+        --warn-bg:rgba(229,115,91,.09); --warn:#e5735b;
+        --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace; }
+      * { box-sizing: border-box; }
+      body { margin:0; background:var(--grund); color:var(--tinte);
+        font:15px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+        -webkit-font-smoothing:antialiased; }
+      .huelle { max-width: 820px; margin: 0 auto; padding: 22px 20px 80px; }
+      header { display:flex; align-items:center; justify-content:space-between; gap:16px;
+        padding-bottom:16px; border-bottom:1px solid var(--rand); flex-wrap:wrap; }
+      .marke { display:flex; align-items:center; gap:8px; font-weight:800; font-size:16px;
+        letter-spacing:-.03em; color:var(--tinte); text-decoration:none; }
+      .marke img { display:block; border-radius:4px; }
+      nav { display:flex; gap:18px; font-size:14px; }
+      nav a { color:var(--tinte); text-decoration:none; opacity:.7; padding-block:2px;
+        border-bottom:1px solid transparent; }
+      nav a:hover { opacity:1; border-color:var(--licht); }
+      a { color: var(--licht); }
+      :focus-visible { outline:2px solid var(--licht); outline-offset:3px; }
+      h1 { font-size: clamp(28px,5vw,44px); font-weight:800; letter-spacing:-.035em;
+        line-height:1.05; margin:36px 0 6px; }
+      h2 { font-size:19px; font-weight:800; letter-spacing:-.02em; margin:34px 0 6px; }
+      h3 { font-size:15px; font-weight:700; margin:20px 0 4px; }
+      p, li { max-width: 72ch; }
+      p, ul, ol { color: var(--dunst); }
+      li { margin-bottom:4px; }
+      strong { color: var(--tinte); }
+      .muted { color: var(--dunst); }
+      .stand { font-family:var(--mono); font-size:11px; letter-spacing:.2em;
+        text-transform:uppercase; color:var(--dunst); margin:0 0 10px; }
+      .hinweis { margin:22px 0; padding:14px 16px; background:var(--warn-bg);
+        border:1px solid var(--warn); font-size:14px; color:var(--tinte); }
+      .hinweis strong { color: var(--warn); }
+      .platzhalter { display:inline-block; padding:1px 7px;
+        background:var(--warn-bg); border:1px dashed var(--warn); color:var(--tinte);
+        font-family:var(--mono); font-size:13px; }
+      table { border-collapse: collapse; width:100%; margin:12px 0; font-size:14px; }
+      th, td { text-align:left; vertical-align:top; padding:9px 10px;
+        border-bottom:1px solid var(--rand-zart); color:var(--dunst); }
+      th { font-family:var(--mono); font-size:11px; letter-spacing:.16em;
+        text-transform:uppercase; color:var(--kreide); font-weight:400; white-space:nowrap; }
+      .tabelle-huelle { overflow-x:auto; }
+      footer { margin-top:52px; padding-top:16px; border-top:1px solid var(--rand);
+        font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+        color:var(--dunst); display:flex; gap:6px 20px; flex-wrap:wrap; }
+      footer a { color:var(--dunst); text-decoration:none; }
+      footer a:hover { color:var(--licht); }
+    </style>
+  </head>
+  <body>
+    <div class="huelle">
+      <header>
+        <a class="marke" href="./"><img src="favicon.svg" width="20" height="20" alt="" />mapper</a>
+        <nav>
+          <a href="./">Startseite</a>
+          <a href="impressum.html">Impressum</a>
+          <a href="datenschutz.html">Datenschutz</a>
+        </nav>
+      </header>
+
+      <h1>Datenschutzerklärung</h1>
+      <p class="stand">Stand: <span class="platzhalter">Datum eintragen</span></p>
+
+      <div class="hinweis">
+        <strong>Entwurf, noch nicht geprüft.</strong>
+        Der Text beschreibt die Datenflüsse, wie sie im Quelltext von mapper tatsächlich
+        angelegt sind. Er ersetzt keine Rechtsberatung: die markierten Stellen müssen
+        ausgefüllt und die Abschnitte zu Auftragsverarbeitung und Drittlandsübermittlung
+        vor der Veröffentlichung geprüft werden. Diesen Kasten danach löschen.
+      </div>
+
+      <h2>1. Verantwortlicher</h2>
+      <p>
+        Verantwortlich für die Verarbeitung personenbezogener Daten im Sinne von
+        Art.&nbsp;4 Nr.&nbsp;7 DSGVO ist:
+      </p>
+      <p>
+        <span class="platzhalter">Name bzw. Firma</span><br />
+        <span class="platzhalter">Anschrift</span><br />
+        E-Mail: <span class="platzhalter">adresse@beispiel.de</span>
+      </p>
+      <p>
+        Ein Datenschutzbeauftragter <span class="platzhalter">ist bestellt / ist nicht bestellt — Zutreffendes wählen</span>.
+      </p>
+
+      <h2>2. Welche Daten verarbeitet werden</h2>
+
+      <h3>2.1 Beim Anlegen eines Kontos</h3>
+      <p>
+        Für die Anmeldung werden E-Mail-Adresse, ein Passwort und ein frei gewählter
+        Anzeigename erhoben. Das Passwort wird nicht im Klartext gespeichert, sondern
+        ausschliesslich als kryptografischer Hash beim Anmeldedienst hinterlegt.
+      </p>
+      <p>
+        <strong>Rechtsgrundlage:</strong> Art.&nbsp;6 Abs.&nbsp;1 lit.&nbsp;b DSGVO
+        (Erfüllung eines Nutzungsverhältnisses).
+      </p>
+
+      <h3>2.2 Inhalte, die du selbst einträgst</h3>
+      <p>
+        Standorte mit Bezeichnung, Koordinaten, Adresse, Notizen, Schlagwörtern,
+        Öffnungszeiten und Aufenthaltsdauer; Kategorien und Gruppen; Routen mit ihren
+        Stopps. Dazu Zeitstempel der Erstellung und Änderung sowie die Kennung des
+        Kontos, das den Eintrag angelegt hat.
+      </p>
+      <p>
+        Diese Inhalte können personenbezogene Daten Dritter enthalten, etwa Adressen von
+        Kundinnen und Kunden. Für deren Rechtmäßigkeit ist verantwortlich, wer sie
+        einträgt.
+      </p>
+      <p>
+        <strong>Rechtsgrundlage:</strong> Art.&nbsp;6 Abs.&nbsp;1 lit.&nbsp;b DSGVO.
+      </p>
+
+      <h3>2.3 Serverprotokolle</h3>
+      <p>
+        Beim Abruf der Anwendung fallen beim Hosting-Anbieter technische Protokolldaten an
+        (IP-Adresse, Zeitpunkt, aufgerufene Adresse, Browserkennung). Sie dienen dem Betrieb
+        und der Abwehr von Missbrauch.
+      </p>
+      <p>
+        <strong>Rechtsgrundlage:</strong> Art.&nbsp;6 Abs.&nbsp;1 lit.&nbsp;f DSGVO
+        (berechtigtes Interesse am sicheren Betrieb).
+      </p>
+
+      <h2>3. Speicherung im Browser</h2>
+      <p>
+        mapper setzt keine Cookies zu Werbe- oder Analysezwecken. Im lokalen Speicher des
+        Browsers werden abgelegt:
+      </p>
+      <ul>
+        <li>die Anmeldesitzung, damit du nicht bei jedem Aufruf neu anmelden musst;</li>
+        <li>Einstellungen der Oberfläche: gewähltes Farbthema, Kartenebene,
+          eingeschaltete Zusatzebenen (PLZ-Regionen, Verkehr);</li>
+        <li>der Verlauf der Adresssuche &mdash; höchstens acht zuletzt gewählte Adressen.
+          Dieser Verlauf verlässt den Browser nicht und wird nicht an den Server
+          übertragen. Er lässt sich in der Suchleiste einzeln oder vollständig löschen.</li>
+      </ul>
+      <p>
+        Alle genannten Einträge sind für den von dir ausdrücklich gewünschten Dienst
+        unbedingt erforderlich im Sinne von &sect;&nbsp;25 Abs.&nbsp;2 Nr.&nbsp;2 TDDDG;
+        eine Einwilligung ist dafür nicht erforderlich. Ein Einwilligungsbanner gibt es
+        deshalb nicht.
+      </p>
+
+      <h2>4. Wo die Daten liegen</h2>
+      <p>
+        Datenbank und Anmeldedienst laufen bei Supabase. Der Datenbankstandort ist die
+        Region <strong>eu-central-1 (Frankfurt am Main)</strong>. Betreiberin der Plattform
+        ist die Supabase, Inc. mit Sitz in den Vereinigten Staaten; ein Zugriff aus einem
+        Drittland ist daher nicht ausgeschlossen.
+      </p>
+      <p>
+        Die Auslieferung der Anwendung selbst erfolgt über <span class="platzhalter">Hosting-Anbieter eintragen: Vercel Inc. und/oder GitHub, Inc.</span>.
+      </p>
+      <div class="hinweis">
+        Vor der Veröffentlichung zu klären und hier zu ergänzen: Abschluss eines Vertrags
+        zur Auftragsverarbeitung (Art.&nbsp;28 DSGVO) mit jedem der genannten Anbieter sowie
+        die Grundlage für eine etwaige Übermittlung in die USA (Angemessenheitsbeschluss
+        EU&ndash;US Data Privacy Framework oder Standardvertragsklauseln).
+      </div>
+
+      <h2>5. Dienste Dritter, die während der Nutzung aufgerufen werden</h2>
+      <p>
+        Karte, Adresssuche, Routenberechnung und Verkehrsmeldungen stammen aus fremden
+        Quellen. Sobald die entsprechende Funktion genutzt wird, stellt dein Browser eine
+        Verbindung zum jeweiligen Anbieter her. Dabei wird diesem technisch bedingt deine
+        <strong>IP-Adresse</strong> bekannt, ausserdem die angefragten Kartenausschnitte
+        oder Suchbegriffe. Ein anderer Weg ist bei einer Karte, die im Browser gezeichnet
+        wird, nicht möglich.
+      </p>
+      <div class="tabelle-huelle">
+        <table>
+          <thead>
+            <tr><th>Wofür</th><th>Anbieter</th><th>Was übertragen wird</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Kartenkacheln<br />(Straßenkarte, Gelände)</td>
+              <td>OpenStreetMap Deutschland, betrieben vom FOSSGIS&nbsp;e.&nbsp;V. (Deutschland);
+                  OpenTopoMap (Deutschland)</td>
+              <td>IP-Adresse, angefragter Kartenausschnitt</td>
+            </tr>
+            <tr>
+              <td>Kartenkacheln<br />(Satellit, Ausweichquelle)</td>
+              <td>Esri Inc. (USA)</td>
+              <td>IP-Adresse, angefragter Kartenausschnitt</td>
+            </tr>
+            <tr>
+              <td>Adresssuche</td>
+              <td>OpenStreetMap Foundation, Nominatim (Vereinigtes Königreich);
+                  komoot GmbH, Photon (Deutschland)</td>
+              <td>Suchbegriff; die IP-Adresse nur dann, wenn die Anfrage nicht
+                  über den eigenen Server läuft &mdash; im Regelfall wird sie
+                  serverseitig gebündelt, sodass der Anbieter die IP-Adresse des
+                  Servers und nicht deine sieht</td>
+            </tr>
+            <tr>
+              <td>Routenberechnung</td>
+              <td><span class="platzhalter">Anbieter eintragen: OSRM-Projekt (Demoserver), eigener Server oder openrouteservice / HeiGIT gGmbH (Deutschland)</span></td>
+              <td>IP-Adresse, Start- und Zielkoordinaten der berechneten Strecke</td>
+            </tr>
+            <tr>
+              <td>Sperrungen und Baustellen</td>
+              <td>Autobahn GmbH des Bundes (Deutschland)</td>
+              <td>keine Daten von dir &mdash; die Meldungen werden serverseitig
+                  abgerufen und zwischengespeichert</td>
+            </tr>
+            <tr>
+              <td>Navigationsverweis</td>
+              <td>Google Ireland Ltd. / Google LLC</td>
+              <td>nur wenn du den Verweis &bdquo;Navigation&ldquo; anklickst: Start- und
+                  Zielkoordinaten, IP-Adresse. Es werden keine Namen übergeben,
+                  ausschliesslich Koordinaten.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        <strong>Rechtsgrundlage:</strong> Art.&nbsp;6 Abs.&nbsp;1 lit.&nbsp;b DSGVO, soweit
+        die Funktion zur Nutzung gehört, im Übrigen Art.&nbsp;6 Abs.&nbsp;1 lit.&nbsp;f
+        DSGVO.
+      </p>
+
+      <h2>6. Keine Auswertung, keine Weitergabe</h2>
+      <p>
+        Es sind keine Analyse-, Tracking- oder Werbeskripte eingebunden. Es findet keine
+        Profilbildung und keine automatisierte Entscheidungsfindung statt. Deine Inhalte
+        werden nicht verkauft, nicht ausgewertet und nicht an Dritte weitergegeben &mdash;
+        ausser an die in Abschnitt&nbsp;4 genannten Auftragsverarbeiter, die sie
+        ausschliesslich weisungsgebunden zum Betrieb verarbeiten.
+      </p>
+
+      <h2>7. Wer was sehen kann</h2>
+      <p>
+        Inhalte gehören zu einem Arbeitsbereich. Wer darin Mitglied ist, sieht sie
+        entsprechend seiner Rolle (Leser, Bearbeiter, Eigentümer). Einzelne Standorte und
+        Routen lassen sich zusätzlich einschränken: auf den ganzen Arbeitsbereich, auf
+        ausgewählte Personen oder auf dich allein. Durchgesetzt wird das in der Datenbank
+        selbst und nicht erst in der Oberfläche.
+      </p>
+
+      <h2>8. Speicherdauer</h2>
+      <p>
+        Konto- und Inhaltsdaten werden gespeichert, solange das Konto besteht. Wird es
+        gelöscht, werden die zugehörigen Daten gelöscht, soweit keine gesetzlichen
+        Aufbewahrungsfristen entgegenstehen. Serverprotokolle des Hosting-Anbieters werden
+        nach dessen Fristen gelöscht <span class="platzhalter">Frist eintragen, sobald mit dem Anbieter geklärt</span>.
+      </p>
+
+      <h2>9. Deine Rechte</h2>
+      <ul>
+        <li><strong>Auskunft</strong> über die zu dir gespeicherten Daten (Art.&nbsp;15 DSGVO)</li>
+        <li><strong>Berichtigung</strong> unrichtiger Daten (Art.&nbsp;16 DSGVO)</li>
+        <li><strong>Löschung</strong> (Art.&nbsp;17 DSGVO)</li>
+        <li><strong>Einschränkung der Verarbeitung</strong> (Art.&nbsp;18 DSGVO)</li>
+        <li><strong>Datenübertragbarkeit</strong> (Art.&nbsp;20 DSGVO). Deinen gesamten
+          Standortbestand kannst du jederzeit selbst als GeoJSON- oder CSV-Datei
+          herunterladen &mdash; in der Anwendung unter &bdquo;Import und Export&ldquo;.</li>
+        <li><strong>Widerspruch</strong> gegen Verarbeitungen auf Grundlage berechtigter
+          Interessen (Art.&nbsp;21 DSGVO)</li>
+        <li><strong>Beschwerde</strong> bei einer Aufsichtsbehörde (Art.&nbsp;77 DSGVO).
+          Zuständig ist die Behörde deines Wohnsitzes oder die des Verantwortlichen:
+          <span class="platzhalter">zuständige Aufsichtsbehörde eintragen</span>.</li>
+      </ul>
+      <p>
+        Für alles davon genügt eine Nachricht an <span class="platzhalter">adresse@beispiel.de</span>.
+      </p>
+
+      <h2>10. Sicherheit</h2>
+      <p>
+        Die Übertragung erfolgt ausschliesslich verschlüsselt (HTTPS). Der Zugriff auf
+        Inhalte wird in der Datenbank je Arbeitsbereich und Rolle geprüft, nicht erst in
+        der Oberfläche. Der Quelltext der Anwendung ist öffentlich einsehbar; die hier
+        beschriebenen Datenflüsse lassen sich darin nachlesen.
+      </p>
+
+      <h2>11. Änderungen</h2>
+      <p>
+        Diese Erklärung wird angepasst, wenn sich die Verarbeitung ändert. Maßgeblich ist
+        die jeweils hier veröffentlichte Fassung.
+      </p>
+      <footer>
+        <a href="./">Zurück zu mapper</a>
+        <a href="impressum.html">Impressum</a>
+        <a href="datenschutz.html">Datenschutz</a>
+      </footer>
+    </div>
+  </body>
+</html>
