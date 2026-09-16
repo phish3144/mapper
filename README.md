@@ -1,7 +1,10 @@
 # mapper
 
-**Live: https://mapper-jet.vercel.app**
-(Zweitausgabe auf GitHub Pages: https://phish3144.github.io/mapper/)
+**Live: https://mapper.sanctora.eu**
+
+Dahinter liegt Vercel; `https://mapper-jet.vercel.app` zeigt dasselbe und bleibt
+als technische Adresse bestehen. Auf GitHub Pages steht unter
+`https://phish3144.github.io/mapper/` eine Zweitausgabe.
 
 Web-Anwendung, um feste Standorte nach Kategorie auf einer Karte zu pflegen, sie
 frei zu gruppieren und daraus Routen zu planen — manuell wie regelbasiert.
@@ -10,9 +13,12 @@ frei zu gruppieren und daraus Routen zu planen — manuell wie regelbasiert.
 > 1. **Authentication → URL Configuration → Site URL** steht ab Werk auf
 >    `http://localhost:3000`. Sie bestimmt, wohin Bestätigungs- und
 >    Passwort-Links weiterleiten — deshalb landen sie sonst im Leeren.
->    Auf `https://mapper-jet.vercel.app` setzen und dieselbe Adresse unter
->    *Redirect URLs* eintragen (wer die Pages-Ausgabe ebenfalls nutzt, traegt
->    `https://phish3144.github.io/mapper/` zusaetzlich dort ein). (Die Bestätigung selbst funktioniert auch
+>    Auf `https://mapper.sanctora.eu` setzen. Unter *Redirect URLs* gehört
+>    jede Adresse einzeln eingetragen, unter der die Anwendung erreichbar ist —
+>    sonst schickt Supabase den Link an die Site URL statt dorthin, wo der Nutzer
+>    war: `https://mapper.sanctora.eu/**`, dazu `https://mapper-jet.vercel.app/**`
+>    und, wer die Pages-Ausgabe nutzt, `https://phish3144.github.io/mapper/**`.
+>    (Die Bestätigung selbst funktioniert auch
 >    ohne das: Supabase bestätigt das Konto, *bevor* es weiterleitet — nur die
 >    Landeseite danach ist tot.)
 > 2. Optional, aber empfohlen — siehe unten.
