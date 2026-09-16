@@ -64,11 +64,18 @@ function describeAuthError(error: unknown): string {
   return describeError(error)
 }
 
-export default function AuthScreen({ onZurueck }: { onZurueck?: () => void }) {
+export default function AuthScreen({
+  onZurueck,
+  startModus = 'signin',
+}: {
+  onZurueck?: () => void
+  /** Womit die Maske aufgeht. Die Startseite hat zwei Knoepfe und meint sie verschieden. */
+  startModus?: Mode
+}) {
   const signIn = useStore((s) => s.signIn)
   const signUp = useStore((s) => s.signUp)
 
-  const [mode, setMode] = useState<Mode>('signin')
+  const [mode, setMode] = useState<Mode>(startModus)
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

@@ -1,312 +1,504 @@
 /* ==========================================================================
    Oeffentliche Startseite.
-   Eigene Datei, weil sie mit der Anwendung nichts teilt ausser den Token:
-   die Anwendung ist ein Raster ueber die volle Hoehe, die Startseite ist ein
-   Dokument, das scrollt.
+
+   Eigene Datei UND eigene Token: die Anwendung ist ein helles wie dunkles
+   Werkzeugraster, die Startseite ist ein dunkles Dokument, das scrollt. Sie
+   gehoert sichtbar zur Familie von sanctora.eu und lotse.sanctora.eu -
+   dunkler Grund, Amber als einziger Akzent, Mono-Kleinlabels in Versalien -
+   hat darin aber ein eigenes Gesicht: scharfe Kanten und Hoehenlinien als
+   Motiv. Deshalb stehen hier --lp-Token und nicht die der Anwendung; ein
+   Themenwechsel in der App darf die Startseite nicht umfaerben.
+
+   Keine Fremdschrift. Der Systemschriftsatz kostet keine Anfrage an Dritte -
+   und genau das behauptet der Fuss der Seite.
    ========================================================================== */
 
 .lp {
+  --lp-grund: #050810;
+  --lp-flaeche: #0b1322;
+  --lp-flaeche-hoch: #101b2f;
+  --lp-tinte: #e3eaf6;
+  --lp-dunst: #78889f;
+  --lp-rand: #1b2841;
+  --lp-rand-zart: #111b2d;
+  --lp-kreide: #7fb4d4;
+  --lp-licht: #f2b544;
+  --lp-licht-tinte: #0a0f18;
+  --lp-warnung: #e5735b;
+
+  --lp-d1: clamp(2.1rem, 4.4vw, 3.5rem);
+  --lp-d2: clamp(1.8rem, 3.9vw, 3rem);
+  --lp-d3: clamp(1.15rem, 1.7vw, 1.4rem);
+  --lp-t: clamp(1rem, 1.05vw, 1.1rem);
+  --lp-klein: 0.9rem;
+  --lp-mini: 0.66rem;
+
+  --lp-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+  position: relative;
   min-height: 100vh;
-  background: var(--bg);
-  color: var(--text);
-  overflow-y: auto;
+  background: var(--lp-grund);
+  color: var(--lp-tinte);
+  font-size: var(--lp-t);
+  line-height: 1.6;
+  letter-spacing: -0.004em;
+  overflow-x: hidden;
+  color-scheme: dark;
 }
 
-/* --- Kopf ---------------------------------------------------------------- */
+.lp h1,
+.lp h2,
+.lp h3 {
+  margin: 0;
+  font-weight: 800;
+  letter-spacing: -0.034em;
+  line-height: 1.06;
+  text-wrap: balance;
+}
+.lp p { margin: 0; }
+.lp a { color: inherit; }
+.lp :focus-visible { outline: 2px solid var(--lp-licht); outline-offset: 3px; }
+.lp [id] { scroll-margin-top: 5rem; }
+
+/* --- Motiv ---------------------------------------------------------------
+   Hoehenlinien hinter allem. Fest stehend, nicht mitscrollend: der Text soll
+   sich ueber die Karte bewegen, nicht die Karte mit dem Text. */
+
+.lp-motiv {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url('/hoehenlinien.svg');
+  background-size: cover;
+  background-position: center;
+  opacity: 0.5;
+  /* Unten ausblenden, sonst konkurriert das Motiv mit dem Fuss. */
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 45%, transparent 82%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 45%, transparent 82%);
+}
+
+.lp-schicht { position: relative; z-index: 1; }
+
+/* --- Hülle ---------------------------------------------------------------- */
+
+.lp-huelle {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-inline: clamp(20px, 4.4vw, 56px);
+}
+
+.lp-etikett {
+  font-family: var(--lp-mono);
+  font-size: var(--lp-mini);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--lp-dunst);
+}
+
+.lp-dunst { color: var(--lp-dunst); }
+
+/* --- Kopf ----------------------------------------------------------------- */
 
 .lp-kopf {
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 10;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: rgba(5, 8, 16, 0.82);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--lp-rand);
+}
+@supports not (backdrop-filter: blur(10px)) {
+  .lp-kopf { background: var(--lp-grund); }
+}
+
+.lp-kopf-reihe {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: 12px 24px;
-  /* Leicht durchscheinend, damit beim Scrollen sichtbar bleibt, dass darunter
-     weitergeht - eine deckende Leiste sieht aus wie ein Seitenende. */
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
-  backdrop-filter: blur(8px);
-}
-@supports not (background: color-mix(in srgb, red 50%, blue)) {
-  .lp-kopf { background: var(--bg); }
+  gap: clamp(12px, 2.4vw, 28px);
+  padding-block: 0.7rem;
 }
 
 .lp-marke {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 800;
+  font-size: 1.04rem;
+  letter-spacing: -0.03em;
+  text-decoration: none;
+}
+
+.lp-kopf nav {
+  display: none;
+  gap: clamp(14px, 2vw, 26px);
+  font-size: var(--lp-klein);
+}
+@media (min-width: 860px) {
+  .lp-kopf nav { display: flex; }
+}
+.lp-kopf nav a {
+  text-decoration: none;
+  opacity: 0.68;
+  padding-block: 0.2rem;
+  border-bottom: 1px solid transparent;
+  transition: opacity 0.2s, border-color 0.2s;
+}
+.lp-kopf nav a:hover { opacity: 1; border-color: var(--lp-licht); }
+
+.lp-kopf-rechts {
+  margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-weight: 700;
-  font-size: 16px;
-  letter-spacing: -0.01em;
+  gap: 0.6rem;
 }
 
-.lp-kopf-nav {
-  display: flex;
+/* --- Knöpfe --------------------------------------------------------------- */
+
+.lp-knopf {
+  display: inline-flex;
   align-items: center;
-  gap: 18px;
+  gap: 0.5rem;
+  font: inherit;
+  font-weight: 600;
+  font-size: var(--lp-klein);
+  text-decoration: none;
+  cursor: pointer;
+  padding: 0.6rem 1.05rem;
+  white-space: nowrap;
+  border: 1px solid var(--lp-licht);
+  border-radius: 0;
+  background: var(--lp-licht);
+  color: var(--lp-licht-tinte);
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.22s,
+    background 0.22s, color 0.22s, border-color 0.22s;
+}
+.lp-knopf:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px -16px rgba(242, 181, 68, 0.85);
+}
+.lp-knopf.leise {
+  background: transparent;
+  color: var(--lp-tinte);
+  border-color: var(--lp-rand);
+}
+.lp-knopf.leise:hover {
+  border-color: var(--lp-licht);
+  color: var(--lp-licht);
+  box-shadow: none;
+}
+.lp-knopf.gross { padding: 0.8rem 1.4rem; font-size: 1rem; }
+.lp-knopf .pfeil { transition: transform 0.22s; }
+.lp-knopf:hover .pfeil { transform: translateX(3px); }
+
+.lp-knopfreihe { display: flex; flex-wrap: wrap; gap: 0.7rem; }
+
+/* Schmale Geraete: die Kopfzeile darf nicht ein Fuenftel des Bildschirms
+   einnehmen, nur weil zwei Knoepfe darin stehen. */
+@media (max-width: 620px) {
+  .lp-kopf-reihe { gap: 10px; padding-block: 0.55rem; }
+  .lp-marke { font-size: 0.98rem; }
+  .lp-knopf { padding: 0.45rem 0.75rem; font-size: 0.82rem; }
+  .lp-knopf.gross { padding: 0.7rem 1.1rem; font-size: 0.95rem; }
+  .lp-kopf-rechts { gap: 0.4rem; }
 }
 
-.lp-link {
-  font-size: 14px;
-  color: var(--text-muted);
-}
-.lp-link:hover { color: var(--text); }
+/* --- Bühne ---------------------------------------------------------------- */
 
-/* --- Held ---------------------------------------------------------------- */
-
-.lp-held {
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: 48px 24px 8px;
+.lp-buehne {
+  display: grid;
+  gap: clamp(1.1rem, 2.2vw, 1.6rem);
+  /* Der Kopf steht fest darueber - das Etikett muss darunter durchpassen. */
+  padding-block: clamp(8rem, 16vh, 10rem) clamp(2.5rem, 6vh, 4rem);
+  max-width: 54ch;
 }
 
-.lp-held h1 {
-  margin: 0;
-  /* Mitwachsend statt in Stufen: die Ueberschrift traegt zwei Zeilen, und die
-     sollen auf jedem Geraet zwei bleiben. */
-  font-size: clamp(30px, 5.2vw, 50px);
-  line-height: 1.12;
-  letter-spacing: -0.025em;
-  font-weight: 700;
-}
+.lp-buehne h1 { font-size: var(--lp-d1); }
 
 .lp-lead {
-  max-width: 62ch;
-  margin: 18px 0 0;
-  font-size: 17px;
-  line-height: 1.6;
-  color: var(--text-muted);
-}
-
-.lp-knoepfe {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 26px;
-}
-.lp-knopf-gross {
-  padding: 11px 20px;
-  font-size: 15px;
-  border-radius: var(--radius);
-}
-
-/* Der Hinweis auf die geschlossene Registrierung. Gedeckt und nicht rot: es
-   ist keine Stoerung, sondern eine Auskunft. */
-.lp-hinweis {
-  max-width: 62ch;
-  margin: 18px 0 0;
-  padding: 11px 14px;
-  font-size: 14px;
+  font-size: clamp(1.06rem, 1.5vw, 1.26rem);
   line-height: 1.55;
-  color: var(--text);
-  background: var(--warning-subtle);
-  border: 1px solid color-mix(in srgb, var(--warning) 35%, transparent);
-  border-radius: var(--radius);
+  color: var(--lp-dunst);
+  max-width: 46ch;
 }
-@supports not (background: color-mix(in srgb, red 50%, blue)) {
-  .lp-hinweis { border-color: var(--border-strong); }
-}
+.lp-lead b { color: var(--lp-tinte); font-weight: 600; }
 
-/* --- Bild ---------------------------------------------------------------- */
+/* --- Bild ----------------------------------------------------------------- */
 
-.lp-bild {
-  margin: 40px 0 0;
+.lp-fenster {
+  margin: 0 0 clamp(3rem, 8vh, 5.5rem);
+  border: 1px solid var(--lp-rand);
+  background: var(--lp-flaeche);
 }
-.lp-bild img {
+.lp-fenster-leiste {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.6rem;
+  padding: 0.45rem 0.7rem;
+  border-bottom: 1px solid var(--lp-rand-zart);
+  font-family: var(--lp-mono);
+  font-size: var(--lp-mini);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--lp-dunst);
+}
+/* Auf schmalen Geraeten traegt die Leiste nur noch ihren Namen - der
+   Zusatz wuerde dort ueber zwei Zeilen brechen und den Rahmen aufblaehen. */
+@media (max-width: 560px) {
+  .lp-fenster-leiste > :not(:first-child) { display: none; }
+}
+.lp-fenster img {
   display: block;
   width: 100%;
   height: auto;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  background: var(--bg-subtle);
 }
-.lp-bildtext {
-  margin-top: 10px;
-  font-size: 13px;
-  color: var(--text-faint);
+.lp-fenster figcaption {
+  padding: 0.7rem 0.85rem;
+  border-top: 1px solid var(--lp-rand-zart);
+  font-size: var(--lp-klein);
+  color: var(--lp-dunst);
 }
 
-/* --- Abschnitte ---------------------------------------------------------- */
+/* --- Kapitel -------------------------------------------------------------- */
 
-.lp-abschnitt {
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: 56px 24px;
-}
-/* Getoente Abschnitte spannen ueber die volle Breite, ihr Inhalt nicht. */
-.lp-abschnitt-getoent {
-  max-width: none;
-  background: var(--bg-panel);
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-}
-.lp-abschnitt-getoent > * {
-  max-width: 1040px;
-  margin-left: auto;
-  margin-right: auto;
+.lp section { padding-block: clamp(3.6rem, 9vh, 6.5rem); }
+
+.lp-getoent {
+  background: linear-gradient(180deg, rgba(11, 19, 34, 0.86), rgba(11, 19, 34, 0.5));
+  border-block: 1px solid var(--lp-rand-zart);
 }
 
-.lp-abschnitt h2 {
-  margin: 0;
-  font-size: clamp(22px, 3vw, 28px);
-  letter-spacing: -0.02em;
+.lp-kapitel {
+  display: grid;
+  gap: clamp(1.3rem, 3vw, 2.4rem);
+  align-items: start;
 }
-.lp-abschnitt-lead {
+@media (min-width: 1000px) {
+  .lp-kapitel { grid-template-columns: 11rem minmax(0, 1fr); }
+}
+
+.lp-rand { display: flex; flex-direction: column; gap: 0.4rem; }
+.lp-rand .nr {
+  font-family: var(--lp-mono);
+  font-size: var(--lp-mini);
+  letter-spacing: 0.2em;
+  color: var(--lp-licht);
+}
+.lp-rand .tt {
+  font-family: var(--lp-mono);
+  font-size: var(--lp-mini);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--lp-dunst);
+}
+
+.lp-aussage { font-size: var(--lp-d2); max-width: 22ch; }
+.lp-aussage em { font-style: normal; color: var(--lp-licht); }
+
+.lp-fliess {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
   max-width: 62ch;
-  margin: 12px 0 0;
-  font-size: 15px;
-  line-height: 1.6;
-  color: var(--text-muted);
+  color: var(--lp-dunst);
 }
+.lp-fliess b { color: var(--lp-tinte); font-weight: 600; }
 
-/* --- Arbeitstag ---------------------------------------------------------- */
+.lp-kapitel-koerper { display: grid; gap: clamp(1.4rem, 3vw, 2.2rem); }
+
+/* --- Schritte ------------------------------------------------------------- */
 
 .lp-schritte {
   list-style: none;
-  margin: 28px 0 0;
+  margin: 0;
   padding: 0;
   display: grid;
-  gap: 22px;
+  gap: 1px;
+  background: var(--lp-rand-zart);
+  border: 1px solid var(--lp-rand-zart);
 }
-.lp-schritte > li {
+@media (min-width: 720px) {
+  .lp-schritte { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1180px) {
+  .lp-schritte { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+.lp-schritte li {
+  background: var(--lp-grund);
+  padding: clamp(1rem, 2.2vw, 1.4rem);
   display: flex;
-  gap: 16px;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: 0.5rem;
 }
-.lp-nummer {
-  flex: 0 0 auto;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--accent);
-  background: var(--accent-subtle);
+.lp-schritte .nr {
+  font-family: var(--lp-mono);
+  font-size: var(--lp-mini);
+  letter-spacing: 0.2em;
+  color: var(--lp-licht);
 }
-.lp-schritte h3 {
-  margin: 4px 0 4px;
-  font-size: 16px;
-}
-.lp-schritte p {
-  margin: 0;
-  max-width: 68ch;
-  font-size: 15px;
-  line-height: 1.6;
-  color: var(--text-muted);
-}
+.lp-schritte h3 { font-size: var(--lp-d3); }
+.lp-schritte p { color: var(--lp-dunst); font-size: var(--lp-klein); line-height: 1.55; }
 
-/* --- Herkunft und Fragen ------------------------------------------------- */
+/* --- Können / Grenzen ----------------------------------------------------- */
 
-.lp-herkunft,
-.lp-fragen {
-  margin: 26px 0 0;
-  display: grid;
-  gap: 20px;
-}
-.lp-herkunft > div,
-.lp-fragen > div {
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
-}
-.lp-herkunft dt,
-.lp-fragen dt {
-  font-weight: 700;
-  font-size: 15px;
-}
-.lp-herkunft dd,
-.lp-fragen dd {
-  margin: 5px 0 0;
-  max-width: 74ch;
-  font-size: 15px;
-  line-height: 1.6;
-  color: var(--text-muted);
-}
-/* Offene Stellen erkennbar, aber nicht schreiend: sie sind ehrlich, nicht
-   kaputt. */
-.lp-offen { color: var(--text-faint); }
-
-/* --- Grenzen ------------------------------------------------------------- */
-
-.lp-grenzen {
+.lp-karten {
   list-style: none;
-  margin: 26px 0 0;
+  margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 16px;
+  gap: clamp(0.8rem, 1.8vw, 1.1rem);
 }
-.lp-grenzen > li {
-  padding: 16px 18px;
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+@media (min-width: 700px) {
+  .lp-karten { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-.lp-abschnitt-getoent .lp-grenzen > li { background: var(--bg); }
-.lp-grenzen h3 {
-  margin: 0 0 6px;
-  font-size: 15px;
+.lp-karte {
+  border: 1px solid var(--lp-rand);
+  background: var(--lp-flaeche);
+  padding: clamp(1rem, 2.2vw, 1.35rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  transition: border-color 0.3s, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.lp-grenzen p {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.55;
-  color: var(--text-muted);
+.lp-karte:hover { border-color: var(--lp-rand); transform: translateY(-3px); }
+.lp-karte h3 { font-size: 1.06rem; letter-spacing: -0.02em; }
+.lp-karte p { color: var(--lp-dunst); font-size: var(--lp-klein); line-height: 1.55; }
+.lp-karte .marke {
+  font-family: var(--lp-mono);
+  font-size: var(--lp-mini);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--lp-kreide);
 }
 
-/* --- Baustellenhinweis --------------------------------------------------- */
+/* Die Grenzen sind bewusst anders gezeichnet: gestrichelt, ohne Fläche.
+   Sie sollen nicht wie ein weiteres Verkaufsargument aussehen. */
+.lp-grenze {
+  border: 1px dashed var(--lp-rand);
+  background: transparent;
+}
+.lp-grenze h3 { color: var(--lp-warnung); }
+.lp-grenze:hover { transform: none; }
+
+/* --- Herkunft ------------------------------------------------------------- */
+
+.lp-herkunft { margin: 0; display: grid; gap: 0; border-top: 1px solid var(--lp-rand-zart); }
+.lp-herkunft > div {
+  display: grid;
+  gap: 0.3rem 1.5rem;
+  padding-block: clamp(0.9rem, 2vw, 1.15rem);
+  border-bottom: 1px solid var(--lp-rand-zart);
+}
+@media (min-width: 760px) {
+  .lp-herkunft > div { grid-template-columns: 11rem minmax(0, 1fr); }
+}
+.lp-herkunft dt {
+  font-family: var(--lp-mono);
+  font-size: var(--lp-mini);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--lp-kreide);
+  padding-top: 0.25rem;
+}
+.lp-herkunft dd { margin: 0; color: var(--lp-dunst); max-width: 62ch; }
+
+/* --- Preis ---------------------------------------------------------------- */
+
+.lp-preis {
+  border: 1px solid var(--lp-licht);
+  background: linear-gradient(150deg, rgba(242, 181, 68, 0.1), transparent 60%);
+  padding: clamp(1.3rem, 3vw, 2rem);
+  display: grid;
+  gap: 0.9rem;
+  justify-items: start;
+}
+.lp-preis .zahl { font-size: var(--lp-d2); font-weight: 800; letter-spacing: -0.04em; }
+.lp-preis p { color: var(--lp-dunst); max-width: 52ch; }
+
+/* --- Fragen --------------------------------------------------------------- */
+
+.lp-fragen { margin: 0; display: grid; gap: 0; }
+.lp-fragen > div {
+  padding-block: clamp(0.9rem, 2vw, 1.2rem);
+  border-bottom: 1px solid var(--lp-rand-zart);
+}
+.lp-fragen > div:first-child { border-top: 1px solid var(--lp-rand-zart); }
+.lp-fragen dt { font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.3rem; }
+.lp-fragen dd { margin: 0; color: var(--lp-dunst); max-width: 64ch; }
+.lp-fragen a { color: var(--lp-licht); }
+
+/* --- Abschluss ------------------------------------------------------------ */
+
+.lp-abschluss { display: grid; gap: 1.2rem; justify-items: start; max-width: 40ch; }
+.lp-abschluss h2 { font-size: var(--lp-d2); }
+
+/* --- Hinweise ------------------------------------------------------------- */
 
 .lp-baustelle {
-  padding: 14px 16px;
-  font-size: 14px;
-  line-height: 1.55;
-  background: var(--warning-subtle);
-  border: 1px dashed var(--warning);
-  border-radius: var(--radius);
+  border: 1px solid var(--lp-warnung);
+  background: rgba(229, 115, 91, 0.08);
+  padding: clamp(0.9rem, 2vw, 1.2rem);
+  font-size: var(--lp-klein);
+  color: var(--lp-tinte);
+  max-width: 68ch;
 }
 .lp-baustelle code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 13px;
+  font-family: var(--lp-mono);
+  font-size: 0.85em;
+  color: var(--lp-licht);
 }
 
-/* --- Fuss ---------------------------------------------------------------- */
+.lp-offen { color: var(--lp-warnung); font-style: normal; }
+
+/* --- Fuß ------------------------------------------------------------------ */
 
 .lp-fuss {
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: 28px 24px 44px;
+  border-top: 1px solid var(--lp-rand);
+  background: var(--lp-grund);
+  padding-block: clamp(2.2rem, 5vh, 3.4rem);
+  font-size: var(--lp-klein);
+}
+.lp-fuss-raster { display: grid; gap: clamp(1.4rem, 3vw, 2.4rem); }
+@media (min-width: 820px) {
+  .lp-fuss-raster { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr); }
+}
+.lp-fuss h2 {
+  font-family: var(--lp-mono);
+  font-size: var(--lp-mini);
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--lp-dunst);
+  margin-bottom: 0.7rem;
+}
+.lp-fuss p { color: var(--lp-dunst); max-width: 44ch; margin-top: 0.7rem; }
+.lp-fuss ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.45rem; }
+.lp-fuss a { text-decoration: none; opacity: 0.8; }
+.lp-fuss a:hover { opacity: 1; color: var(--lp-licht); }
+.lp-fuss-schluss {
+  margin-top: clamp(1.6rem, 4vh, 2.4rem);
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--lp-rand-zart);
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 10px 20px;
-  border-top: 1px solid var(--border);
-  font-size: 13px;
-  color: var(--text-muted);
-}
-.lp-fuss-nav {
-  display: flex;
-  gap: 16px;
-}
-.lp-fuss-quellen {
-  flex: 1 1 100%;
-  color: var(--text-faint);
+  gap: 0.4rem 1.4rem;
+  font-family: var(--lp-mono);
+  font-size: var(--lp-mini);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lp-dunst);
 }
 
-/* --- Schmale Geraete ----------------------------------------------------- */
+/* --- Bewegung ------------------------------------------------------------- */
 
-@media (max-width: 620px) {
-  .lp-kopf { padding: 10px 16px; }
-  /* Die Ankerverweise fallen weg: auf 360 px draengen sie den einzigen
-     Knopf, auf den es ankommt, aus der Zeile. */
-  .lp-kopf-nav .lp-link { display: none; }
-  .lp-held { padding: 32px 16px 4px; }
-  .lp-abschnitt { padding: 40px 16px; }
-  .lp-fuss { padding: 24px 16px 36px; }
-  .lp-knopf-gross { flex: 1 1 auto; }
+@media (prefers-reduced-motion: reduce) {
+  .lp *,
+  .lp *::before,
+  .lp *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }

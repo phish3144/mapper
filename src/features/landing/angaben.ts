@@ -23,12 +23,15 @@ export interface Angaben {
   /**
    * Steht die Registrierung offen?
    *
-   * ACHTUNG, bewusst auf false: im Supabase-Projekt ist die
-   * E-Mail-Bestaetigung aktiv (mailer_autoconfirm = false), der eingebaute
-   * Mailversand des Free Tiers stellt die Bestaetigungsmail aber in aller
-   * Regel nicht zu. Wer sich heute registriert, kommt nicht hinein. Erst
-   * umstellen, wenn dieser Weg nachweislich durchlaeuft - sonst schickt die
-   * Startseite Leute in eine Sackgasse.
+   * Haengt an EINER Einstellung im Supabase-Projekt: Authentication -> Sign In
+   * / Providers -> Email -> "Confirm email". Ist sie an, verlangt Supabase eine
+   * Bestaetigungsmail, und die stellt der eingebaute Mailversand des Free Tiers
+   * in aller Regel nicht zu - wer sich registriert, kommt dann nicht hinein.
+   * Nachpruefbar ohne Dashboard: /auth/v1/settings des Projekts meldet dann
+   * `mailer_autoconfirm: false`.
+   *
+   * Steht das hier auf false, zeigt die Startseite keinen Knopf zum Anlegen,
+   * sondern sagt, dass Konten von Hand entstehen. Kein Knopf ins Leere.
    */
   registrierungOffen: boolean
   /** Quelltext. Leer blendet den Verweis aus. */
@@ -38,8 +41,8 @@ export interface Angaben {
 export const ANGABEN: Angaben = {
   betreiber: '',
   kontakt: '',
-  preis: '',
-  registrierungOffen: false,
+  preis: 'Kostenlos.',
+  registrierungOffen: true,
   quelltext: 'https://github.com/phish3144/mapper',
 }
 

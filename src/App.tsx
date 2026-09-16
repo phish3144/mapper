@@ -46,6 +46,8 @@ export default function App() {
   const [vonAuthLink] = useState(kommtVonAuthLink)
   /** Anmeldemaske statt Startseite - von Hand geoeffnet oder per E-Mail-Link. */
   const [zeigeAnmeldung, setZeigeAnmeldung] = useState(vonAuthLink)
+  /** Mit welchem Reiter die Maske aufgeht - die Startseite hat zwei Knoepfe. */
+  const [anmeldeModus, setAnmeldeModus] = useState<'signin' | 'signup'>('signin')
 
   useEffect(() => {
     void init()
@@ -63,9 +65,17 @@ export default function App() {
     return (
       <>
         {zeigeAnmeldung ? (
-          <AuthScreen onZurueck={vonAuthLink ? undefined : () => setZeigeAnmeldung(false)} />
+          <AuthScreen
+            startModus={anmeldeModus}
+            onZurueck={vonAuthLink ? undefined : () => setZeigeAnmeldung(false)}
+          />
         ) : (
-          <LandingPage onAnmelden={() => setZeigeAnmeldung(true)} />
+          <LandingPage
+            onAnmelden={(registrieren) => {
+              setAnmeldeModus(registrieren ? 'signup' : 'signin')
+              setZeigeAnmeldung(true)
+            }}
+          />
         )}
         <Notices />
       </>
