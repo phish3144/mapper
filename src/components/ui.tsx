@@ -447,7 +447,7 @@ export function Tabs<T extends string>({
   active,
   onChange,
 }: {
-  tabs: readonly { id: T; label: string }[]
+  tabs: readonly { id: T; label: ReactNode }[]
   active: T
   onChange: (id: T) => void
 }) {

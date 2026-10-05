@@ -493,7 +493,8 @@ export default function AddressSearchBar() {
         // genau auf dem eigenen Loeschknopf.
         type="text"
         value={query}
-        placeholder="Adresse suchen …  ( / )"
+        placeholder="Adresse suchen …"
+        title="Tastenkürzel: / oder Strg+K"
         aria-label="Adresse suchen"
         aria-keyshortcuts="/ Control+K"
         autoComplete="off"

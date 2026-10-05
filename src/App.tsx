@@ -10,6 +10,7 @@ import RoutesPanel from '@/features/routes/RoutesPanel'
 import MapView from '@/features/map/MapView'
 import LandingPage from '@/features/landing/LandingPage'
 import { useSprungziel } from '@/features/shell/useSprungziel'
+import BottomNav from '@/features/shell/BottomNav'
 import RouteFromDialog from '@/features/search/RouteFromDialog'
 import WorkspaceGate from '@/features/workspace/WorkspaceGate'
 
@@ -105,6 +106,8 @@ export default function App() {
       ) : (
         <WorkspaceGate />
       )}
+      {/* Dritte Zeile des Rasters, nur am Telefon sichtbar. */}
+      {currentWorkspaceId && <BottomNav />}
       {/* Ausserhalb der Karte: die Karte bildet einen eigenen Stapelkontext,
           ein Dialog darin laege unter ihren Ebenen. */}
       <RouteFromDialog />

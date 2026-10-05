@@ -5,6 +5,7 @@
  * darin: die Leaflet-Ebenen reichen bis z-index 700 und wuerden das Overlay
  * (400) sonst verdecken.
  */
+import { useState } from 'react'
 import { Button, Spinner } from '@/components/ui'
 import { useUi } from '@/lib/uiStore'
 import { standZeit } from '@/lib/traffic'
@@ -151,6 +152,9 @@ export default function MapControls({
   const focusBounds = useUi((s) => s.focusBounds)
 
   const visible = useVisibleLocations()
+  // Am Telefon klappt die Ebenenwahl aus einem Knopf auf, statt ein Drittel
+  // der Karte dauerhaft zu belegen.
+  const [ebenenOffen, setEbenenOffen] = useState(false)
 
   function chooseLayer(id: BaseLayerId) {
     localStorage.setItem(BASE_LAYER_KEY, id)
@@ -167,8 +171,8 @@ export default function MapControls({
     onTrafficChange(on)
   }
 
-  return (
-    <div className="map-overlay top-right">
+  const ebenen = (
+    <>
       <div className="panel row" style={{ padding: 3, gap: 3 }} role="group" aria-label="Kartenebene">
         {BASE_LAYER_ORDER.map((id) => {
           const layer = BASE_LAYERS[id]
@@ -213,7 +217,7 @@ export default function MapControls({
         {trafficOn && <VerkehrsStatus traffic={traffic} />}
       </div>
 
-      <div className="panel" style={{ padding: 3 }}>
+      <div className="panel desktop-only" style={{ padding: 3 }}>
         {/* Kein aria-label: der sichtbare Text ist der zugaengliche Name, sonst
             koennen Sprachsteuerungen die Schaltflaeche nicht ansprechen. Die
             Erlaeuterung gehoert in den Titel. */}
@@ -227,6 +231,47 @@ export default function MapControls({
         </Button>
       </div>
 
+    </>
+  )
+
+  return (
+    <div className="map-overlay top-right">
+      {/* Am Rechner wie gehabt: alles sichtbar nebeneinander. */}
+      <div className="desktop-only" style={{ display: 'contents' }}>
+        {ebenen}
+      </div>
+
+      {/* Am Telefon zwei runde Knoepfe; die Ebenenwahl klappt darunter auf. */}
+      <div className="mobile-only col" style={{ gap: 8, alignItems: 'flex-end' }}>
+        <button
+          type="button"
+          className="map-fab"
+          aria-expanded={ebenenOffen}
+          aria-label="Kartenebenen, PLZ-Regionen und Verkehr"
+          onClick={() => setEbenenOffen((v) => !v)}
+        >
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" aria-hidden="true">
+            <path d="m12 3 9 5-9 5-9-5 9-5z" />
+            <path d="m3 13 9 5 9-5" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          className="map-fab"
+          disabled={visible.length === 0}
+          aria-label="Alle sichtbaren Standorte ins Bild holen"
+          onClick={() => focusBounds(visible.map((l) => ({ lat: l.lat, lng: l.lng })))}
+        >
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
+            <path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />
+          </svg>
+        </button>
+        {ebenenOffen && (
+          <div className="col" style={{ gap: 6, alignItems: 'flex-end' }}>
+            {ebenen}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

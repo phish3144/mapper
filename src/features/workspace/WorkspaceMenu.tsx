@@ -106,7 +106,7 @@ export default function WorkspaceMenu() {
         {current ? (
           <>
             <Dot color={current.color} />
-            <span className="truncate" style={{ maxWidth: 170 }}>
+            <span className="truncate menu-name" style={{ maxWidth: 170 }}>
               {current.name}
             </span>
           </>

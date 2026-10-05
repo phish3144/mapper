@@ -147,13 +147,19 @@ export default function UserMenu() {
         aria-haspopup="true"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
+        aria-label={`Konto: ${label}`}
         onClick={() => setOpen((v) => !v)}
       >
-        <span className="truncate" style={{ maxWidth: 150 }}>
+        <span className="truncate wide-only" style={{ maxWidth: 150 }}>
           {label}
         </span>
-        <span aria-hidden="true" style={{ fontSize: 10 }}>
+        <span className="wide-only" aria-hidden="true" style={{ fontSize: 10 }}>
           &#9662;
+        </span>
+        {/* Am Telefon nur ein Kreis mit dem Anfangsbuchstaben - der Name
+            nahm der Suche die Breite. */}
+        <span className="avatar compact-only" aria-hidden="true">
+          {label.trim().charAt(0).toUpperCase() || '?'}
         </span>
       </button>
 

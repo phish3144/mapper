@@ -6,9 +6,18 @@ import WorkspaceMenu from '@/features/workspace/WorkspaceMenu'
 import UserMenu from '@/features/workspace/UserMenu'
 import AddressSearchBar from '@/features/search/AddressSearchBar'
 
+// Auf dem Tablet im Hochformat fehlt der Platz fuer den langen Reiter; dann
+// steht dort nur "Gruppen" wie in der Navigationsleiste des Telefons.
 const TABS = [
   { id: 'locations' as const, label: 'Standorte' },
-  { id: 'catalog' as const, label: 'Kategorien & Gruppen' },
+  {
+    id: 'catalog' as const,
+    label: (
+      <>
+        <span className="wide-only">Kategorien &amp; </span>Gruppen
+      </>
+    ),
+  },
   { id: 'routes' as const, label: 'Routen' },
 ]
 
@@ -23,13 +32,14 @@ export default function Header() {
     <header className="app-header">
       <span className="app-brand">
         <BrandMark size={18} />
-        mapper
+        <span className="wide-only">mapper</span>
       </span>
 
       <WorkspaceMenu />
 
+      {/* Am Telefon stehen die Reiter unten in der Navigationsleiste. */}
       {hasWorkspace && (
-        <div style={{ marginLeft: 8 }}>
+        <div className="desktop-only" style={{ marginLeft: 8 }}>
           <Tabs tabs={TABS} active={tab} onChange={setTab} />
         </div>
       )}
@@ -38,10 +48,11 @@ export default function Header() {
           Reiter erreichbar, nicht nur in der Standortliste. */}
       {hasWorkspace && <AddressSearchBar />}
 
-      <div className="grow" />
+      <div className="grow desktop-only" />
 
       {hasWorkspace && (
         <IconButton
+          className="desktop-only"
           label={sidebarOpen ? 'Seitenleiste ausblenden' : 'Seitenleiste einblenden'}
           onClick={() => setSidebarOpen(!sidebarOpen)}
         >

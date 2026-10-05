@@ -17,6 +17,7 @@ import { formatLatLng } from '@/lib/geo'
 import { useCanEdit } from '@/lib/store'
 import { useUi } from '@/lib/uiStore'
 import { navigationUrlTo } from '@/lib/navigation'
+import { popupOptionen } from '@/features/map/popupOptionen'
 
 /** Hof um die Adresse, damit die Nadel nicht allein im Kartenbild steht. */
 const HALO_RADIUS_M = 250
@@ -145,7 +146,7 @@ export default function SearchMarker() {
         title={label}
         zIndexOffset={SEARCH_Z_OFFSET}
       >
-        <Popup>
+        <Popup {...popupOptionen()}>
           <div className="col" style={{ gap: 5 }}>
             <strong>{label}</strong>
             <span className="small muted">{coords}</span>

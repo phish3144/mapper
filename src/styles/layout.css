@@ -249,6 +249,11 @@
 .stat-value { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .stat-label { font-size: 11px; color: var(--text-muted); }
 
+/* Am Telefon zwei mal zwei: vier Spalten liessen "1.081,7 km" umbrechen. */
+@media (max-width: 760px) {
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 .chips { display: flex; flex-wrap: wrap; gap: 5px; }
 .chip {
   display: inline-flex; align-items: center; gap: 5px;
@@ -294,11 +299,81 @@
   .app-body { grid-template-columns: 1fr; grid-template-rows: 1fr; }
   .app-body .sidebar { border-right: none; }
   /* Auf kleinen Geraeten sind Liste und Karte nicht gleichzeitig sinnvoll —
-     es wird umgeschaltet statt nebeneinander gestellt. */
+     es wird umgeschaltet statt nebeneinander gestellt. Umgeschaltet wird
+     ueber die Navigationsleiste unten. */
   .app-body:not(.is-collapsed) .map-area { display: none; }
   .app-body.is-collapsed { grid-template-columns: 1fr; }
   .app-body.is-collapsed .map-area { display: block; }
 }
+
+/* --- Aufbau auf dem Telefon ----------------------------------------------
+   Oben nur, was immer gebraucht wird: Arbeitsbereich, Suche, Konto. Die
+   Reiter wandern nach unten in eine Navigationsleiste, wo der Daumen ist -
+   in der Kopfzeile passten sie nie neben die Suche. */
+
+.mobile-only { display: none !important; }
+
+/* Tablet im Hochformat (iPad Mini: 768 px) behaelt Liste neben Karte, aber
+   die volle Kopfzeile passt nicht: ohne Markennamen, mit kurzem Reiter und
+   dem Konto als Kreis. */
+.compact-only { display: none !important; }
+
+@media (max-width: 1000px) {
+  .wide-only { display: none !important; }
+  .compact-only { display: inline-flex !important; }
+}
+
+.app-header .tab { white-space: nowrap; }
+
+/* Selbst wenn die Kopfzeile einmal ueberlaeuft, darf sie die Spalte nicht
+   verbreitern - sonst schiebt sie die Karte samt Bedienelementen aus dem
+   Bild. */
+.app { grid-template-columns: minmax(0, 1fr); }
+
+@media (max-width: 760px) {
+  .desktop-only { display: none !important; }
+  .mobile-only { display: flex !important; }
+
+  .app {
+    height: 100%;
+    height: 100dvh;
+    grid-template-rows: calc(var(--header-height) + env(safe-area-inset-top)) 1fr auto;
+  }
+  .app-header {
+    gap: 6px;
+    padding: env(safe-area-inset-top) max(8px, env(safe-area-inset-right)) 0 max(8px, env(safe-area-inset-left));
+  }
+  .app-brand { display: none; }
+  .menu-name { max-width: 88px !important; }
+}
+
+.bottom-nav {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  min-height: var(--bottom-nav-height);
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border);
+  z-index: 500;
+}
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.bottom-nav-item svg { width: 22px; height: 22px; }
+.bottom-nav-item.is-active { color: var(--accent); }
+.bottom-nav-item.is-active svg { stroke-width: 2.3; }
 
 /* --- Symbolauswahl ------------------------------------------------------- */
 
@@ -477,8 +552,21 @@
 }
 
 @media (max-width: 760px) {
-  .addr-search { flex-basis: 100%; max-width: none; }
-  .addr-pop { position: fixed; left: 8px; right: 8px; top: calc(var(--header-height) + 6px); }
+  /* Die Suche nimmt, was in der Kopfzeile uebrig ist - nicht mehr. Mit
+     flex-basis 100% schob sie frueher die Kopfzeile auf 800 px Breite, und
+     beim Antippen rutschte die ganze Seite seitlich weg. */
+  .addr-search { flex: 1 1 auto; min-width: 0; max-width: none; }
+  /* Die Vorschlagsliste ueber die volle Breite statt nur unter dem schmalen
+     Feld, und nie unter die Navigationsleiste. */
+  .addr-pop {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    top: calc(var(--header-height) + env(safe-area-inset-top) + 6px);
+  }
+  .addr-pop-scroll {
+    max-height: calc(100dvh - var(--header-height) - var(--bottom-nav-height) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 120px);
+  }
 }
 
 /* --- Team-Schnellfilter auf der Karte ------------------------------------
@@ -523,3 +611,72 @@
 /* Leaflet faerbt jeden Link in der Karte blau - auch einen, der wie ein
    Knopf aussehen soll. */
 .leaflet-container a.btn { color: var(--text); }
+
+/* Kontokreis in der Kopfzeile (nur Telefon). */
+.avatar {
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-on-accent);
+  background: var(--accent);
+}
+
+/* --- Karte auf dem Telefon ------------------------------------------------ */
+
+.map-fab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  color: var(--text);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+.map-fab[aria-expanded='true'] { color: var(--text-on-accent); background: var(--accent); border-color: var(--accent); }
+.map-fab:disabled { opacity: 0.5; }
+
+/* Mit dem Finger zoomt man mit zwei Fingern - die Plus/Minus-Knoepfe
+   belegen dann nur die Ecke, in der die Team-Leiste stehen will. */
+@media (pointer: coarse) {
+  .leaflet-control-zoom { display: none; }
+}
+
+@media (max-width: 760px) {
+  /* Die Navigationsleiste ist ein Raster aus vier gleichen Feldern; die
+     allgemeine Regel fuer .mobile-only wuerde sie zur Flexzeile machen. */
+  .bottom-nav.mobile-only { display: grid !important; }
+
+  /* Team-Leiste ueber die ganze Breite, seitlich scrollbar. */
+  .map-overlay.bottom-center {
+    left: 8px;
+    right: 8px;
+    transform: none;
+    max-width: none;
+    justify-content: center;
+  }
+
+  /* Die Seitenleiste scrollt als Ganzes. Am Rechner bleibt der Kopf stehen
+     und nur die Liste scrollt; am Telefon frass der stehende Kopf fast den
+     ganzen Bildschirm, und die Liste darunter war ein Streifen. */
+  .app-body .sidebar { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .app-body .sidebar-scroll { flex: none; overflow: visible; min-height: auto; }
+  .app-body .sidebar-foot { position: sticky; bottom: 0; z-index: 2; }
+
+  /* Breite kommt aus popupOptionen(); hier nur die Untergrenze aus global entfernen. */
+  .leaflet-popup-content { min-width: 0; }
+}
+
+/* Hier und nicht in global.css: .chip steht in dieser Datei, und die wird
+   nach global.css geladen - dort ueberschriebe sie die Fingergroesse wieder. */
+@media (pointer: coarse) {
+  .chip { min-height: 34px; padding-inline: 12px; }
+  .team-chip { min-height: 34px; padding-inline: 12px; font-size: 13px; }
+}

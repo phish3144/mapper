@@ -164,6 +164,26 @@ let focusNonce = 0
 /** Der Typ des Speichers - die Tests laden ihn erst nach einem Ersatz fuer localStorage. */
 export type UiStore = typeof useUi
 
+/** Gleiche Grenze wie in layout.css: darunter teilen sich Liste und Karte den Bildschirm nicht. */
+export const SCHMAL_MEDIA = '(max-width: 760px)'
+
+/**
+ * Ist der Bildschirm so schmal, dass Seitenleiste und Karte sich abwechseln?
+ * Ausserhalb eines Browsers (Tests) nie.
+ */
+export function istSchmal(): boolean {
+  return typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia(SCHMAL_MEDIA).matches
+    : false
+}
+
+/**
+ * Wer etwas auf der Karte zeigen will, muss sie auch sehen. Am Telefon
+ * verdeckt die offene Seitenleiste die Karte - also wird sie dann
+ * geschlossen. Am Rechner bleibt sie, wie sie ist.
+ */
+const zurKarte = (): { sidebarOpen: false } | Record<string, never> => (istSchmal() ? { sidebarOpen: false } : {})
+
 export const useUi = create<UiState>()((set) => ({
   tab: 'locations',
   selectedLocationId: null,
@@ -205,7 +225,7 @@ export const useUi = create<UiState>()((set) => ({
       routePreview: point === null && s.routePreview?.belongsToSearch ? null : s.routePreview,
     })),
   setSearchWithinFilter: (on) => set({ searchWithinFilter: on }),
-  setRoutePreview: (preview) => set({ routePreview: preview }),
+  setRoutePreview: (preview) => set(preview ? { routePreview: preview, ...zurKarte() } : { routePreview: null }),
   setRouteOrigin: (origin) => set({ routeOrigin: origin }),
   // In einem Zug: Strecke setzen, Zielwahl schliessen, Ausschnitt anpassen.
   // Getrennt aufgerufen wurde das Anpassen des Ausschnitts schon einmal
@@ -215,9 +235,10 @@ export const useUi = create<UiState>()((set) => ({
       routePreview: preview,
       routeOrigin: null,
       focus: { nonce: ++focusNonce, points: [preview.from, preview.to] },
+      ...zurKarte(),
     }),
-  focusPoint: (point, zoom) => set({ focus: { nonce: ++focusNonce, point, zoom } }),
-  focusBounds: (points) => set({ focus: { nonce: ++focusNonce, points } }),
+  focusPoint: (point, zoom) => set({ focus: { nonce: ++focusNonce, point, zoom }, ...zurKarte() }),
+  focusBounds: (points) => set({ focus: { nonce: ++focusNonce, points }, ...zurKarte() }),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
   setTheme: (theme) => {
     localStorage.setItem(THEME_KEY, theme)

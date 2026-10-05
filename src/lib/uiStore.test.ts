@@ -5,7 +5,7 @@
  * uebersieht: das Leeren der Adresssuche raeumt die Strecke weg - aber nur die
  * Strecke, die zur Suche gehoert.
  */
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import type { RoutePreview, UiStore } from './uiStore'
 
 /**
@@ -80,5 +80,51 @@ describe('setSearchPoint', () => {
     useUi.setState({ routePreview: strecke({ belongsToSearch: true }) })
     useUi.getState().setSearchPoint({ lat: 50.1, lng: 8.7, label: 'Frankfurt' })
     expect(useUi.getState().routePreview).not.toBeNull()
+  })
+})
+
+/**
+ * Am Telefon verdeckt die Seitenleiste die Karte ganz. Wer dort einen
+ * Standort, einen Stopp oder eine Strecke antippt, will das Ergebnis sehen -
+ * also geht es zur Karte. Daneben (Tablet, Rechner) bleibt die Liste offen.
+ */
+describe('Sprung zur Karte am Telefon', () => {
+  function bildschirm(schmal: boolean) {
+    ;(globalThis as { window?: unknown }).window = {
+      matchMedia: (q: string) => ({ matches: schmal && q.includes('max-width') }),
+    }
+  }
+
+  afterEach(() => {
+    delete (globalThis as { window?: unknown }).window
+  })
+
+  it('schließt die Seitenleiste auf schmalem Bildschirm', () => {
+    bildschirm(true)
+    for (const tu of [
+      () => useUi.getState().focusPoint(BERLIN),
+      () => useUi.getState().focusBounds([HANNOVER, BERLIN]),
+      () => useUi.getState().starteRoute(strecke()),
+      () => useUi.getState().setRoutePreview(strecke()),
+    ]) {
+      useUi.setState({ sidebarOpen: true })
+      tu()
+      expect(useUi.getState().sidebarOpen).toBe(false)
+    }
+  })
+
+  it('lässt sie daneben offen', () => {
+    bildschirm(false)
+    useUi.setState({ sidebarOpen: true })
+    useUi.getState().focusPoint(BERLIN)
+    useUi.getState().starteRoute(strecke())
+    expect(useUi.getState().sidebarOpen).toBe(true)
+  })
+
+  it('lässt sie offen, wenn die Strecke nur weggeräumt wird', () => {
+    bildschirm(true)
+    useUi.setState({ sidebarOpen: true, routePreview: strecke() })
+    useUi.getState().setRoutePreview(null)
+    expect(useUi.getState().sidebarOpen).toBe(true)
   })
 })

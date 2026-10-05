@@ -16,6 +16,7 @@ import 'leaflet.markercluster'
 import { Marker, Popup, useMap } from 'react-leaflet'
 import { koordinatenText, navigationUrlTo } from '@/lib/navigation'
 import { inZwischenablage } from '@/lib/clipboard'
+import { popupOptionen } from './popupOptionen'
 import { appBasis, sprungLink } from '@/lib/deepLink'
 import { hatReichweite, reichweiteText } from '@/lib/reichweite'
 import { Badge, Button, Dot } from '@/components/ui'
@@ -180,7 +181,7 @@ function PlainMarker({
       zIndexOffset={selected ? SELECTED_Z_OFFSET : 0}
       eventHandlers={{ click: () => selectLocation(location.id) }}
     >
-      <Popup>
+      <Popup {...popupOptionen()}>
         <LocationPopup location={location} />
       </Popup>
     </Marker>
@@ -238,7 +239,7 @@ function ClusteredMarkers({
         icon: iconFor(location, categoryOf(location, categories), false, colorsOf),
         title: titleFor(location, namesOf(location)),
       })
-      marker.bindPopup(element, { minWidth: 180 })
+      marker.bindPopup(element, popupOptionen())
       marker.on('click', () => selectLocation(location.id))
       marker.on('popupopen', () => setOpenPopup({ marker, element, location }))
       marker.on('popupclose', () =>
