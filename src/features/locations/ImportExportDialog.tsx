@@ -27,6 +27,7 @@ import type { ImportResult, ParsedLocation } from '@/lib/io'
 import { pluralize } from '@/lib/format'
 import { findSymbol } from '@/lib/symbols'
 import type { Group } from '@/types/domain'
+import { reichweiteAusText } from '@/lib/reichweite'
 
 type ExportFormat = 'geojson' | 'csv'
 type ExportScope = 'all' | 'filtered'
@@ -183,6 +184,9 @@ export default function ImportExportDialog({ onClose }: { onClose: () => void })
   }
 
   function toInput(row: ParsedLocation, categoryId: string | null): db.LocationInput {
+    // Nennt die Datei keine Reichweite, steht sie bei HWPs oft im Namen
+    // ("75 min. / 100km") - genau wie beim Vorbefuellen des Bestands.
+    const ausName = reichweiteAusText(row.name)
     return {
       name: row.name,
       lat: row.lat,
@@ -191,6 +195,8 @@ export default function ImportExportDialog({ onClose }: { onClose: () => void })
       notes: row.notes ?? null,
       category_id: categoryId,
       service_minutes: Math.round(row.serviceMinutes),
+      reach_km: row.reachKm ?? ausName.km,
+      reach_minutes: row.reachMinutes ?? ausName.minuten,
       time_windows: row.timeWindows,
       tags: row.tags,
       is_active: row.isActive,

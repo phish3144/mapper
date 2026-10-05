@@ -84,7 +84,7 @@ const KANN: { marke: string; was: string; text: string }[] = [
     marke: 'Suchen',
     was: 'Adresse und Umgebung',
     text:
-      'Die Suche findet gespeicherte Standorte und freie Adressen in einem Feld und merkt sich die letzten acht. Zu jedem Punkt lässt sich fragen, was in der Nähe liegt — und von dort direkt eine Strecke zu einem beliebigen Ziel zeichnen.',
+      'Die Suche findet gespeicherte Standorte und freie Adressen in einem Feld und merkt sich die letzten acht. Zu jedem Punkt zeigt sie die nächsten Standorte nach Fahrzeit — und wo einer seine Reichweite hinterlegt hat, gleich dazu, ob die Adresse darin liegt.',
   },
   {
     marke: 'Hinein',

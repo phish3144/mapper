@@ -30,6 +30,8 @@ function location(overrides: Partial<MapLocation> = {}): MapLocation {
     address: null,
     notes: null,
     service_minutes: 30,
+    reach_km: null,
+    reach_minutes: null,
     time_windows: [],
     tags: [],
     is_active: true,

@@ -31,10 +31,25 @@ import { symbolEmoji } from '@/lib/symbols'
 import VisibilityEditor from '@/features/catalog/VisibilityEditor'
 import TimeWindowsEditor from './TimeWindowsEditor'
 import type { LatLng, MapLocation, TimeWindow, VisibilityLevel } from '@/types/domain'
+import { hatReichweite, reichweiteAusText, reichweiteText } from '@/lib/reichweite'
 
 const MAX_NAME_LENGTH = 120
 /** Kuerzere Eingaben liefern bei Nominatim fast nur Rauschen. */
 const MIN_QUERY_LENGTH = 3
+
+/**
+ * Eine Reichweitengrenze aus dem Feld: leer heisst "keine Angabe", sonst
+ * eine ganze Zahl im erlaubten Bereich (dieselben Grenzen wie in der
+ * Datenbank, 0014_reichweite.sql). `false` heisst: ungueltig.
+ */
+function parseGrenze(value: string, max: number): number | null | false {
+  const text = value.trim().replace(',', '.')
+  if (text === '') return null
+  const n = Number(text)
+  if (!Number.isFinite(n)) return false
+  const ganz = Math.round(n)
+  return ganz >= 1 && ganz <= max ? ganz : false
+}
 
 function parseCoord(value: string): number | null {
   const text = value.trim().replace(',', '.')
@@ -79,6 +94,9 @@ export default function LocationForm({
       : [],
   )
   const [serviceMinutes, setServiceMinutes] = useState(String(location?.service_minutes ?? 0))
+  const [reachMinutes, setReachMinutes] = useState(location?.reach_minutes != null ? String(location.reach_minutes) : '')
+  const [reachKm, setReachKm] = useState(location?.reach_km != null ? String(location.reach_km) : '')
+  const [reachError, setReachError] = useState<string | null>(null)
   const [windows, setWindows] = useState<TimeWindow[]>(location?.time_windows ?? [])
   const [tags, setTags] = useState<string[]>(location?.tags ?? [])
   const [tagDraft, setTagDraft] = useState('')
@@ -204,6 +222,12 @@ export default function LocationForm({
       setServiceError('Die Aufenthaltsdauer darf nicht negativ sein.')
       return
     }
+    const reichMin = parseGrenze(reachMinutes, 1440)
+    const reichKm = parseGrenze(reachKm, 2000)
+    if (reichMin === false || reichKm === false) {
+      setReachError('Ganze Zahlen: Minuten von 1 bis 1440, Kilometer von 1 bis 2000 — oder leer lassen.')
+      return
+    }
 
     // Ein noch nicht bestaetigter Tag im Eingabefeld waere sonst verloren.
     const pendingTag = tagDraft.trim()
@@ -215,6 +239,7 @@ export default function LocationForm({
     setNameError(null)
     setCoordError(null)
     setServiceError(null)
+    setReachError(null)
     setBusy(true)
     try {
       const input: db.LocationInput = {
@@ -230,6 +255,8 @@ export default function LocationForm({
         tags: finalTags,
         is_active: isActive,
         visibility,
+        reach_minutes: reichMin,
+        reach_km: reichKm,
       }
       const saved = location
         ? await db.updateLocation(location.id, input)
@@ -476,6 +503,61 @@ export default function LocationForm({
           if (serviceError) setServiceError(null)
         }}
       />
+
+      <div className="field-row">
+        <TextField
+          label="Reichweite: max. Fahrzeit (Min.)"
+          type="number"
+          min={1}
+          max={1440}
+          step={5}
+          value={reachMinutes}
+          placeholder="keine Angabe"
+          onChange={(e) => {
+            setReachMinutes(e.target.value)
+            if (reachError) setReachError(null)
+          }}
+        />
+        <TextField
+          label="max. Strecke (km)"
+          type="number"
+          min={1}
+          max={2000}
+          step={5}
+          value={reachKm}
+          placeholder="keine Angabe"
+          onChange={(e) => {
+            setReachKm(e.target.value)
+            if (reachError) setReachError(null)
+          }}
+        />
+      </div>
+      <div className="field-hint" style={{ marginTop: -6, marginBottom: 12 }}>
+        {reachError ? (
+          <span style={{ color: 'var(--danger)' }}>{reachError}</span>
+        ) : (
+          <>Bis wohin dieser Standort anfährt, auf der Straße gemessen. Die Adresssuche zeigt damit, ob eine Adresse in Reichweite liegt.</>
+        )}
+        {/* Viele Namen tragen die Reichweite schon - dann ein Klick statt Abtippen. */}
+        {(() => {
+          const ausName = reichweiteAusText(name)
+          if (!hatReichweite(ausName) || reachMinutes.trim() !== '' || reachKm.trim() !== '') return null
+          return (
+            <div style={{ marginTop: 4 }}>
+              <button
+                type="button"
+                className="linkish"
+                onClick={() => {
+                  setReachMinutes(ausName.minuten !== null ? String(ausName.minuten) : '')
+                  setReachKm(ausName.km !== null ? String(ausName.km) : '')
+                }}
+              >
+                Aus dem Namen übernehmen: {reichweiteText(ausName)}
+              </button>
+            </div>
+          )
+        })()}
+      </div>
 
       <TimeWindowsEditor value={windows} onChange={setWindows} />
 

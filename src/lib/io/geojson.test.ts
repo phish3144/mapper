@@ -14,6 +14,8 @@ function makeLocation(partial: Partial<MapLocation> = {}): MapLocation {
     address: null,
     notes: null,
     service_minutes: 0,
+    reach_km: null,
+    reach_minutes: null,
     time_windows: [],
     tags: [],
     is_active: true,
@@ -90,10 +92,23 @@ describe('locationsToGeoJson', () => {
       notizen: 'Klingel defekt',
       tags: ['kunde', 'nord'],
       aufenthalt_minuten: 15,
+      reichweite_minuten: null,
+      reichweite_km: null,
       aktiv: false,
       symbol: null,
       zeitfenster: [{ dow: 1, von: '08:00', bis: '12:00' }],
     })
+  })
+
+  it('nimmt die Reichweite mit und liest sie wieder zurueck', () => {
+    const collection = locationsToGeoJson(
+      [makeLocation({ id: 'loc-1', name: 'Ekinci', reach_km: 100, reach_minutes: 75 })],
+      [],
+      new Map(),
+    )
+    expect(collection.features[0].properties).toMatchObject({ reichweite_km: 100, reichweite_minuten: 75 })
+    const zurueck = parseGeoJson(JSON.stringify(collection))
+    expect(zurueck.rows[0]).toMatchObject({ reachKm: 100, reachMinutes: 75 })
   })
 })
 

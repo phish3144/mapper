@@ -17,6 +17,7 @@ import { Marker, Popup, useMap } from 'react-leaflet'
 import { koordinatenText, navigationUrlTo } from '@/lib/navigation'
 import { inZwischenablage } from '@/lib/clipboard'
 import { appBasis, sprungLink } from '@/lib/deepLink'
+import { hatReichweite, reichweiteText } from '@/lib/reichweite'
 import { Badge, Button, Dot } from '@/components/ui'
 import * as db from '@/lib/db'
 import { formatMinutes, formatTimeWindows } from '@/lib/format'
@@ -418,6 +419,11 @@ function LocationPopup({ location }: { location: MapLocation }) {
 
       <span className="small muted">Zeiten: {formatTimeWindows(location.time_windows)}</span>
       <span className="small muted">Aufenthalt: {formatMinutes(location.service_minutes)}</span>
+      {hatReichweite({ km: location.reach_km, minuten: location.reach_minutes }) && (
+        <span className="small muted">
+          Reichweite: {reichweiteText({ km: location.reach_km, minuten: location.reach_minutes })}
+        </span>
+      )}
 
       {myGroups.length > 0 && (
         <div className="chips">

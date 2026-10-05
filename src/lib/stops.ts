@@ -37,6 +37,8 @@ export function stopPlace(stop: RouteStop, location: MapLocation | undefined): M
     address: null,
     notes: null,
     service_minutes: 0,
+    reach_km: null,
+    reach_minutes: null,
     time_windows: [],
     tags: [],
     is_active: true,

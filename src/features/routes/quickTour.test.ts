@@ -25,6 +25,8 @@ function ort(patch: Partial<MapLocation> & Pick<MapLocation, 'id' | 'name' | 'la
     address: null,
     notes: null,
     service_minutes: 0,
+    reach_km: null,
+    reach_minutes: null,
     time_windows: [],
     tags: [],
     is_active: true,

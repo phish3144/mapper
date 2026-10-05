@@ -309,6 +309,8 @@ export type LocationInput = Pick<MapLocation, 'name' | 'lat' | 'lng'> &
       | 'tags'
       | 'is_active'
       | 'visibility'
+      | 'reach_km'
+      | 'reach_minutes'
     >
   >
 

@@ -106,6 +106,10 @@ export interface MapLocation {
   tags: string[]
   is_active: boolean
   visibility: VisibilityLevel
+  /** Hoechste Anfahrt auf der Strasse in km (Reichweite eines HWP); null = keine Angabe. */
+  reach_km: number | null
+  /** Hoechste Anfahrtszeit in Minuten; null = keine Angabe. */
+  reach_minutes: number | null
   created_by: string | null
   created_at: string
   updated_at: string

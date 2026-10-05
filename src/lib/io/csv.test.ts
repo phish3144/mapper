@@ -14,6 +14,8 @@ function makeLocation(partial: Partial<MapLocation> = {}): MapLocation {
     address: null,
     notes: null,
     service_minutes: 0,
+    reach_km: null,
+    reach_minutes: null,
     time_windows: [],
     tags: [],
     is_active: true,
@@ -63,9 +65,9 @@ describe('toCsv', () => {
     const csv = toCsv([], [], NO_GROUPS)
     expect(csv.startsWith(CSV_BOM)).toBe(true)
     expect(csv.slice(CSV_BOM.length).split('\r\n')[0]).toBe(
-      'Name;Kategorie;Gruppen;Breite;Länge;Adresse;Notizen;Tags;Aufenthalt (min);Aktiv;Zeitfenster;Symbol',
+      'Name;Kategorie;Gruppen;Breite;Länge;Adresse;Notizen;Tags;Aufenthalt (min);Aktiv;Zeitfenster;Symbol;Reichweite (min);Reichweite (km)',
     )
-    expect(CSV_HEADER).toHaveLength(12)
+    expect(CSV_HEADER).toHaveLength(14)
   })
 
   it('schreibt Koordinaten mit Komma und maskiert Sonderzeichen', () => {
@@ -316,5 +318,21 @@ describe('parseCsv, Randfälle', () => {
     expect(result.rows[0].categoryName).toBeUndefined()
     expect(result.rows[0].tags).toEqual([])
     expect(result.rows[0].timeWindows).toEqual([])
+  })
+})
+
+describe('Reichweite in CSV', () => {
+  it('liest beide Spalten, auch unter anderen Namen', () => {
+    const r = parseCsv('Name;Breite;Länge;Reichweite (min);Max. Strecke\nEkinci;52,48;13,44;75;100\nOhne;52;13;;\n')
+    expect(r.errors).toEqual([])
+    expect(r.rows[0]).toMatchObject({ reachMinutes: 75, reachKm: 100 })
+    expect(r.rows[1].reachMinutes).toBeUndefined()
+    expect(r.rows[1].reachKm).toBeUndefined()
+  })
+
+  it('weist unsinnige Werte zurueck statt sie zu speichern', () => {
+    const r = parseCsv('Name;Breite;Länge;Reichweite (km)\nTippfehler;52;13;10000\n')
+    expect(r.rows).toHaveLength(0)
+    expect(r.errors[0]).toContain('Ungültige Reichweite')
   })
 })

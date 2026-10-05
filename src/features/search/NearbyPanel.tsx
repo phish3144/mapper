@@ -18,7 +18,7 @@
  * Liste garantiert dieselbe Adresse meinen.
  */
 import { useMemo, useRef, type KeyboardEvent } from 'react'
-import { Button, Checkbox, EmptyState, GroupStripe, Spinner } from '@/components/ui'
+import { Badge, Button, Checkbox, EmptyState, GroupStripe, Spinner } from '@/components/ui'
 import { buildMembershipMap, categoryById, useCanEdit, useLocationColors, useStore } from '@/lib/store'
 import { filterLocations, isFilterActive, useUi, type SearchPoint } from '@/lib/uiStore'
 import {
@@ -30,6 +30,7 @@ import {
   type NearbyEntry,
 } from '@/lib/nearby'
 import { useTravelFrom } from './useTravelFrom'
+import { reichweitenUrteil } from '@/lib/reichweite'
 import { formatLatLng, isValidLatLng } from '@/lib/geo'
 import { formatDistance, formatDuration, pluralize } from '@/lib/format'
 import { symbolEmoji } from '@/lib/symbols'
@@ -77,6 +78,13 @@ function NearbyRow({
   // springt nur ein, wenn der Routendienst keine geliefert hat - und heisst
   // dann auch so.
   const road = entry.travelMeters === null ? null : formatDistance(entry.travelMeters)
+  // Die Frage hinter der Suche: faehrt dieser HWP hierher? Nur mit
+  // Fahrstrecke beantwortet - die Luftlinie liegt dafuer zu kurz.
+  const urteil = reichweitenUrteil(
+    { km: location.reach_km, minuten: location.reach_minutes },
+    entry.travelSec,
+    entry.travelMeters,
+  )
 
   // Der sichtbare Text ist auf drei Spalten verteilt; vorgelesen ergibt er nur
   // als ein Satz Sinn.
@@ -86,6 +94,7 @@ function NearbyRow({
     road === null ? `Luftlinie ${air}` : `Fahrstrecke ${road}`,
     entry.travelSec === null ? '' : `Fahrzeit ${formatDuration(entry.travelSec)}`,
     `Richtung ${heading}`,
+    urteil?.text ?? '',
     // Was der Klick TUT, gehoert in den Namen der Schaltflaeche. Ohne das
     // hiesse sie nur "Bisol GmbH" und niemand wuesste, was passiert.
     'Route dorthin anzeigen',
@@ -108,6 +117,13 @@ function NearbyRow({
       <span className="addr-hit-main">
         <span className="addr-hit-title truncate">{location.name}</span>
         <span className="addr-hit-sub truncate">{sub}</span>
+        {urteil && (
+          <span style={{ marginTop: 2 }}>
+            <Badge tone={urteil.status === 'drin' ? 'success' : urteil.status === 'draussen' ? 'warning' : 'default'}>
+              {urteil.text}
+            </Badge>
+          </span>
+        )}
       </span>
 
       <span className="addr-dist" aria-hidden="true" title={`Luftlinie ${air}`}>
@@ -187,6 +203,15 @@ export default function NearbyPanel({ point }: { point: SearchPoint }) {
         : candidates.slice(0, NEARBY_LIMIT),
     [candidates, travel],
   )
+
+  const drin = entries.filter(
+    (e) =>
+      reichweitenUrteil(
+        { km: e.location.reach_km, minuten: e.location.reach_minutes },
+        e.travelSec,
+        e.travelMeters,
+      )?.status === 'drin',
+  ).length
 
   const label = point.label.trim()
   // Ein Punkt ausserhalb des Gradnetzes ergibt weder eine Entfernung noch eine
@@ -305,6 +330,7 @@ export default function NearbyPanel({ point }: { point: SearchPoint }) {
           {status === 'ready' && (
             <div className="small faint" style={{ marginTop: 4 }}>
               Sortiert nach Fahrzeit, Entfernungen auf der Straße.
+              {drin > 0 && ` ${pluralize(drin, 'Standort', 'Standorte')} in Reichweite.`}
             </div>
           )}
           {status === 'failed' && (

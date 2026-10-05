@@ -24,6 +24,9 @@ export interface ParsedLocation {
   isActive: boolean
   /** Kennung des Kartensymbols; ueberschreibt das der Kategorie. */
   icon?: string
+  /** Reichweite in km bzw. Minuten, sofern die Datei eine nennt. */
+  reachKm?: number
+  reachMinutes?: number
 }
 
 /** Ergebnis eines Imports: verwertbare Zeilen und Meldungen zu den uebrigen. */
@@ -297,6 +300,22 @@ const SERVICE_KEYS = ['aufenthaltminuten', 'aufenthaltmin', 'aufenthalt', 'aufen
 const ACTIVE_KEYS = ['aktiv', 'active', 'isactive']
 const WINDOW_KEYS = ['zeitfenster', 'timewindows', 'oeffnungszeiten', 'openinghours', 'zeiten']
 const ICON_KEYS = ['symbol', 'icon', 'kartensymbol']
+// Wie alle Schluessel hier in der Form, die normalizeKey liefert: Umlaute zu
+// ae/oe/ue, ohne Leer- und Satzzeichen. "Reichweite (km)" wird "reichweitekm".
+export const REACH_KM_KEYS = ['reichweitekm', 'reichweite', 'maxstrecke', 'maxkm', 'reachkm']
+export const REACH_MIN_KEYS = ['reichweiteminuten', 'reichweitemin', 'maxfahrzeit', 'maxminuten', 'reachminutes']
+
+/**
+ * Eine Reichweitengrenze aus einer Datei: leer ist "keine Angabe", sonst
+ * eine ganze Zahl im Bereich der Datenbank (0014_reichweite.sql).
+ */
+export function parseReach(raw: unknown, max: number): number | null | 'ungueltig' {
+  if (raw === undefined || raw === null || String(raw).trim() === '') return null
+  const n = parseNumberLoose(raw)
+  if (n === null) return 'ungueltig'
+  const ganz = Math.round(n)
+  return ganz >= 1 && ganz <= max ? ganz : 'ungueltig'
+}
 
 /** FeatureCollection mit Punkt-Geometrien in GeoJSON-Reihenfolge [lng, lat]. */
 export function locationsToGeoJson(
@@ -320,6 +339,8 @@ export function locationsToGeoJson(
         notizen: location.notes,
         tags: [...location.tags],
         aufenthalt_minuten: location.service_minutes,
+        reichweite_minuten: location.reach_minutes,
+        reichweite_km: location.reach_km,
         aktiv: location.is_active,
         symbol: location.icon,
         zeitfenster: location.time_windows.map((window) => ({
@@ -438,6 +459,13 @@ function parseFeature(feature: unknown, label: string): FeatureOutcome {
   if (categoryName !== '') row.categoryName = categoryName
   const icon = pickText(properties, ICON_KEYS)
   if (icon !== '') row.icon = icon
+  const reachKm = parseReach(pick(properties, REACH_KM_KEYS), 2000)
+  const reachMinutes = parseReach(pick(properties, REACH_MIN_KEYS), 1440)
+  if (reachKm === 'ungueltig' || reachMinutes === 'ungueltig') {
+    return { ok: false, error: `${label}: Ungültige Reichweite (ganze Zahl, bis 2000 km bzw. 1440 Min.).` }
+  }
+  if (reachKm !== null) row.reachKm = reachKm
+  if (reachMinutes !== null) row.reachMinutes = reachMinutes
   return { ok: true, row }
 }
 

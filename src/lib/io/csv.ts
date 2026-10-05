@@ -13,7 +13,10 @@ import {
   normalizeKey,
   parseBooleanish,
   parseNumberLoose,
+  parseReach,
   parseTimeWindows,
+  REACH_KM_KEYS,
+  REACH_MIN_KEYS,
   splitList,
 } from './geojson'
 
@@ -32,6 +35,8 @@ export const CSV_HEADER: readonly string[] = [
   'Aktiv',
   'Zeitfenster',
   'Symbol',
+  'Reichweite (min)',
+  'Reichweite (km)',
 ]
 
 const DELIMITER = ';'
@@ -78,6 +83,8 @@ export function toCsv(
       location.is_active ? 'ja' : 'nein',
       formatTimeWindows(location.time_windows),
       location.icon ?? '',
+      location.reach_minutes === null ? '' : String(location.reach_minutes),
+      location.reach_km === null ? '' : String(location.reach_km),
     ]
     lines.push(cells.map(escapeCsv).join(DELIMITER))
   }
@@ -219,6 +226,8 @@ interface ColumnMap {
   active?: number
   timeWindows?: number
   icon?: number
+  reachMinutes?: number
+  reachKm?: number
 }
 
 const COLUMN_ALIASES: [keyof ColumnMap, string[]][] = [
@@ -234,6 +243,8 @@ const COLUMN_ALIASES: [keyof ColumnMap, string[]][] = [
   ['active', ['aktiv', 'active', 'isactive']],
   ['timeWindows', ['zeitfenster', 'timewindows', 'oeffnungszeiten', 'openinghours', 'zeiten']],
   ['icon', ['symbol', 'icon', 'kartensymbol']],
+  ['reachMinutes', REACH_MIN_KEYS],
+  ['reachKm', REACH_KM_KEYS],
 ]
 
 /** Spalten anhand der Kopfzeile zuordnen, unabhaengig von Schreibweise und Umlauten. */
@@ -359,6 +370,14 @@ export function parseCsv(text: string): ImportResult {
     if (categoryName !== '') row.categoryName = categoryName
     const icon = cell(columns.icon)
     if (icon !== '') row.icon = icon
+    const reachMinutes = parseReach(cell(columns.reachMinutes), 1440)
+    const reachKm = parseReach(cell(columns.reachKm), 2000)
+    if (reachMinutes === 'ungueltig' || reachKm === 'ungueltig') {
+      errors.push(`${at}: Ungültige Reichweite (ganze Zahl, bis 1440 Min. bzw. 2000 km).`)
+      continue
+    }
+    if (reachMinutes !== null) row.reachMinutes = reachMinutes
+    if (reachKm !== null) row.reachKm = reachKm
     rows.push(row)
   }
 
