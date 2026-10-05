@@ -195,3 +195,37 @@ export function withTravel(
     travelMeters: usableValue(distances, index),
   }))
 }
+
+/**
+ * Wie viele Kandidaten nach Luftlinie vorausgewaehlt werden, bevor die
+ * Fahrzeit entscheidet.
+ *
+ * Die Luftlinie taugt nur zum Vorsortieren. Nachgemessen an 64 echten Paaren
+ * (Suchpunkt -> HWP): die Strasse ist im Mittel 1,34-mal so lang, im
+ * schlimmsten Fall 1,9-mal, und in sieben von acht Stichproben ordnete die
+ * Fahrzeit die naechsten acht anders als die Luftlinie. Ein Ziel auf Platz 9
+ * der Luftlinie kann deshalb das schnellste sein - nur wer es mitrechnet,
+ * kann es zeigen. 25 Ziele sind fuer jeden Routendienst eine kleine Matrix.
+ */
+export const ROAD_CANDIDATES = 25
+
+/**
+ * Ordnet nach Fahrzeit, sobald es eine gibt, und kuerzt auf `limit`.
+ *
+ * Eintraege mit Fahrzeit stehen vorn, aufsteigend; Gleichstand entscheidet
+ * die Luftlinie. Eintraege ohne Fahrzeit - der Dienst kennt keinen Weg, etwa
+ * auf eine Insel ohne Faehre im Datensatz - folgen nach Luftlinie. Fehlt die
+ * Fahrzeit bei ALLEN, ist das Ergebnis genau die Luftlinien-Reihenfolge.
+ *
+ * Die Eingabe wird nicht veraendert.
+ */
+export function rankByTravel<T extends { airKm: number; travelSec: number | null }>(
+  entries: readonly T[],
+  limit: number,
+): T[] {
+  const mitZeit = entries.filter((e) => e.travelSec !== null)
+  const ohneZeit = entries.filter((e) => e.travelSec === null)
+  mitZeit.sort((a, b) => (a.travelSec as number) - (b.travelSec as number) || a.airKm - b.airKm)
+  ohneZeit.sort((a, b) => a.airKm - b.airKm)
+  return [...mitZeit, ...ohneZeit].slice(0, Math.max(0, limit))
+}

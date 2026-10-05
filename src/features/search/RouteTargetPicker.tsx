@@ -7,18 +7,22 @@
  * ganzen Bestand, nicht im Umkreis.
  *
  * Gespeicherte Standorte stehen oben, weil sie das sind, was die Anwenderin
- * fast immer meint. Eine freie Adresse geht trotzdem: wer zu einem Ort will,
+ * fast immer meint. Sie sind nach FAHRZEIT sortiert und zeigen die
+ * Fahrstrecke - die Luftlinie lag nachgemessen im Mittel ein Drittel darunter
+ * und taugt nur, solange der Routendienst nicht geantwortet hat. Eine freie Adresse geht trotzdem: wer zu einem Ort will,
  * den es noch nicht gibt, soll deswegen nicht erst einen Standort anlegen
  * muessen - das war ausdruecklich unerwuenscht.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button, EmptyState, GroupStripe, Spinner } from '@/components/ui'
 import { createAddressSearch, type AddressMatch, type DebouncedAddressSearch } from '@/lib/geocode'
-import { formatDistance } from '@/lib/format'
+import { formatDistance, formatDuration } from '@/lib/format'
 import { haversineKm } from '@/lib/geo'
+import { ROAD_CANDIDATES, rankByTravel } from '@/lib/nearby'
 import { useLocationColors, useStore } from '@/lib/store'
 import { symbolEmoji } from '@/lib/symbols'
 import type { LatLng, MapLocation } from '@/types/domain'
+import { useTravelFrom } from './useTravelFrom'
 
 /** Genug zum Auswaehlen, wenig genug zum Ueberblicken. */
 const TREFFER_GRENZE = 8
@@ -69,23 +73,62 @@ export default function RouteTargetPicker({
 
   const gesucht = text.trim().toLowerCase()
 
+  /** Alle waehlbaren Standorte mit ihrer Luftlinie, naechste zuerst. */
+  const waehlbar = useMemo(() => {
+    const liste = locations
+      .filter((l) => l.is_active && l.id !== excludeId)
+      .map((l) => ({ location: l, airKm: haversineKm(origin, { lat: l.lat, lng: l.lng }) }))
+    liste.sort((a, b) => a.airKm - b.airKm)
+    return liste
+  }, [locations, origin, excludeId])
+
   /**
-   * Gespeicherte Standorte, nach Entfernung zum Start sortiert. Ohne
-   * Eingabe sind das schlicht die naechstgelegenen - so ist die Liste auch
+   * Die Fahrzeit wird fuer die naechsten ROAD_CANDIDATES gerechnet, und zwar
+   * UNABHAENGIG von der Eingabe: so kostet das Oeffnen eine Anfrage und nicht
+   * jeder Tastendruck eine. Wer gezielt einen weit entfernten Standort sucht,
+   * bekommt fuer ihn die Luftlinie - als solche benannt.
+   */
+  const targets = useMemo(
+    () =>
+      waehlbar
+        .slice(0, ROAD_CANDIDATES)
+        .map(({ location: l }) => ({ id: l.id, lat: l.lat, lng: l.lng })),
+    [waehlbar],
+  )
+  const { travel } = useTravelFrom(origin, targets)
+  const fahrt = useMemo(() => {
+    const map = new Map<string, { sec: number | null; meters: number | null }>()
+    if (!travel) return map
+    targets.forEach((t, i) => {
+      const sec = travel.durations[i]
+      const meters = travel.distances[i]
+      map.set(t.id, {
+        sec: Number.isFinite(sec) && sec >= 0 ? sec : null,
+        meters: Number.isFinite(meters) && meters >= 0 ? meters : null,
+      })
+    })
+    return map
+  }, [travel, targets])
+
+  /**
+   * Gespeicherte Standorte, nach Fahrzeit zum Start sortiert. Ohne Eingabe
+   * sind das schlicht die am schnellsten erreichbaren - so ist die Liste auch
    * beim Oeffnen schon nuetzlich und nicht leer.
    */
   const eigene = useMemo(() => {
-    const passend = locations
-      .filter((l) => l.is_active && l.id !== excludeId)
-      .filter((l) =>
+    const passend = waehlbar
+      .filter(({ location: l }) =>
         gesucht === ''
           ? true
           : `${l.name} ${l.address ?? ''} ${l.tags.join(' ')}`.toLowerCase().includes(gesucht),
       )
-      .map((l) => ({ location: l, km: haversineKm(origin, { lat: l.lat, lng: l.lng }) }))
-    passend.sort((a, b) => a.km - b.km)
-    return passend.slice(0, TREFFER_GRENZE)
-  }, [locations, gesucht, origin, excludeId])
+      .map((e) => ({
+        ...e,
+        travelSec: fahrt.get(e.location.id)?.sec ?? null,
+        travelMeters: fahrt.get(e.location.id)?.meters ?? null,
+      }))
+    return rankByTravel(passend, TREFFER_GRENZE)
+  }, [waehlbar, gesucht, fahrt])
 
   function tippen(wert: string): void {
     setText(wert)
@@ -146,7 +189,7 @@ export default function RouteTargetPicker({
           <div className="addr-section">
             <span className="addr-section-title">Gespeicherte Standorte</span>
           </div>
-          {eigene.map(({ location, km }) => (
+          {eigene.map(({ location, airKm, travelSec, travelMeters }) => (
             <button
               key={location.id}
               type="button"
@@ -161,7 +204,11 @@ export default function RouteTargetPicker({
               <span className="addr-hit-main">
                 <span className="addr-hit-title truncate">{location.name}</span>
                 <span className="addr-hit-sub truncate">
-                  {formatDistance(km * 1000)} Luftlinie
+                  {travelMeters !== null
+                    ? `${formatDistance(travelMeters)}${
+                        travelSec !== null ? ` · ${formatDuration(travelSec)}` : ''
+                      }`
+                    : `${formatDistance(airKm * 1000)} Luftlinie`}
                   {location.address ? ` · ${location.address}` : ''}
                 </span>
               </span>

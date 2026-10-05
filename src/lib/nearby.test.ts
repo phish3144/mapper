@@ -6,6 +6,7 @@ import {
   directionLabel,
   nearestLocations,
   withTravel,
+  rankByTravel,
 } from './nearby'
 import type { CompassPoint, NearbyEntry } from './nearby'
 
@@ -478,5 +479,43 @@ describe('withTravel', () => {
     expect(entries.every((e) => e.travelSec === null && e.travelMeters === null)).toBe(true)
     expect(result[0]).not.toBe(entries[0])
     expect(result[0].location).toBe(entries[0].location)
+  })
+})
+
+describe('rankByTravel', () => {
+  const e = (name: string, airKm: number, travelSec: number | null) => ({ name, airKm, travelSec })
+
+  it('sortiert nach Fahrzeit, nicht nach Luftlinie', () => {
+    // Echtes Muster aus Zeuthen: der Luftlinie nach Erster ist per Auto Zweiter.
+    const r = rankByTravel([e('Rabofsky', 18.7, 1800), e('Caliskan', 20.4, 2040), e('Ekinci', 20.5, 1740)], 8)
+    expect(r.map((x) => x.name)).toEqual(['Ekinci', 'Rabofsky', 'Caliskan'])
+  })
+
+  it('holt ein Ziel von weiter hinten nach vorn, wenn es schneller erreichbar ist', () => {
+    const r = rankByTravel([e('nah', 50, 4000), e('mittel', 60, 3900), e('weiter', 70, 3000)], 2)
+    expect(r.map((x) => x.name)).toEqual(['weiter', 'mittel'])
+  })
+
+  it('stellt Ziele ohne Fahrzeit nach Luftlinie hinten an', () => {
+    const r = rankByTravel([e('ohne-nah', 5, null), e('mit', 90, 5000), e('ohne-fern', 40, null)], 8)
+    expect(r.map((x) => x.name)).toEqual(['mit', 'ohne-nah', 'ohne-fern'])
+  })
+
+  it('ist ohne jede Fahrzeit genau die Luftlinien-Reihenfolge', () => {
+    const r = rankByTravel([e('b', 20, null), e('a', 10, null), e('c', 30, null)], 8)
+    expect(r.map((x) => x.name)).toEqual(['a', 'b', 'c'])
+  })
+
+  it('entscheidet Gleichstand bei der Fahrzeit nach Luftlinie', () => {
+    const r = rankByTravel([e('fern', 30, 600), e('nah', 10, 600)], 8)
+    expect(r.map((x) => x.name)).toEqual(['nah', 'fern'])
+  })
+
+  it('kuerzt auf das Limit und laesst die Eingabe unveraendert', () => {
+    const eingabe = [e('a', 1, 300), e('b', 2, 200), e('c', 3, 100)]
+    const kopie = eingabe.map((x) => ({ ...x }))
+    expect(rankByTravel(eingabe, 1).map((x) => x.name)).toEqual(['c'])
+    expect(rankByTravel(eingabe, 0)).toEqual([])
+    expect(eingabe).toEqual(kopie)
   })
 })

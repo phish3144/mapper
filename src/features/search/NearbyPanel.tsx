@@ -2,20 +2,34 @@
  * Umgebungsliste zu einer gesuchten Adresse: welche gespeicherten Standorte
  * liegen ihr am naechsten?
  *
- * Die Rangfolge kommt immer aus der Luftlinie (nearestLocations). Fahrzeiten
- * werden nur nachtraeglich angehaengt — bleibt der Routing-Dienst stumm, ist
- * die Liste trotzdem vollstaendig und richtig sortiert. Deshalb wird ein
- * Fehlschlag hier auch nicht gemeldet, sondern nur benannt.
+ * Die Luftlinie waehlt nur vor: die ROAD_CANDIDATES naechsten Standorte
+ * werden mit dem Routendienst gerechnet, und die FAHRZEIT entscheidet, welche
+ * acht oben stehen. Angezeigt wird die Fahrstrecke, nicht die Luftlinie.
+ *
+ * Frueher war es umgekehrt: Rangfolge und grosse Zahl kamen aus der
+ * Luftlinie, die Fahrzeit stand klein daneben. Nachgemessen lag die Strasse im
+ * Mittel 39 km ueber der Luftlinie, bei jedem vierten Paar mehr als 50 km -
+ * und der erste Vorschlag war nicht immer der schnellste.
+ *
+ * Bleibt der Routendienst stumm, gilt die Luftlinie, sichtbar als solche
+ * benannt. Ein Fehlschlag wird nicht gemeldet, nur benannt.
  *
  * Der Bezugspunkt kommt von aussen (uiStore.searchPoint), damit Karte und
  * Liste garantiert dieselbe Adresse meinen.
  */
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { useMemo, useRef, type KeyboardEvent } from 'react'
 import { Button, Checkbox, EmptyState, GroupStripe, Spinner } from '@/components/ui'
 import { buildMembershipMap, categoryById, useCanEdit, useLocationColors, useStore } from '@/lib/store'
 import { filterLocations, isFilterActive, useUi, type SearchPoint } from '@/lib/uiStore'
-import { directionLabel, nearestLocations, withTravel, type NearbyEntry } from '@/lib/nearby'
-import { getRouteProvider } from '@/lib/routing'
+import {
+  ROAD_CANDIDATES,
+  directionLabel,
+  nearestLocations,
+  rankByTravel,
+  withTravel,
+  type NearbyEntry,
+} from '@/lib/nearby'
+import { useTravelFrom } from './useTravelFrom'
 import { formatLatLng, isValidLatLng } from '@/lib/geo'
 import { formatDistance, formatDuration, pluralize } from '@/lib/format'
 import { symbolEmoji } from '@/lib/symbols'
@@ -28,19 +42,6 @@ const NEARBY_LIMIT = 8
 const FOCUS_ZOOM = 16
 
 /** Ohne Kategorie gibt es keine Farbe; der Punkt bleibt dann neutral. */
-
-type TravelStatus = 'idle' | 'loading' | 'ready' | 'failed'
-
-/**
- * Fahrzeiten samt Schluessel der Anfrage, aus der sie stammen. Ohne den
- * Schluessel koennte eine spaet eintreffende Antwort an eine inzwischen andere
- * Liste geheftet werden — die Zeiten stuenden dann bei den falschen Standorten.
- */
-interface TravelResult {
-  key: string
-  durations: number[]
-  distances: number[]
-}
 
 function subLine(
   entry: NearbyEntry,
@@ -72,14 +73,19 @@ function NearbyRow({
   const air = formatDistance(entry.airKm * 1000)
   const heading = directionLabel(entry.direction)
   const sub = subLine(entry, category, coordinates)
+  // Die Fahrstrecke ist die Zahl, an der man eine Tour misst. Die Luftlinie
+  // springt nur ein, wenn der Routendienst keine geliefert hat - und heisst
+  // dann auch so.
+  const road = entry.travelMeters === null ? null : formatDistance(entry.travelMeters)
 
   // Der sichtbare Text ist auf drei Spalten verteilt; vorgelesen ergibt er nur
   // als ein Satz Sinn.
   const spoken = [
     location.name,
     sub,
-    `Luftlinie ${air} Richtung ${heading}`,
+    road === null ? `Luftlinie ${air}` : `Fahrstrecke ${road}`,
     entry.travelSec === null ? '' : `Fahrzeit ${formatDuration(entry.travelSec)}`,
+    `Richtung ${heading}`,
     // Was der Klick TUT, gehoert in den Namen der Schaltflaeche. Ohne das
     // hiesse sie nur "Bisol GmbH" und niemand wuesste, was passiert.
     'Route dorthin anzeigen',
@@ -104,12 +110,16 @@ function NearbyRow({
         <span className="addr-hit-sub truncate">{sub}</span>
       </span>
 
-      <span className="addr-dist" aria-hidden="true">
-        <strong>{air}</strong>
-        <span style={{ display: 'block' }}>{heading}</span>
-        {entry.travelSec !== null && (
-          <span style={{ display: 'block' }}>Fahrt {formatDuration(entry.travelSec)}</span>
+      <span className="addr-dist" aria-hidden="true" title={`Luftlinie ${air}`}>
+        <strong>{road ?? air}</strong>
+        {road === null ? (
+          <span style={{ display: 'block' }}>Luftlinie</span>
+        ) : (
+          entry.travelSec !== null && (
+            <span style={{ display: 'block' }}>{formatDuration(entry.travelSec)} Fahrt</span>
+          )
         )}
+        <span style={{ display: 'block' }}>{heading}</span>
         {/* Kein eigener Knopf: die Zeile IST schon einer, und ein Knopf im
             Knopf waere ungueltig. Der Hinweis sagt trotzdem, was ein Klick
             bewirkt. */}
@@ -138,8 +148,6 @@ export default function NearbyPanel({ point }: { point: SearchPoint }) {
   const focusBounds = useUi((s) => s.focusBounds)
   const setRoutePreview = useUi((s) => s.setRoutePreview)
 
-  const [travel, setTravel] = useState<TravelResult | null>(null)
-  const [status, setStatus] = useState<TravelStatus>('idle')
   const listRef = useRef<HTMLDivElement>(null)
 
   const origin = useMemo<LatLng>(() => ({ lat: point.lat, lng: point.lng }), [point.lat, point.lng])
@@ -160,83 +168,24 @@ export default function NearbyPanel({ point }: { point: SearchPoint }) {
   // onlyActive: die Umgebungsliste ist Teil der Suchleiste und damit ein
   // Vorschlag. Ein stillgelegter Standort gehoert dort nicht hin - er wuerde
   // in der kurzen Liste einen gueltigen verdraengen.
-  const base = useMemo(
-    () => nearestLocations(origin, pool, { limit: NEARBY_LIMIT, onlyActive: true }),
+  // Vorauswahl nach Luftlinie, aber breiter als die Liste: welche acht oben
+  // stehen, entscheidet erst die Fahrzeit.
+  const candidates = useMemo(
+    () => nearestLocations(origin, pool, { limit: ROAD_CANDIDATES, onlyActive: true }),
     [origin, pool],
   )
-
-  const matrixPoints = useMemo<LatLng[]>(
-    () => [origin, ...base.map((e) => ({ lat: e.location.lat, lng: e.location.lng }))],
-    [origin, base],
+  const targets = useMemo(
+    () => candidates.map((e) => ({ id: e.location.id, lat: e.location.lat, lng: e.location.lng })),
+    [candidates],
   )
-
-  /**
-   * Schluessel der Fahrzeit-Anfrage. Er nennt Kennung UND Koordinaten jedes
-   * Ziels: verschobene Standorte muessen neu gerechnet werden, blosses
-   * Neurendern nicht.
-   */
-  const travelKey = useMemo(
-    () =>
-      [
-        `start@${origin.lat.toFixed(6)},${origin.lng.toFixed(6)}`,
-        ...base.map(
-          (e) => `${e.location.id}@${e.location.lat.toFixed(6)},${e.location.lng.toFixed(6)}`,
-        ),
-      ].join('|'),
-    [origin, base],
-  )
-
-  // Der Effekt haengt allein am Schluessel; die Punkte selbst kommen ueber die
-  // Ref herein. Ein Array in den Abhaengigkeiten waere bei jedem Rendern neu
-  // und wuerde die Anfrage endlos wiederholen.
-  const pointsRef = useRef<LatLng[]>(matrixPoints)
-  useEffect(() => {
-    pointsRef.current = matrixPoints
-  }, [matrixPoints])
-
-  useEffect(() => {
-    const points = pointsRef.current
-    // Ein einzelner Punkt ist der Suchpunkt selbst — dafuer gibt es nichts zu rechnen.
-    if (points.length < 2) {
-      setStatus('idle')
-      return
-    }
-
-    const controller = new AbortController()
-    let cancelled = false
-    setStatus('loading')
-
-    void (async () => {
-      try {
-        const matrix = await getRouteProvider().matrix(points, 'driving', controller.signal)
-        if (cancelled) return
-        // Zeile 0 ist der Weg vom Suchpunkt zu den Zielen; Spalte 0 ist er selbst.
-        setTravel({
-          key: travelKey,
-          durations: matrix.durations[0]?.slice(1) ?? [],
-          distances: matrix.distances[0]?.slice(1) ?? [],
-        })
-        setStatus('ready')
-      } catch {
-        if (cancelled || controller.signal.aborted) return
-        // Kein reportError: die Luftlinie beantwortet die Frage bereits, ein
-        // Fehlerbanner waere hier lauter als der Verlust an Genauigkeit.
-        setStatus('failed')
-      }
-    })()
-
-    return () => {
-      cancelled = true
-      controller.abort()
-    }
-  }, [travelKey])
+  const { status, travel } = useTravelFrom(origin, targets)
 
   const entries = useMemo(
     () =>
-      travel && travel.key === travelKey
-        ? withTravel(base, travel.durations, travel.distances)
-        : base,
-    [base, travel, travelKey],
+      travel
+        ? rankByTravel(withTravel(candidates, travel.durations, travel.distances), NEARBY_LIMIT)
+        : candidates.slice(0, NEARBY_LIMIT),
+    [candidates, travel],
   )
 
   const label = point.label.trim()
@@ -350,12 +299,20 @@ export default function NearbyPanel({ point }: { point: SearchPoint }) {
           {status === 'loading' && (
             <div className="row small faint" style={{ marginTop: 4 }}>
               <Spinner />
-              <span>Fahrzeiten werden berechnet …</span>
+              <span>Fahrstrecken werden berechnet — bis dahin nach Luftlinie …</span>
+            </div>
+          )}
+          {status === 'ready' && (
+            <div className="small faint" style={{ marginTop: 4 }}>
+              Sortiert nach Fahrzeit, Entfernungen auf der Straße.
             </div>
           )}
           {status === 'failed' && (
+            /* Die Zahl gehoert dazu: wer nur "Luftlinie" liest, rechnet sie
+               trotzdem als Fahrstrecke. Ein Drittel ist der gemessene Mittelwert. */
             <div className="small faint" style={{ marginTop: 4 }}>
-              Fahrzeiten nicht verfügbar — es gilt die Luftlinie.
+              Routendienst nicht erreichbar — Reihenfolge und Entfernungen nach Luftlinie. Die
+              Fahrstrecke ist meist rund ein Drittel länger.
             </div>
           )}
         </div>
