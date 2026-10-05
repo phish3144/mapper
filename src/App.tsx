@@ -9,6 +9,7 @@ import CatalogPanel from '@/features/catalog/CatalogPanel'
 import RoutesPanel from '@/features/routes/RoutesPanel'
 import MapView from '@/features/map/MapView'
 import LandingPage from '@/features/landing/LandingPage'
+import { useSprungziel } from '@/features/shell/useSprungziel'
 import RouteFromDialog from '@/features/search/RouteFromDialog'
 import WorkspaceGate from '@/features/workspace/WorkspaceGate'
 
@@ -44,8 +45,13 @@ export default function App() {
    * ergaebe eine andere Antwort als beim ersten Mal.
    */
   const [vonAuthLink] = useState(kommtVonAuthLink)
+  // Geteilte Verweise auf Standort oder Tour. Muss vor init() laufen, weil es
+  // den Arbeitsbereich vormerkt - daher hier oben und nicht erst nach der
+  // Anmeldung.
+  const sprungziel = useSprungziel()
   /** Anmeldemaske statt Startseite - von Hand geoeffnet oder per E-Mail-Link. */
-  const [zeigeAnmeldung, setZeigeAnmeldung] = useState(vonAuthLink)
+  // Ein geteilter Verweis meint die Anwendung, nicht die Werbeseite davor.
+  const [zeigeAnmeldung, setZeigeAnmeldung] = useState(vonAuthLink || sprungziel !== null)
   /** Mit welchem Reiter die Maske aufgeht - die Startseite hat zwei Knoepfe. */
   const [anmeldeModus, setAnmeldeModus] = useState<'signin' | 'signup'>('signin')
 

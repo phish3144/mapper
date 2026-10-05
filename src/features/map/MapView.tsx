@@ -26,6 +26,7 @@ import MapControls, {
 import MarkerLayer, { useVisibleLocations } from './MarkerLayer'
 import PlzLayer from './PlzLayer'
 import TrafficLayer, { useVerkehr } from './TrafficLayer'
+import TeamChips from './TeamChips'
 
 /** Startausschnitt: ganz Deutschland. */
 const GERMANY_CENTER: LatLngTuple = [51.16, 10.45]
@@ -89,6 +90,7 @@ export default function MapView() {
         <SearchMarker />
 
         <MapClicks />
+        <EscapeKey />
         <FocusHandler />
         <SizeWatcher />
       </MapContainer>
@@ -113,6 +115,12 @@ export default function MapView() {
           )}
         </div>
       )}
+
+      {/* Unten mittig: oben stehen schon Streckenleiste und Kartenwahl, und
+          am Telefon liegt diese Stelle unter dem Daumen. */}
+      <div className="map-overlay bottom-center">
+        <TeamChips />
+      </div>
 
       <RouteBar />
 
@@ -248,4 +256,31 @@ function BaseTiles({ layer }: { layer: BaseLayer }) {
       }}
     />
   )
+}
+
+/**
+ * Esc raeumt die Karte auf, eins nach dem anderen: erst die Sprechblase,
+ * dann die gezeichnete Strecke, dann die gesuchte Adresse.
+ *
+ * Steht ein Dialog offen oder der Fokus in einem Eingabefeld, gehoert Esc
+ * denen - die schliessen damit sich selbst bzw. ihre Vorschlagsliste.
+ */
+function EscapeKey() {
+  const map = useMap()
+  useEffect(() => {
+    function onKey(e: KeyboardEvent): void {
+      if (e.key !== 'Escape' || e.defaultPrevented) return
+      if (document.querySelector('[role="dialog"]')) return
+      const el = document.activeElement
+      if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) return
+      const ui = useUi.getState()
+      // Leaflet kennt "ist eine Sprechblase offen?" nur ueber das DOM.
+      if (map.getContainer().querySelector('.leaflet-popup')) map.closePopup()
+      else if (ui.routePreview) ui.setRoutePreview(null)
+      else if (ui.searchPoint) ui.setSearchPoint(null)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [map])
+  return null
 }

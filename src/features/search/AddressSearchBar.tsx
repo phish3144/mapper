@@ -166,6 +166,28 @@ export default function AddressSearchBar() {
 
   const rootRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  // "/" wie in vielen Werkzeugen, Strg+K bzw. Cmd+K wie in den uebrigen:
+  // beides springt von ueberall in die Suche. Nicht, solange jemand gerade
+  // tippt oder ein Dialog offen ist - dort ist "/" ein Zeichen.
+  useEffect(() => {
+    function onKey(e: globalThis.KeyboardEvent): void {
+      const strgK = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k'
+      if (e.key !== '/' && !strgK) return
+      const el = document.activeElement
+      const tippt =
+        el instanceof HTMLInputElement ||
+        el instanceof HTMLTextAreaElement ||
+        el instanceof HTMLSelectElement ||
+        (el instanceof HTMLElement && el.isContentEditable)
+      if ((tippt && !strgK) || document.querySelector('[role="dialog"]')) return
+      e.preventDefault()
+      inputRef.current?.focus()
+      inputRef.current?.select()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [])
   const listRef = useRef<HTMLDivElement>(null)
 
   const uid = useId()
@@ -471,8 +493,9 @@ export default function AddressSearchBar() {
         // genau auf dem eigenen Loeschknopf.
         type="text"
         value={query}
-        placeholder="Adresse suchen …"
+        placeholder="Adresse suchen …  ( / )"
         aria-label="Adresse suchen"
+        aria-keyshortcuts="/ Control+K"
         autoComplete="off"
         spellCheck={false}
         role="combobox"

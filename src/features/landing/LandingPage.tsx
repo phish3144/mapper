@@ -132,9 +132,9 @@ const HERKUNFT: { was: string; woher: string }[] = [
 /** Was die Anwendung NICHT kann. Gehoert auf die Seite, nicht in die Fussnote. */
 const GRENZEN: { was: string; text: string }[] = [
   {
-    was: 'Keine Tour aufs Navi',
+    was: 'Keine GPX-Datei',
     text:
-      'Es gibt einen Navigationsverweis von Punkt zu Punkt, aber keinen Export einer ganzen Tour als GPX oder KML. Eine Reihenfolge mit acht Stopps landet nicht in einem Schlag auf dem Telefon des Fahrers.',
+      'Eine Tour geht als Google-Maps-Verweis aufs Telefon — bis elf Punkte in einem, längere in Abschnitten. Eine GPX- oder KML-Datei für ein eigenes Navi gibt es nicht.',
   },
   {
     was: 'Verkehr wird gezeigt, nicht eingeplant',

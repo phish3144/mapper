@@ -10,6 +10,9 @@ import StopList from './StopList'
 import RuleEditor from './RuleEditor'
 import { useRoutePlan } from './useRoutePlan'
 import VisibilityEditor from '@/features/catalog/VisibilityEditor'
+import { inZwischenablage } from '@/lib/clipboard'
+import { appBasis, sprungLink } from '@/lib/deepLink'
+import { navigationsPunkte, tourAbschnitte, tourAlsText } from '@/lib/tourText'
 import type { Route, RouteProfile, RouteRule, VisibilityLevel } from '@/types/domain'
 
 const PROFILE_LABELS: Record<RouteProfile, string> = {
@@ -90,6 +93,46 @@ export default function RouteEditor({ route, onBack }: { route: Route; onBack: (
     name: e.location.id === '' ? `${e.location.name} (kein Standort)` : e.location.name,
   }))
   const schedule = plan.schedule
+
+  /**
+   * Die Tour fuers Telefon: Google-Maps-Verweise in der Reihenfolge der
+   * Stopps. Google rechnet dabei mit Verkehr; die Reihenfolge kommt von hier.
+   */
+  const abschnitte = useMemo(
+    () =>
+      tourAbschnitte(
+        navigationsPunkte(
+          plan.entries.map((e) => ({ lat: e.location.lat, lng: e.location.lng })),
+          route.roundtrip,
+        ),
+      ),
+    [plan.entries, route.roundtrip],
+  )
+
+  async function linkKopieren(): Promise<void> {
+    const link = sprungLink(appBasis(), { ws: route.workspace_id, art: 'tour', id: route.id })
+    if (await inZwischenablage(link)) notify('success', 'Link zur Tour kopiert.')
+    else notify('error', 'Der Link ließ sich nicht kopieren — der Browser erlaubt es hier nicht.')
+  }
+
+  async function tourKopieren(): Promise<void> {
+    const ankunft = new Map(schedule?.stops.map((st) => [st.index, st.arrival]) ?? [])
+    const text = tourAlsText({
+      name: route.name,
+      stopps: plan.entries.map((e, i) => ({
+        name: e.location.name,
+        address: e.location.address,
+        lat: e.location.lat,
+        lng: e.location.lng,
+        ankunft: ankunft.get(i) ?? null,
+      })),
+      rundtour: route.roundtrip,
+      gesamtMeter: schedule?.totalDistanceM ?? null,
+      gesamtSekunden: schedule?.totalTravelSec ?? null,
+    })
+    if (await inZwischenablage(text)) notify('success', 'Stoppliste mit Navigationsverweisen kopiert.')
+    else notify('error', 'Die Stoppliste ließ sich nicht kopieren — der Browser erlaubt es hier nicht.')
+  }
 
   return (
     <>
@@ -333,6 +376,32 @@ export default function RouteEditor({ route, onBack }: { route: Route; onBack: (
             )}
           </div>
         </div>
+
+        {plan.entries.length > 0 && (
+          /* Unterwegs: die Tour verlaesst hier den Schreibtisch. Jeder
+             Abschnitt ein eigener Verweis, weil Google nicht mehr als elf
+             Punkte auf einmal nimmt. */
+          <div className="row" style={{ gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
+            {abschnitte.map((a) => (
+              <a
+                key={a.url}
+                className="btn btn-sm"
+                href={a.url}
+                target="_blank"
+                rel="noreferrer"
+                title="In Google Maps öffnen — auf dem Telefon in der Maps-App, mit Verkehr"
+              >
+                {abschnitte.length === 1 ? 'In Google Maps öffnen' : `Google Maps · Stopps ${a.von}–${a.bis}`}
+              </a>
+            ))}
+            <Button size="sm" title="Stopps, Ankunftszeiten und Navigationsverweise als Text — für WhatsApp oder Mail" onClick={() => void tourKopieren()}>
+              Stoppliste kopieren
+            </Button>
+            <Button size="sm" variant="ghost" title="Verweis, der diese Tour direkt in mapper öffnet — für Kollegen im selben Arbeitsbereich" onClick={() => void linkKopieren()}>
+              Link kopieren
+            </Button>
+          </div>
+        )}
 
         {plan.lastGain && (
           <div className="panel panel-pad small" style={{ marginBottom: 8, borderLeft: '3px solid var(--success)' }}>

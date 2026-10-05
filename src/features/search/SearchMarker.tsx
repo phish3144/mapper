@@ -16,6 +16,7 @@ import { Button } from '@/components/ui'
 import { formatLatLng } from '@/lib/geo'
 import { useCanEdit } from '@/lib/store'
 import { useUi } from '@/lib/uiStore'
+import { navigationUrlTo } from '@/lib/navigation'
 
 /** Hof um die Adresse, damit die Nadel nicht allein im Kartenbild steht. */
 const HALO_RADIUS_M = 250
@@ -152,6 +153,15 @@ export default function SearchMarker() {
               <Button size="sm" title={`Strecke von "${label}" zu einem Ziel`} onClick={starteStrecke}>
                 Route
               </Button>
+              <a
+                className="btn btn-sm"
+                href={navigationUrlTo(searchPoint)}
+                target="_blank"
+                rel="noreferrer"
+                title="In Google Maps vom eigenen Standort hierher navigieren — mit Verkehr"
+              >
+                Navigation
+              </a>
               {canEdit && (
                 <Button size="sm" onClick={createLocation}>
                   Als Standort anlegen

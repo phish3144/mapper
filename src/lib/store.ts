@@ -91,7 +91,7 @@ const EMPTY_WORKSPACE_DATA = {
   grants: [] as VisibilityGrant[],
 }
 
-const LAST_WORKSPACE_KEY = 'mapper.lastWorkspace'
+export const LAST_WORKSPACE_KEY = 'mapper.lastWorkspace'
 
 export const useStore = create<State & Actions>()((set, get) => ({
   session: null,

@@ -166,6 +166,8 @@
 .map-overlay.top-left { top: 10px; left: 10px; flex-direction: column; align-items: flex-start; }
 .map-overlay.top-right { top: 10px; right: 10px; flex-direction: column; align-items: flex-end; }
 .map-overlay.bottom-left { bottom: 22px; left: 10px; }
+/* Ueber der Namensnennung der Karte, zwischen Zoomknoepfen und Rand. */
+.map-overlay.bottom-center { bottom: 26px; left: 50%; transform: translateX(-50%); max-width: calc(100% - 120px); }
 
 .map-hint {
   padding: 6px 11px;
@@ -478,3 +480,46 @@
   .addr-search { flex-basis: 100%; max-width: none; }
   .addr-pop { position: fixed; left: 8px; right: 8px; top: calc(var(--header-height) + 6px); }
 }
+
+/* --- Team-Schnellfilter auf der Karte ------------------------------------
+   Eine Zeile, die auf schmalen Geraeten seitlich scrollt statt umzubrechen:
+   vier Zeilen Knoepfe ueber der Karte waeren mehr Knopf als Karte. */
+
+.team-chips {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+.team-chips::-webkit-scrollbar { display: none; }
+.team-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  padding: 3px 9px;
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.team-chip:hover { background: var(--bg-hover); color: var(--text); }
+.team-chip.is-on {
+  color: var(--text);
+  background: var(--accent-subtle);
+  border-color: var(--accent);
+}
+
+/* Leaflet faerbt jeden Link in der Karte blau - auch einen, der wie ein
+   Knopf aussehen soll. */
+.leaflet-container a.btn { color: var(--text); }

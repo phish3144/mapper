@@ -14,6 +14,9 @@ import { createPortal } from 'react-dom'
 import L from 'leaflet'
 import 'leaflet.markercluster'
 import { Marker, Popup, useMap } from 'react-leaflet'
+import { koordinatenText, navigationUrlTo } from '@/lib/navigation'
+import { inZwischenablage } from '@/lib/clipboard'
+import { appBasis, sprungLink } from '@/lib/deepLink'
 import { Badge, Button, Dot } from '@/components/ui'
 import * as db from '@/lib/db'
 import { formatMinutes, formatTimeWindows } from '@/lib/format'
@@ -305,6 +308,7 @@ function LocationPopup({ location }: { location: MapLocation }) {
   const loadStops = useStore((s) => s.loadStops)
   const notify = useStore((s) => s.notify)
   const reportError = useStore((s) => s.reportError)
+  const workspaceId = useStore((s) => s.currentWorkspaceId)
   const canEdit = useCanEdit()
 
   const activeRouteId = useUi((s) => s.activeRouteId)
@@ -350,6 +354,27 @@ function LocationPopup({ location }: { location: MapLocation }) {
     }
   }
 
+  /**
+   * Adresse, wo es eine gibt, sonst die Koordinaten. Viele Standorte stammen
+   * aus Karten-Importen und haben nur Koordinaten - die versteht jedes Navi
+   * beim Einfuegen genauso.
+   */
+  const kopierText = location.address?.trim() || koordinatenText(location)
+  const kopierName = location.address?.trim() ? 'Adresse' : 'Koordinaten'
+
+  async function kopieren(): Promise<void> {
+    if (await inZwischenablage(kopierText)) notify('success', `${kopierName} kopiert.`)
+    else notify('error', `${kopierName} ließen sich nicht kopieren — der Browser erlaubt es hier nicht.`)
+  }
+
+  /** Verweis, der diesen Standort direkt oeffnet - fuer Kollegen im selben Bereich. */
+  async function linkKopieren(): Promise<void> {
+    if (!workspaceId) return
+    const link = sprungLink(appBasis(), { ws: workspaceId, art: 'standort', id: location.id })
+    if (await inZwischenablage(link)) notify('success', 'Link zum Standort kopiert.')
+    else notify('error', 'Der Link ließ sich nicht kopieren — der Browser erlaubt es hier nicht.')
+  }
+
   function starteStrecke(): void {
     // Die Sprechblase schliessen: der Dialog legt sich sonst darueber, und
     // nach dem Waehlen soll der Blick auf der Strecke liegen, nicht auf ihr.
@@ -379,6 +404,18 @@ function LocationPopup({ location }: { location: MapLocation }) {
 
       {location.address && <span className="small muted">{location.address}</span>}
 
+      {/* Die Notizen tragen bei HWPs das, was man vor dem Anruf wissen muss:
+          KN ja/nein, Reichweite, Ansprechpartner. Bisher standen sie nur im
+          Bearbeiten-Formular. */}
+      {location.notes?.trim() && (
+        <span
+          className="small"
+          style={{ whiteSpace: 'pre-line', maxHeight: '7.5em', overflowY: 'auto', overflowWrap: 'anywhere' }}
+        >
+          {location.notes.trim()}
+        </span>
+      )}
+
       <span className="small muted">Zeiten: {formatTimeWindows(location.time_windows)}</span>
       <span className="small muted">Aufenthalt: {formatMinutes(location.service_minutes)}</span>
 
@@ -393,20 +430,50 @@ function LocationPopup({ location }: { location: MapLocation }) {
         </div>
       )}
 
+      {/* Oben, was man unterwegs braucht; darunter, was man am Schreibtisch
+          braucht. Sechs gleich gewichtete Knoepfe in einer Sprechblase
+          liest niemand. */}
       <div className="row" style={{ gap: 6, marginTop: 3, flexWrap: 'wrap' }}>
         {/* Auch fuer Leser: eine Strecke anzusehen aendert nichts. */}
         <Button size="sm" title={`Strecke von "${location.name}" zu einem Ziel`} onClick={starteStrecke}>
           Route
         </Button>
-        {canEdit && (
-          <Button size="sm" onClick={() => setEditingLocation(location.id)}>
-            Bearbeiten
-          </Button>
-        )}
+        <a
+          className="btn btn-sm"
+          href={navigationUrlTo(location)}
+          target="_blank"
+          rel="noreferrer"
+          title="In Google Maps vom eigenen Standort hierher navigieren — mit Verkehr"
+        >
+          Navigation
+        </a>
         {canAddToRoute && (
           <Button size="sm" variant="primary" busy={busy} onClick={() => void addToRoute()}>
             Zur Route hinzufügen
           </Button>
+        )}
+      </div>
+      <div className="row small" style={{ gap: 12, flexWrap: 'wrap' }}>
+        <button
+          type="button"
+          className="linkish"
+          title={`${kopierName} in die Zwischenablage: ${kopierText}`}
+          onClick={() => void kopieren()}
+        >
+          {kopierName} kopieren
+        </button>
+        <button
+          type="button"
+          className="linkish"
+          title="Verweis, der diesen Standort direkt in mapper öffnet"
+          onClick={() => void linkKopieren()}
+        >
+          Link kopieren
+        </button>
+        {canEdit && (
+          <button type="button" className="linkish" onClick={() => setEditingLocation(location.id)}>
+            Bearbeiten
+          </button>
         )}
       </div>
     </div>

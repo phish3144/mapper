@@ -26,3 +26,58 @@ export function navigationUrl(from: LatLng, to: LatLng): string {
   })
   return `https://www.google.com/maps/dir/?${params.toString()}`
 }
+
+/**
+ * So viele Zwischenziele nimmt ein Google-Maps-Verweis hoechstens. Laut
+ * Dokumentation neun in der App und am Rechner, im mobilen Browser nur drei.
+ * Geplant wird fuer die App: auf dem Telefon oeffnet der Verweis sie, sobald
+ * sie installiert ist.
+ */
+export const MAX_WAYPOINTS = 9
+
+/**
+ * Navigation zu einem einzelnen Ziel. Ohne Start nimmt Google den Standort
+ * des Geraets - unterwegs genau das Richtige, und Google rechnet dabei mit
+ * Verkehr, was unsere Fahrzeiten nicht koennen.
+ */
+export function navigationUrlTo(to: LatLng): string {
+  const params = new URLSearchParams({
+    api: '1',
+    destination: punkt(to),
+    travelmode: 'driving',
+  })
+  return `https://www.google.com/maps/dir/?${params.toString()}`
+}
+
+/**
+ * Eine ganze Tour als Google-Maps-Verweise, in der Reihenfolge der Stopps.
+ *
+ * Mehr als MAX_WAYPOINTS Zwischenziele passen nicht in einen Verweis. Laengere
+ * Touren werden deshalb in Abschnitte geteilt, und jeder Abschnitt beginnt
+ * genau dort, wo der vorige endet - kein Stopp faellt zwischen zwei Verweise.
+ */
+export function tourNavigationUrls(points: readonly LatLng[]): string[] {
+  if (points.length === 0) return []
+  if (points.length === 1) return [navigationUrlTo(points[0])]
+
+  const schritt = MAX_WAYPOINTS + 1
+  const urls: string[] = []
+  for (let i = 0; i < points.length - 1; i += schritt) {
+    const abschnitt = points.slice(i, i + schritt + 1)
+    const params = new URLSearchParams({
+      api: '1',
+      origin: punkt(abschnitt[0]),
+      destination: punkt(abschnitt[abschnitt.length - 1]),
+      travelmode: 'driving',
+    })
+    const zwischen = abschnitt.slice(1, -1)
+    if (zwischen.length > 0) params.set('waypoints', zwischen.map(punkt).join('|'))
+    urls.push(`https://www.google.com/maps/dir/?${params.toString()}`)
+  }
+  return urls
+}
+
+/** Koordinaten so, wie Google Maps und jedes Navi sie beim Einfuegen versteht. */
+export function koordinatenText(p: LatLng): string {
+  return `${p.lat.toFixed(STELLEN)}, ${p.lng.toFixed(STELLEN)}`
+}
