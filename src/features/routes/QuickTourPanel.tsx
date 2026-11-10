@@ -216,7 +216,7 @@ export default function QuickTourPanel({ route }: { route: Route | null }) {
       }
     }
 
-    const lookup = await findAddress(line, { limit: 5, countryCodes: 'de,at,ch', signal })
+    const lookup = await findAddress(line, { limit: 5, signal })
     if (signal.aborted) {
       return { raw: line, kind: 'missing', locationId: null, point: null, label: null, hint: 'Abgebrochen.' }
     }

@@ -807,6 +807,7 @@ describe('Ausweichen auf Photon', () => {
           street: 'Horstwiesen',
           postcode: '29336',
           city: 'Nienhagen',
+          countrycode: 'DE',
           osm_value: 'house',
         },
       },
@@ -892,5 +893,89 @@ describe('Ausweichen auf Photon', () => {
     expect(result.matches).toEqual([])
     // Der Grund des bevorzugten Dienstes ist der aussagekraeftigere.
     expect(result.problem).toBe('rate-limit')
+  })
+})
+
+/**
+ * Fast alle Ziele liegen in Deutschland. Ohne Einschraenkung lieferte
+ * Nominatim auf "29221" zuerst einen Ort in Litauen, Celle erst danach.
+ */
+describe('Deutschland zuerst', () => {
+  const celle = nominatimHit({
+    lat: '52.62',
+    lon: '10.08',
+    display_name: '29221, Celle, Landkreis Celle, Niedersachsen, Deutschland',
+    type: 'postcode',
+    addresstype: 'postcode',
+  })
+  const wien = nominatimHit({ lat: '48.2', lon: '16.37', display_name: 'Wien, Österreich', type: 'city' })
+
+  it('schickt jede Nominatim-Anfrage mit countrycodes=de', async () => {
+    fetchMock.mockResolvedValue(jsonResponse([]))
+    await settleCascade(findAddress('Horstwiesen 14, 29336 Nienhagen'))
+    const nominatim = calls().filter((c) => c.url.startsWith(NOMINATIM_BASE_URL))
+    // Die volle Suche geht danach weltweit weiter - die ersten Schritte aber,
+    // frei wie strukturiert, sind auf Deutschland beschraenkt.
+    const inland = nominatim.filter((c) => new URL(c.url).searchParams.get('countrycodes') === 'de')
+    expect(inland.length).toBeGreaterThanOrEqual(2)
+    expect(inland.some((c) => new URL(c.url).searchParams.has('postalcode'))).toBe(true)
+  })
+
+  it('findet eine reine Postleitzahl in Deutschland', async () => {
+    fetchMock.mockResolvedValue(jsonResponse([celle]))
+    const result = await settleCascade(findAddress('29221', { mode: 'quick' }))
+    expect(result.matches[0]?.label).toContain('Celle')
+    expect(calledUrl(0).searchParams.get('q')).toBe('29221')
+    expect(calledUrl(0).searchParams.get('countrycodes')).toBe('de')
+  })
+
+  it('sucht in der vollen Suche weltweit weiter, wenn Deutschland nichts liefert', async () => {
+    fetchMock.mockImplementation((url: string) =>
+      Promise.resolve(
+        String(url).includes('photon')
+          ? jsonResponse({ features: [] })
+          : jsonResponse(new URL(String(url)).searchParams.has('countrycodes') ? [] : [wien]),
+      ),
+    )
+    const result = await settleCascade(findAddress('Wien', { mode: 'full' }))
+    expect(result.matches[0]?.label).toBe('Wien, Österreich')
+  })
+
+  it('bleibt beim Tippen in Deutschland', async () => {
+    fetchMock.mockImplementation((url: string) =>
+      Promise.resolve(jsonResponse(new URL(String(url)).searchParams.has('countrycodes') ? [] : [wien])),
+    )
+    const result = await settleCascade(findAddress('Wien', { mode: 'quick' }))
+    expect(result.matches).toEqual([])
+    expect(calls().every((c) => new URL(c.url).searchParams.get('countrycodes') === 'de')).toBe(true)
+  })
+
+  it('haelt sich an ausdruecklich vorgegebene Laender und sucht dann nicht weiter', async () => {
+    fetchMock.mockResolvedValue(jsonResponse([]))
+    await settleCascade(findAddress('Wien', { mode: 'full', countryCodes: 'de,at' }))
+    const nominatim = calls().filter((c) => c.url.startsWith(NOMINATIM_BASE_URL))
+    expect(nominatim.length).toBeGreaterThan(0)
+    expect(nominatim.every((c) => new URL(c.url).searchParams.get('countrycodes') === 'de,at')).toBe(true)
+  })
+
+  it('siebt bei Photon Treffer aus anderen Laendern aus', async () => {
+    const merkmal = (code: string, ort: string, lng: number) => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [lng, 52] },
+      properties: { postcode: '29221', city: ort, countrycode: code, osm_value: 'postcode' },
+    })
+    fetchMock.mockImplementation((url: string) =>
+      Promise.resolve(
+        String(url).includes('photon')
+          ? jsonResponse({ features: [merkmal('LT', 'Kalveliai', 25), merkmal('DE', 'Celle', 10.08)] })
+          : jsonResponse({}, 403),
+      ),
+    )
+    const result = await settleCascade(findAddress('29221', { mode: 'quick' }))
+    expect(result.provider).toBe('photon')
+    expect(result.matches.map((m) => m.label)).toEqual(['29221 Celle'])
+    // Photon filtert nicht selbst; damit nach dem Sieben genug bleibt, wird mehr angefragt.
+    const photonUrl = new URL(calls().find((c) => c.url.includes('photon'))!.url)
+    expect(Number(photonUrl.searchParams.get('limit'))).toBeGreaterThan(8)
   })
 })

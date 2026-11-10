@@ -17,7 +17,7 @@
 
 import type { LatLng } from '@/types/domain'
 import type { Bounds } from '@/lib/geo'
-import { photonFeatures, photonSearchUrl, photonToHit } from '@/lib/photon'
+import { photonCountryCode, photonFeatures, photonSearchUrl, photonToHit } from '@/lib/photon'
 import {
   buildSearchSteps,
   parseGermanAddress,
@@ -87,6 +87,14 @@ export const DEFAULT_SEARCH_LIMIT = 8
 export const MAX_SEARCH_LIMIT = 40
 
 export const GEOCODE_CACHE_LIMIT = 100
+
+/**
+ * Gesucht wird zuerst in Deutschland. Ohne Einschraenkung landete eine reine
+ * Postleitzahl wie "29221" zuerst in Litauen und erst an zweiter Stelle in
+ * Celle - die Dienste wissen nicht, dass hier fast alles in Deutschland liegt.
+ * Erst wenn dort gar nichts zu finden ist, sucht die volle Suche weltweit.
+ */
+export const DEFAULT_COUNTRY_CODES = 'de'
 
 /**
  * Liest eine Vite-Variable. Der Zugriff laeuft ueber einen Cast, weil
@@ -402,10 +410,11 @@ export interface ProxyRequest {
   structured?: Record<string, string>
   limit: number
   /**
-   * Nur bei der freien Suche gesetzt - so wie auf dem Direktweg. Der
-   * strukturierte Weg schraenkt nie auf Laender ein, und der Bote muss sich
-   * exakt so verhalten wie der Direktweg: sonst lieferte er andere Treffer,
-   * die dann unter einem Schluessel landen, der die Einschraenkung behauptet.
+   * Laendereinschraenkung fuer Nominatim - frei wie strukturiert, genau wie
+   * auf dem Direktweg. Der Bote muss sich exakt so verhalten wie der
+   * Direktweg: sonst landeten andere Treffer unter einem Schluessel, der die
+   * Einschraenkung behauptet. Photon kennt keine; dort filtert der Aufrufer
+   * die Antwort selbst.
    */
   countryCodes?: string
 }
@@ -466,16 +475,23 @@ async function viaProxy(request: ProxyRequest, signal?: AbortSignal): Promise<un
 }
 
 /** Wandelt die Rohantwort eines Dienstes in Treffer um. */
-function parseProviderBody(provider: GeocodeProvider, body: unknown): GeocodeHit[] | null {
+function parseProviderBody(
+  provider: GeocodeProvider,
+  body: unknown,
+  photonFilter?: { countryCodes: string; limit: number },
+): GeocodeHit[] | null {
   if (provider === 'photon') {
     // Eine Photon-Antwort ohne features-Feld ist kaputt; eine mit leerem
     // features-Feld ist schlicht ohne Treffer. Der Unterschied entscheidet,
     // ob 'bad-response' gemeldet oder ein leeres Ergebnis gemerkt wird.
     if (!Array.isArray((body as { features?: unknown })?.features)) return null
+    const erlaubt = photonFilter?.countryCodes ? photonFilter.countryCodes.split(',') : null
     const hits: GeocodeHit[] = []
     for (const feature of photonFeatures(body)) {
+      if (erlaubt !== null && !erlaubt.includes(photonCountryCode(feature) ?? '')) continue
       const hit = photonToHit(feature)
       if (hit) hits.push(hit)
+      if (photonFilter && hits.length >= photonFilter.limit) break
     }
     return hits
   }
@@ -497,6 +513,7 @@ async function runLookup(
   key: string,
   provider: GeocodeProvider,
   load: () => Promise<unknown>,
+  photonFilter?: { countryCodes: string; limit: number },
 ): Promise<RawLookup> {
   const cached = readCache(key)
   if (cached) return { hits: cached, problem: null }
@@ -511,7 +528,7 @@ async function runLookup(
     return { hits: [], problem: error instanceof GeocodeError ? error.problem : 'network' }
   }
 
-  const hits = parseProviderBody(provider, body)
+  const hits = parseProviderBody(provider, body, photonFilter)
   if (hits === null) return { hits: [], problem: 'bad-response' }
 
   writeCache(key, hits)
@@ -532,15 +549,20 @@ async function photonLookup(query: string, opts: AddressSearchOptions): Promise<
   if (opts.signal?.aborted) return leer
 
   const limit = clampLimit(opts.limit)
+  const countryCodes = normalizeCountryCodes(opts.countryCodes)
+  // Photon kennt keine Laendereinschraenkung. Gefiltert wird hier, nach der
+  // Antwort - deshalb mehr Treffer anfordern, damit nach dem Aussieben noch
+  // genug uebrig bleiben.
+  const anfrage = countryCodes === '' ? limit : Math.min(MAX_SEARCH_LIMIT, limit * 3)
   return runLookup(
-    `photon|${limit}|${normalized}`,
+    `photon|${countryCodes}|${limit}|${normalized}`,
     'photon',
     async () => {
-      // Photon kennt keine Laendereinschraenkung - auf dem Direktweg ebenso wenig.
-      const durchBoten = await viaProxy(buildProxyRequest('photon', limit, { q: query }), opts.signal)
+      const durchBoten = await viaProxy(buildProxyRequest('photon', anfrage, { q: query }), opts.signal)
       if (durchBoten !== null) return durchBoten
-      return fetchJson(photonSearchUrl(query.trim(), limit), opts.signal, PHOTON_MIN_INTERVAL_MS)
+      return fetchJson(photonSearchUrl(query.trim(), anfrage), opts.signal, PHOTON_MIN_INTERVAL_MS)
     },
+    { countryCodes, limit },
   )
 }
 
@@ -738,7 +760,8 @@ async function searchStructuredRaw(
   if (opts.signal?.aborted) return leer
 
   const limit = clampLimit(opts.limit)
-  const key = `struct|${limit}|${entries.map(([k, v]) => `${k}=${v.toLowerCase()}`).sort().join('&')}`
+  const countryCodes = normalizeCountryCodes(opts.countryCodes)
+  const key = `struct|${countryCodes}|${limit}|${entries.map(([k, v]) => `${k}=${v.toLowerCase()}`).sort().join('&')}`
   const params = new URLSearchParams({
     format: 'jsonv2',
     addressdetails: '1',
@@ -746,13 +769,17 @@ async function searchStructuredRaw(
     'accept-language': 'de',
   })
   for (const [field, value] of entries) params.set(field, value.trim())
+  if (countryCodes !== '') params.set('countrycodes', countryCodes)
 
   const structured = Object.fromEntries(entries.map(([field, value]) => [field, value.trim()]))
   return runLookup(
     key,
     'nominatim',
     async () => {
-      const durchBoten = await viaProxy(buildProxyRequest('nominatim', limit, { structured }), opts.signal)
+      const durchBoten = await viaProxy(
+        buildProxyRequest('nominatim', limit, { structured, countryCodes }),
+        opts.signal,
+      )
       if (durchBoten !== null) return durchBoten
       return fetchJson(`${NOMINATIM_BASE_URL}/search?${params.toString()}`, opts.signal)
     },
@@ -869,9 +896,27 @@ async function runPhoton(
   return { hits: [], problem }
 }
 
+/**
+ * Sucht eine Adresse, zuerst in Deutschland (siehe DEFAULT_COUNTRY_CODES).
+ * Gibt der Aufrufer selbst Laender vor, gelten genau diese - ein leerer Text
+ * heisst dann weltweit. Ohne Vorgabe sucht die volle Suche weltweit weiter,
+ * wenn Deutschland nichts liefert; die schnelle Suche beim Tippen nicht,
+ * sonst tauchten waehrend jeder halben Eingabe Treffer aus aller Welt auf.
+ */
 export async function findAddress(
   query: string,
   opts: AddressSearchOptions = {},
+): Promise<AddressLookup> {
+  if (opts.countryCodes !== undefined) return findAddressIn(query, opts)
+  const inland = await findAddressIn(query, { ...opts, countryCodes: DEFAULT_COUNTRY_CODES })
+  if (inland.matches.length > 0 || inland.problem !== null) return inland
+  if (opts.mode === 'quick' || opts.signal?.aborted) return inland
+  return findAddressIn(query, { ...opts, countryCodes: '' })
+}
+
+async function findAddressIn(
+  query: string,
+  opts: AddressSearchOptions,
 ): Promise<AddressLookup> {
   const wanted = wantedPrecision(query)
   const steps = buildSearchSteps(query)

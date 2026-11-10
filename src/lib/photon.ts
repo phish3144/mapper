@@ -130,6 +130,13 @@ export function photonToHit(feature: unknown): PhotonHit | null {
   }
 }
 
+/** Laendercode eines Photon-Merkmals in Kleinbuchstaben ("de"), sonst null. */
+export function photonCountryCode(feature: unknown): string | null {
+  const properties = asRecord(asRecord(feature)?.properties)
+  const code = text(properties?.countrycode)
+  return code === null ? null : code.toLowerCase()
+}
+
 /** Liest die Merkmalsliste einer Photon-Antwort heraus. */
 export function photonFeatures(body: unknown): unknown[] {
   const raw = asRecord(body)
