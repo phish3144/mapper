@@ -11,6 +11,8 @@ import { admin, looksUndeployed } from '@/lib/db'
 import type { AdminAccount } from '@/lib/db'
 import { formatDateShort, pluralize } from '@/lib/format'
 import { describeError } from '@/lib/supabase'
+import { erzeugePasswort } from '@/lib/passwort'
+import { inZwischenablage } from '@/lib/clipboard'
 import { useCurrentWorkspace, useStore } from '@/lib/store'
 import type { MemberRole } from '@/types/domain'
 import {
@@ -59,6 +61,9 @@ export default function AdminDialog({ onClose }: { onClose: () => void }) {
 
   const [resetting, setResetting] = useState<AdminAccount | null>(null)
   const [newPassword, setNewPassword] = useState('')
+  // Nach dem Setzen bleibt der Dialog offen und zeigt das Passwort noch einmal
+  // zum Kopieren - weitergeben muss es der Administrator ja selbst.
+  const [resetDone, setResetDone] = useState(false)
   const [resetError, setResetError] = useState<string | null>(null)
   const [resetBusy, setResetBusy] = useState(false)
 
@@ -80,7 +85,12 @@ export default function AdminDialog({ onClose }: { onClose: () => void }) {
   // Ebenfalls stabil: Modal haengt seinen Fokus-Effekt an onClose. Ein bei jedem
   // Rendern neu gebautes Schliessen zoege den Fokus nach jedem Tastendruck aus
   // dem Passwortfeld zurueck in die Kopfzeile des Dialogs.
-  const closeReset = useCallback(() => setResetting(null), [])
+  // Das Passwort nicht im Zustand liegen lassen, wenn der Dialog zu ist.
+  const closeReset = useCallback(() => {
+    setResetting(null)
+    setNewPassword('')
+    setResetDone(false)
+  }, [])
   const cancelDelete = useCallback(() => setPendingDelete(null), [])
 
   // `initial` steuert nur die Ladeanzeige: nach einer Aktion soll die Liste
@@ -194,9 +204,7 @@ export default function AdminDialog({ onClose }: { onClose: () => void }) {
     setResetBusy(true)
     try {
       await admin.resetPassword(resetting.id, newPassword)
-      notify('success', `Passwort für ${resetting.email} wurde gesetzt.`)
-      setResetting(null)
-      setNewPassword('')
+      setResetDone(true)
     } catch (err) {
       handleActionError(err, setResetError)
     } finally {
@@ -295,8 +303,9 @@ export default function AdminDialog({ onClose }: { onClose: () => void }) {
                       aria-label={`Passwort von ${a.email} zuruecksetzen`}
                       disabled={busyId === a.id}
                       onClick={() => {
-                        setNewPassword('')
+                        setNewPassword(erzeugePasswort())
                         setResetError(null)
+                        setResetDone(false)
                         setResetting(a)
                       }}
                     >
@@ -415,35 +424,80 @@ export default function AdminDialog({ onClose }: { onClose: () => void }) {
           width={400}
           onClose={closeReset}
           footer={
-            <>
-              <Button onClick={closeReset} disabled={resetBusy}>
-                Abbrechen
+            resetDone ? (
+              <Button variant="primary" onClick={closeReset}>
+                Fertig
               </Button>
-              <Button type="submit" form={resetFormId} variant="primary" busy={resetBusy}>
-                Passwort setzen
-              </Button>
-            </>
+            ) : (
+              <>
+                <Button onClick={closeReset} disabled={resetBusy}>
+                  Abbrechen
+                </Button>
+                <Button type="submit" form={resetFormId} variant="primary" busy={resetBusy}>
+                  Passwort setzen
+                </Button>
+              </>
+            )
           }
         >
-          <form id={resetFormId} onSubmit={submitReset}>
-            <p className="small muted">
-              Neues Passwort für <strong>{resetting.email}</strong>. Die Person wird nicht
-              benachrichtigt.
-            </p>
-            <TextField
-              label="Neues Passwort"
-              type="password"
-              autoComplete="new-password"
-              autoFocus
-              hint={`Mindestens ${MIN_PASSWORD} Zeichen.`}
-              error={resetError}
-              value={newPassword}
-              onChange={(e) => {
-                setNewPassword(e.target.value)
-                if (resetError) setResetError(null)
-              }}
-            />
-          </form>
+          {resetDone ? (
+            <div className="col" style={{ gap: 10 }}>
+              <p className="small">
+                Das Passwort für <strong>{resetting.email}</strong> ist gesetzt. Gib es der
+                Person weiter, sie wird nicht benachrichtigt.
+              </p>
+              <div className="row" style={{ gap: 8 }}>
+                <code
+                  className="input grow"
+                  style={{ userSelect: 'all', overflowWrap: 'anywhere', fontFamily: 'var(--font-mono, monospace)', fontSize: 16 }}
+                >
+                  {newPassword}
+                </code>
+                <Button
+                  onClick={() =>
+                    void inZwischenablage(newPassword).then((ok) =>
+                      notify(ok ? 'success' : 'error', ok ? 'Passwort kopiert.' : 'Kopieren hat nicht geklappt – bitte von Hand markieren.'),
+                    )
+                  }
+                >
+                  Kopieren
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <form id={resetFormId} onSubmit={submitReset}>
+              <p className="small muted">
+                Neues Passwort für <strong>{resetting.email}</strong>. Vorgeschlagen ist ein
+                zufälliges; du kannst es auch überschreiben. Die Person wird nicht benachrichtigt.
+              </p>
+              <TextField
+                label="Neues Passwort"
+                type="text"
+                autoComplete="off"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
+                autoFocus
+                hint={`Mindestens ${MIN_PASSWORD} Zeichen.`}
+                error={resetError}
+                value={newPassword}
+                onChange={(e) => {
+                  setNewPassword(e.target.value)
+                  if (resetError) setResetError(null)
+                }}
+              />
+              <button
+                type="button"
+                className="linkish small"
+                onClick={() => {
+                  setNewPassword(erzeugePasswort())
+                  setResetError(null)
+                }}
+              >
+                Neues zufälliges Passwort
+              </button>
+            </form>
+          )}
         </Modal>
       )}
 
